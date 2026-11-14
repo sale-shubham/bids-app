@@ -1,5 +1,7 @@
 'use client';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { formatINR } from '@/lib/utils';
 import { nextPagedParam } from '@/lib/paged';
 import { recordEngagement } from '@/lib/engagement';
 import * as api from './bids.api';
@@ -9,7 +11,10 @@ export function usePlaceBid(auctionId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (amountPaise: number) => api.placeBid(auctionId, amountPaise),
-    onSuccess: (data) => {
+    onSuccess: (data, amountPaise) => {
+      // Toast here, not in the component's mutate() callback: the cache update below swaps the bid
+      // controls out (you are now the highest bidder), unmounting them before that callback would run.
+      toast.success(`Bid of ${formatINR(amountPaise)} placed`);
       recordEngagement('bid'); // unlocks the push soft prompt + install banner
       // The response carries the fresh auction (server offset already synced in bids.api).
       if (data.auction) qc.setQueryData(['auction', auctionId], data.auction);

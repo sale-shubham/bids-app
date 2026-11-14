@@ -25,6 +25,7 @@ test('deactivate and reactivate a member', async ({ page }) => {
   await page.getByPlaceholder('Search name or email').fill(email);
   await expect(page.getByText(email).first()).toBeVisible();
 
+  await expect(page.getByRole('row')).toHaveCount(2); // header + the one match
   await page.getByRole('button', { name: 'Deactivate', exact: true }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Deactivate' }).click();
   await expect(page.getByText('Member deactivated')).toBeVisible();
@@ -39,6 +40,7 @@ test('deactivate and reactivate a member', async ({ page }) => {
 test('an admin cannot deactivate their own account', async ({ page }) => {
   await page.goto('/admin/members');
   await page.getByPlaceholder('Search name or email').fill(loadState().members.admin.email);
+  await expect(page.getByRole('row')).toHaveCount(2);
   await expect(page.getByRole('button', { name: 'Deactivate', exact: true })).toBeDisabled();
 });
 

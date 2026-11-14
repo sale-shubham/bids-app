@@ -7,8 +7,9 @@ test.use({ storageState: storageStatePath('bidderA') });
 
 const bottomNav = (page: import('@playwright/test').Page) => page.locator('nav.fixed');
 
+// The bottom nav belongs to the signed-in dashboard shell (member pages), not the public /auctions shell.
 test('bottom nav shows the bidder tabs and navigates', async ({ page }) => {
-  await page.goto('/auctions');
+  await page.goto('/watchlist');
   const nav = bottomNav(page);
   await expect(nav).toBeVisible();
   for (const name of ['Home', 'Auctions', 'Watchlist', 'Profile']) {
@@ -21,7 +22,7 @@ test('bottom nav shows the bidder tabs and navigates', async ({ page }) => {
 });
 
 test('phone layout: bottom nav is shown and the page does not scroll sideways', async ({ page }) => {
-  await page.goto('/auctions');
+  await page.goto('/watchlist');
   await expect(bottomNav(page)).toBeVisible();
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflow).toBeLessThanOrEqual(1); // no horizontal page scroll
