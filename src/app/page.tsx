@@ -2,6 +2,9 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { Gavel, PackagePlus, Search, Trophy } from 'lucide-react';
 import { PublicHeader } from '@/components/layout/public-header';
+import { SiteFooter } from '@/components/layout/site-footer';
+import { TopBidders } from '@/features/leaderboard/components/leaderboard-view';
+import { getLeaderboardServer } from '@/features/leaderboard/leaderboard.server';
 import { Button } from '@/components/ui/button';
 import { AuctionGrid } from '@/features/auctions/components/auction-grid';
 import { RecentlyViewed } from '@/features/auctions/components/recently-viewed';
@@ -23,6 +26,8 @@ export default async function HomePage() {
   } catch {
     home = null;
   }
+
+  const topBidders = (await getLeaderboardServer('spent', 5)) ?? [];
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -62,6 +67,8 @@ export default async function HomePage() {
             </p>
           )}
 
+          <TopBidders entries={topBidders} />
+
           <RecentlyViewed />
 
           <section aria-labelledby="how-it-works" className="space-y-4">
@@ -96,6 +103,7 @@ export default async function HomePage() {
           </section>
         </div>
       </main>
+      <SiteFooter />
     </div>
   );
 }

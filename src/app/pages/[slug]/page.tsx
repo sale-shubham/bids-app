@@ -1,26 +1,55 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { LEGAL_PAGES, LEGAL_PAGE_SLUGS, legalPageName } from '@/constants/legal';
-import { LegalPageView } from './legal-page-view';
+import { PUBLIC_LEGAL_SLUGS, legalPageName } from '@/constants/legal';
+import { RichText } from '@/components/common/rich-text';
+import { getLegalDocServer } from '@/features/settings/settings.server';
 
-// Admin-managed content pages (Privacy Policy, Terms & Conditions). The page
-// set is fixed in code — the admin edits content only — so an unknown slug is
-// a 404, not an empty page.
+// Admin-managed legal pages, server-rendered from GET /settings/legal/:slug.
+// The slug set is fixed in code; an unknown slug (or a 404 from the API) is a 404.
+export const revalidate = 300;
+
+type Props = { params: Promise<{ slug: string }> };
+
 export function generateStaticParams() {
-  return LEGAL_PAGES.map(({ slug }) => ({ slug }));
+  return PUBLIC_LEGAL_SLUGS.map((slug) => ({ slug }));
 }
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}): Promise<Metadata> {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  return { title: `${legalPageName(slug)} — NobleBid` };
+  if (!PUBLIC_LEGAL_SLUGS.includes(slug)) return {};
+  const doc = await getLegalDocServer(slug);
+  const title = doc?.title ?? legalPageName(slug);
+  return {
+    title: `${title} — NobleBid`,
+    description: `${title} for NobleBid, the online auction marketplace.`,
+    alternates: { canonical: `/pages/${slug}` },
+  };
 }
 
-export default async function ContentPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function ContentPage({ params }: Props) {
   const { slug } = await params;
-  if (!LEGAL_PAGE_SLUGS.includes(slug)) notFound();
-  return <LegalPageView slug={slug} />;
+  if (!PUBLIC_LEGAL_SLUGS.includes(slug)) notFound();
+  const doc = await getLegalDocServer(slug);
+  const title = doc?.title ?? legalPageName(slug);
+
+  return (
+    <main className="container max-w-3xl py-10 sm:py-16">
+      <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{title}</h1>
+      {doc?.updatedAt && (
+        <p className="mt-2 text-sm text-muted-foreground">
+          Last updated{' '}
+          {new Date(doc.updatedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+        </p>
+      )}
+      <div className="mt-8">
+        {doc === null ? (
+          <p className="text-sm text-muted-foreground">Could not load this page right now. Please try again later.</p>
+        ) : doc.content ? (
+          <RichText html={doc.content} />
+        ) : (
+          <p className="text-sm text-muted-foreground">This page has not been published yet.</p>
+        )}
+      </div>
+    </main>
+  );
 }

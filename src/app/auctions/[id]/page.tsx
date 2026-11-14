@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { PublicHeader } from '@/components/layout/public-header';
+import { SiteFooter } from '@/components/layout/site-footer';
 import { AuctionDetailView } from '@/features/auctions/components/auction-detail';
 import { getAuctionDetailServer } from '@/features/auctions/auctions.server';
 import type { AuctionDetail } from '@/features/auctions/auctions.types';
@@ -94,6 +95,7 @@ export default async function AuctionDetailPage({ params }: Props) {
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ld }} />
         <AuctionDetailView initial={auction} serverTime={serverTime} />
       </main>
+      <SiteFooter />
     </div>
   );
 }
