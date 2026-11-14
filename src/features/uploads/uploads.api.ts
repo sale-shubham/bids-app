@@ -37,3 +37,21 @@ export async function putToPresigned(uploadUrl: string, file: File) {
   });
   if (!res.ok) throw new Error(`Upload failed (${res.status}). Please try again.`);
 }
+
+// Same PUT as above, via XHR so the caller can show upload progress (fetch has
+// no upload progress events). Content-Length is set by the browser from the
+// File, matching the size that was presigned.
+export function putToPresignedWithProgress(uploadUrl: string, file: File, onProgress: (pct: number) => void): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', uploadUrl);
+    xhr.setRequestHeader('Content-Type', file.type);
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+    };
+    xhr.onload = () =>
+      xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`Upload failed (${xhr.status}). Please try again.`));
+    xhr.onerror = () => reject(new Error('Upload failed. Check your connection and try again.'));
+    xhr.send(file);
+  });
+}

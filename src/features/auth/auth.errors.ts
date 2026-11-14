@@ -4,6 +4,7 @@ import { apiErrorCode, apiErrorMessage } from '@/lib/api-client';
 // else falls back to the server's own message.
 const MESSAGES: Record<string, string> = {
   INVALID_CREDENTIALS: 'Incorrect email or password.',
+  INVALID_CURRENT_PASSWORD: 'Your current password is incorrect.',
   EMAIL_TAKEN: 'An account with this email already exists. Try logging in instead.',
   EMAIL_NOT_VERIFIED: 'Please verify your email to continue.',
   ACCOUNT_SUSPENDED: 'Your account has been suspended. Contact support for help.',
