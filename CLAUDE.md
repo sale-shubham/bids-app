@@ -14,7 +14,7 @@ Next.js 16 App Router PWA (React 19, TypeScript, Tailwind 4, Radix/shadcn UI). S
 - Destructive actions use `<ConfirmDialog>`; forms use zod + react-hook-form; data hooks live in `src/features/<feature>/use-<feature>.ts`.
 
 ## Commands
-`npm run dev` (port 3002) · `npm run lint` · `npm run typecheck` · `npm run check`
+`npm run dev` (port 3002) · `npm run lint` · `npm run typecheck` · `npm test` (vitest) · `npm run check` (lint + typecheck + test) · E2E: `e2e/README.md`, `readme/methods/testing.md`
 
 ## Status
 Phase 1: auth (login, signup + email OTP, forgot/reset password), profile, header user menu and route guards are real; /auctions, /watchlist, /my-bids, /sell/auctions, /admin are placeholders. Phase 7/8: PWA icons and splash generated from the logo (scripts/generate-*), push opt-in after first bid/watch, Amplify deploy readiness; see readme/flows/pwa.md, push-notifications.md, deployment.md.

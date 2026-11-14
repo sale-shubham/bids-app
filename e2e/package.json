@@ -1,0 +1,23 @@
+{
+  "name": "bids-app-e2e",
+  "private": true,
+  "description": "Playwright E2E suite for bids-app. Not part of the app: own dependencies, excluded from the app's tsconfig, lint, vitest and build.",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "report": "playwright show-report",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": "24.x"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^24.0.0",
+    "@types/pg": "^8.15.0",
+    "bcryptjs": "^3.0.2",
+    "pg": "^8.16.0",
+    "typescript": "^6.0.3"
+  }
+}
