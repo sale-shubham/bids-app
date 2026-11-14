@@ -31,6 +31,11 @@ function parseCommission(raw: unknown): CommissionDTO {
   };
 }
 
+/** One commission from `{ data: CommissionDTO }` (GET /commissions/:id). */
+export function parseCommissionResponse(body: unknown): CommissionDTO {
+  return parseCommission(obj(body).data);
+}
+
 export function parseCommissionPage(body: unknown): Paged<CommissionDTO> {
   const p = parsePaged<unknown>(body);
   return { items: p.items.map(parseCommission), meta: p.meta };

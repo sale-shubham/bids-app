@@ -73,20 +73,53 @@ export interface OpenCheckoutInput {
 
 export class RazorpayCheckoutError extends Error {
   constructor(
-    public reason: 'dismissed' | 'failed' | 'load',
+    public reason: 'dismissed' | 'failed' | 'load' | 'aborted',
     message: string,
   ) {
     super(message);
   }
 }
 
-/** Opens Checkout in order mode. Resolves with the signed response; rejects with RazorpayCheckoutError. */
-export async function openRazorpayCheckout(input: OpenCheckoutInput): Promise<RazorpayHandlerResponse> {
+const abortedError = () => new RazorpayCheckoutError('aborted', 'Payment window closed.');
+
+/**
+ * Opens Checkout in order mode. Resolves with the signed response; rejects with RazorpayCheckoutError.
+ * If `opts.signal` aborts, the checkout is closed and the promise rejects with reason 'aborted'
+ * (the caller uses this when it learned the payment went through some other way).
+ */
+export async function openRazorpayCheckout(
+  input: OpenCheckoutInput,
+  opts: { signal?: AbortSignal } = {},
+): Promise<RazorpayHandlerResponse> {
+  const { signal } = opts;
+  if (signal?.aborted) throw abortedError();
   const ok = await loadRazorpayCheckout();
+  if (signal?.aborted) throw abortedError();
   if (!ok || !window.Razorpay) throw new RazorpayCheckoutError('load', 'Could not load the payment window.');
   const Ctor = window.Razorpay;
   return new Promise<RazorpayHandlerResponse>((resolve, reject) => {
-    const rzp = new Ctor({
+    // The handler, ondismiss, payment.failed and abort can race (rzp.close() itself fires
+    // ondismiss). Whichever comes first settles the promise; everything after is ignored.
+    let settled = false;
+    let rzp: RazorpayInstance | null = null;
+    const onAbort = () => {
+      // Settle before closing so the ondismiss that close() triggers is ignored.
+      if (!settle(() => reject(abortedError()))) return;
+      try {
+        rzp?.close();
+      } catch {
+        // already closed
+      }
+    };
+    const settle = (fn: () => void): boolean => {
+      if (settled) return false;
+      settled = true;
+      signal?.removeEventListener('abort', onAbort);
+      fn();
+      return true;
+    };
+
+    rzp = new Ctor({
       key: input.keyId,
       order_id: input.orderId,
       amount: input.amountPaise,
@@ -95,13 +128,14 @@ export async function openRazorpayCheckout(input: OpenCheckoutInput): Promise<Ra
       description: input.description,
       prefill: input.prefill,
       theme: { color: '#7C3AED' },
-      modal: { ondismiss: () => reject(new RazorpayCheckoutError('dismissed', 'Payment cancelled')) },
-      handler: resolve,
+      modal: { ondismiss: () => settle(() => reject(new RazorpayCheckoutError('dismissed', 'Payment cancelled'))) },
+      handler: (response) => settle(() => resolve(response)),
     });
     rzp.on('payment.failed', (resp) => {
       const desc = (resp as { error?: { description?: string } })?.error?.description;
-      reject(new RazorpayCheckoutError('failed', desc || 'Payment failed'));
+      settle(() => reject(new RazorpayCheckoutError('failed', desc || 'Payment failed')));
     });
+    signal?.addEventListener('abort', onAbort);
     rzp.open();
   });
 }
