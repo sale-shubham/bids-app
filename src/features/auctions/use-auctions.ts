@@ -1,5 +1,7 @@
 'use client';
+import * as React from 'react';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useServerNow } from '@/components/common/countdown';
 import * as api from './auctions.api';
 import { nextAuctionPage } from './auctions.filters';
 import type {
@@ -38,12 +40,50 @@ export function useCategories() {
   return useQuery({ queryKey: ['auctions', 'categories'], queryFn: api.fetchCategories, staleTime: 5 * 60_000 });
 }
 
+const POLL_MS = 10_000;
+const CLOSE_JOB_LAG_MS = 70_000;
+
+// Until the WebSocket lands (Phase 4) the page polls while the tab is visible and the
+// auction can still change. `initialDataUpdatedAt: 0` makes the server-rendered
+// (anonymous) detail refetch on mount so isMe / myHighestBidPaise / contact arrive.
 export function useAuction(id: string, initial?: AuctionDetail) {
   return useQuery({
     queryKey: ['auction', id],
     queryFn: async () => (await api.fetchAuction(id)).auction,
-    ...(initial ? { initialData: initial } : {}),
+    refetchInterval: (query) => {
+      const s = query.state.data?.status;
+      return s === 'LIVE' || s === 'SCHEDULED' ? POLL_MS : false;
+    },
+    refetchIntervalInBackground: false,
+    ...(initial ? { initialData: initial, initialDataUpdatedAt: 0 } : {}),
   });
+}
+
+/**
+ * Refetch once when the start time passes, once when the end time passes, and once more
+ * 70 s after the end (the server's close job runs about a minute late).
+ */
+export function useAuctionBoundaryRefetch(
+  auction: Pick<AuctionDetail, 'status' | 'startTime' | 'endTime'> | undefined,
+  refetch: () => unknown,
+) {
+  const now = useServerNow();
+  const fired = React.useRef<Record<string, boolean>>({});
+  const open = auction?.status === 'LIVE' || auction?.status === 'SCHEDULED';
+  const scheduled = auction?.status === 'SCHEDULED';
+  const start = auction ? Date.parse(auction.startTime) : 0;
+  const end = auction ? Date.parse(auction.endTime) : 0;
+  const run = React.useEffectEvent((key: string) => {
+    if (fired.current[key]) return;
+    fired.current[key] = true;
+    void refetch();
+  });
+  React.useEffect(() => {
+    if (!open || now === 0) return;
+    if (scheduled && now >= start) run(`start:${start}`);
+    if (now >= end) run(`end:${end}`);
+    if (now >= end + CLOSE_JOB_LAG_MS) run(`close:${end}`);
+  }, [now, open, scheduled, start, end]);
 }
 
 function useInvalidateAuctions() {

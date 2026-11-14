@@ -14,6 +14,6 @@ export const savePushSubscription = (subscription: PushSubscriptionJSON) =>
 export const removePushSubscription = (endpoint: string) =>
   api.post('/push/unsubscribe', { endpoint }).then((r) => r.data.data as { endpoint: string });
 
-/** Unread notification total for the app-icon badge. TODO(Phase 5): backed by bids-api notifications. */
+/** Unread notification total (bids-api `GET /notifications/unread-count` -> `{ count }`), also the app-icon badge. */
 export const fetchUnreadCount = () =>
-  api.get('/notifications/unread-count').then((r) => (r.data.data as { unread: number }).unread);
+  api.get('/notifications/unread-count').then((r) => (r.data.data as { count: number }).count);

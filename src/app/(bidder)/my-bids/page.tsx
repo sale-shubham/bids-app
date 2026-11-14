@@ -1,13 +1,127 @@
-import { Trophy } from 'lucide-react';
-import { ComingSoon } from '@/components/common/coming-soon';
+'use client';
+import * as React from 'react';
+import Link from 'next/link';
+import { Gavel, Trophy } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Countdown } from '@/components/common/countdown';
+import { EmptyState } from '@/components/common/empty-state';
+import { InfiniteScroll } from '@/components/common/infinite-scroll';
+import { apiErrorMessage } from '@/lib/api-client';
+import { formatINR } from '@/lib/utils';
+import { CoverImage } from '@/features/auctions/components/auction-card';
+import type { MyBidRow, MyBidState, MyBidsTab } from '@/features/bids/bids.types';
+import { useMyBids } from '@/features/bids/use-bids';
+
+const TABS: { value: MyBidsTab; label: string }[] = [
+  { value: 'winning', label: 'Winning' },
+  { value: 'outbid', label: 'Outbid' },
+  { value: 'won', label: 'Won' },
+  { value: 'lost', label: 'Lost' },
+];
+
+const EMPTY: Record<MyBidsTab, { title: string; description: string }> = {
+  winning: { title: 'Not winning anything yet', description: 'Auctions where you are the highest bidder show up here.' },
+  outbid: { title: 'You have not been outbid', description: 'Auctions where someone has topped your bid show up here.' },
+  won: { title: 'No wins yet', description: 'Auctions you won will be listed here with the seller contact.' },
+  lost: { title: 'Nothing lost', description: 'Ended auctions you did not win show up here.' },
+};
+
+const STATE: Record<MyBidState, { label: string; variant: 'success' | 'warning' | 'secondary' }> = {
+  WINNING: { label: 'Winning', variant: 'success' },
+  OUTBID: { label: 'Outbid', variant: 'warning' },
+  WON: { label: 'Won', variant: 'success' },
+  LOST: { label: 'Lost', variant: 'secondary' },
+};
+
+function MyBidCard({ row }: { row: MyBidRow }) {
+  const { auction: a } = row;
+  const s = STATE[row.state];
+  return (
+    <li className="flex flex-col gap-3 rounded-xl border p-3 sm:flex-row sm:items-center">
+      <Link href={`/auctions/${a.id}`} className="relative h-24 w-full shrink-0 overflow-hidden rounded-lg bg-muted sm:w-32">
+        <CoverImage src={a.coverImage} alt={a.title} sizes="128px" />
+      </Link>
+      <div className="min-w-0 flex-1 space-y-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant={s.variant} dot>
+            {s.label}
+          </Badge>
+          <span className="text-xs text-muted-foreground">{a.category}</span>
+        </div>
+        <Link href={`/auctions/${a.id}`} className="block truncate font-semibold hover:underline">
+          {a.title}
+        </Link>
+        <p className="text-sm text-muted-foreground">
+          Your highest bid <span className="font-semibold text-foreground">{formatINR(row.myHighestBidPaise)}</span> · Current{' '}
+          {formatINR(a.bidCount > 0 ? a.currentBidPaise : a.startingBidPaise)} · {row.myBidCount} of your {row.myBidCount === 1 ? 'bid' : 'bids'}
+        </p>
+        <Countdown startTime={a.startTime} endTime={a.endTime} status={a.status} />
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {row.state === 'OUTBID' && a.status === 'LIVE' && (
+          <Button asChild size="sm">
+            <Link href={`/auctions/${a.id}`}>
+              <Gavel className="h-4 w-4" /> Bid again
+            </Link>
+          </Button>
+        )}
+        <Button asChild variant="outline" size="sm">
+          <Link href={`/auctions/${a.id}`}>{row.state === 'WON' ? 'Seller contact' : 'View'}</Link>
+        </Button>
+      </div>
+    </li>
+  );
+}
 
 export default function MyBidsPage() {
+  const [tab, setTab] = React.useState<MyBidsTab>('winning');
+  const list = useMyBids(tab);
+  const rows = list.data?.pages.flatMap((p) => p.items) ?? [];
+
   return (
-    <ComingSoon
-      icon={Trophy}
-      title="My bids"
-      phase={3}
-      description="Track the auctions you are winning, outbid on, won or lost."
-    />
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">My bids</h1>
+        <p className="text-muted-foreground">Auctions you are winning, outbid on, won or lost.</p>
+      </div>
+
+      <Tabs value={tab} onValueChange={(v) => setTab(v as MyBidsTab)}>
+        <TabsList>
+          {TABS.map((t) => (
+            <TabsTrigger key={t.value} value={t.value}>
+              {t.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
+
+      {list.isPending ? (
+        <div className="space-y-3">
+          {Array.from({ length: 3 }, (_, i) => (
+            <Skeleton key={i} className="h-24 w-full" />
+          ))}
+        </div>
+      ) : list.isError ? (
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed py-12 text-center">
+          <p className="text-sm text-muted-foreground">{apiErrorMessage(list.error, 'Could not load your bids')}</p>
+          <Button variant="outline" onClick={() => void list.refetch()}>
+            Try again
+          </Button>
+        </div>
+      ) : rows.length === 0 ? (
+        <EmptyState icon={Trophy} title={EMPTY[tab].title} description={EMPTY[tab].description} actionLabel="Browse auctions" actionHref="/auctions" />
+      ) : (
+        <ul className="space-y-3">
+          {rows.map((r) => (
+            <MyBidCard key={r.auction.id} row={r} />
+          ))}
+        </ul>
+      )}
+
+      <InfiniteScroll onLoadMore={() => void list.fetchNextPage()} hasMore={!!list.hasNextPage && !list.isFetchNextPageError} loading={list.isFetchingNextPage} />
+    </div>
   );
 }

@@ -2,11 +2,10 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Gavel, Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { Countdown } from '@/components/common/countdown';
 import { MemberAvatar } from '@/components/common/member-avatar';
@@ -14,18 +13,20 @@ import { RichText } from '@/components/common/rich-text';
 import { useAuthStore } from '@/store/auth-store';
 import { useLiveStore } from '@/store/live-store';
 import { useRecentlyViewedStore } from '@/store/recently-viewed-store';
-import { formatINR } from '@/lib/utils';
 import { auctionErrorMessage } from '../auctions.errors';
 import type { AuctionDetail } from '../auctions.types';
-import { useAuction, useDeleteAuction } from '../use-auctions';
+import { BidHistory } from '@/features/bids/components/bid-history';
+import { BidPanel } from '@/features/bids/components/bid-panel';
+import { useAuction, useAuctionBoundaryRefetch, useDeleteAuction } from '../use-auctions';
 import { AuctionGallery } from './auction-gallery';
 import { AuctionStatusBadge } from './auction-card';
 import { ShareButtons } from './share-buttons';
 
 export function AuctionDetailView({ initial, serverTime }: { initial: AuctionDetail; serverTime: string | null }) {
   const router = useRouter();
-  const { data } = useAuction(initial.id, initial);
+  const { data, refetch } = useAuction(initial.id, initial);
   const auction = data ?? initial;
+  useAuctionBoundaryRefetch(auction, refetch);
   const member = useAuthStore((s) => s.member);
   const syncServerTime = useLiveStore((s) => s.syncServerTime);
   const del = useDeleteAuction();
@@ -49,8 +50,6 @@ export function AuctionDetailView({ initial, serverTime }: { initial: AuctionDet
   const isOwner = !!member && (member.id === auction.seller.id || member.role === 'SUPER_ADMIN');
   const canManage = isOwner && auction.bidCount === 0 && auction.status !== 'ENDED' && auction.status !== 'CANCELLED';
   const hasBids = auction.bidCount > 0;
-  const currentPaise = hasBids ? auction.currentBidPaise : auction.startingBidPaise;
-  const minNextPaise = hasBids ? auction.currentBidPaise + auction.minIncrementPaise : auction.startingBidPaise;
 
   const onDelete = () =>
     del.mutate(auction.id, {
@@ -79,33 +78,7 @@ export function AuctionDetailView({ initial, serverTime }: { initial: AuctionDet
           <Countdown startTime={auction.startTime} endTime={auction.endTime} status={auction.status} className="text-sm" />
         </div>
 
-        <Card>
-          <CardContent className="space-y-3 p-4">
-            <div className="flex items-end justify-between gap-4">
-              <div>
-                <p className="text-sm text-muted-foreground">{hasBids ? 'Current bid' : 'Starting bid'}</p>
-                <p className="text-3xl font-extrabold text-primary">{formatINR(currentPaise)}</p>
-              </div>
-              <p className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
-                <Gavel className="h-4 w-4" aria-hidden />
-                {auction.bidCount} {auction.bidCount === 1 ? 'bid' : 'bids'}
-              </p>
-            </div>
-            {auction.status !== 'ENDED' && auction.status !== 'CANCELLED' && (
-              <p className="text-sm text-muted-foreground">
-                Minimum next bid: <span className="font-semibold text-foreground">{formatINR(minNextPaise)}</span>
-                <span className="ml-1">(increment {formatINR(auction.minIncrementPaise)})</span>
-              </p>
-            )}
-            {/* Phase 3 replaces this with the live bid panel. */}
-            <div className="space-y-2 rounded-lg border border-dashed p-3">
-              <Button type="button" className="w-full" disabled>
-                Place bid
-              </Button>
-              <p className="text-center text-xs text-muted-foreground">Bidding opens in the next update</p>
-            </div>
-          </CardContent>
-        </Card>
+        <BidPanel auction={auction} />
 
         <div className="flex items-center gap-3 rounded-xl border p-3">
           <MemberAvatar id={auction.seller.id} name={auction.seller.name} email="" avatarUrl={auction.seller.avatarUrl} size="md" />
@@ -119,6 +92,9 @@ export function AuctionDetailView({ initial, serverTime }: { initial: AuctionDet
 
         {isOwner && (
           <div className="flex flex-wrap gap-2 border-t pt-4">
+            <Button asChild variant="outline" size="sm">
+              <Link href={`/sell/auctions/${auction.id}`}>Manage</Link>
+            </Button>
             {canManage ? (
               <>
                 <Button asChild variant="outline" size="sm">
@@ -137,6 +113,10 @@ export function AuctionDetailView({ initial, serverTime }: { initial: AuctionDet
             )}
           </div>
         )}
+      </div>
+
+      <div className="lg:col-span-2">
+        <BidHistory auctionId={auction.id} recentBids={auction.recentBids ?? []} bidCount={auction.bidCount} />
       </div>
 
       <section className="space-y-3 lg:col-span-2" aria-labelledby="description">

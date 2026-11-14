@@ -1,3 +1,5 @@
+import type { AuctionContact, BidDTO } from '@/features/bids/bids.types';
+
 export type AuctionStatus = 'SCHEDULED' | 'LIVE' | 'ENDED' | 'CANCELLED';
 export type AuctionCondition = 'NEW' | 'USED';
 export type AuctionSort = 'endingSoon' | 'newest' | 'priceAsc' | 'priceDesc' | 'mostBids';
@@ -37,6 +39,12 @@ export interface AuctionDetail extends AuctionCard {
   endedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  /** Latest 5 bids, newest first (bidder labels masked; `isMe` is only set for a signed-in caller). */
+  recentBids?: BidDTO[];
+  /** The signed-in bidder's highest bid on this auction. */
+  myHighestBidPaise?: number | null;
+  /** Counterparty contact — only for the winner and the seller once the auction ended with a winner. */
+  contact?: AuctionContact | null;
 }
 
 export interface PageMeta {
