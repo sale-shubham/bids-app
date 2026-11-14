@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ThemeToggle } from '@/components/common/theme-toggle';
+import { NotificationBell } from '@/features/notifications/components/notification-bell';
 import { UserMenu } from '@/components/layout/user-menu';
 
 // Header for public pages (home, browse): brand, a couple of links, theme toggle
@@ -19,6 +20,7 @@ export function PublicHeader() {
       </div>
       <div className="flex items-center gap-2 sm:gap-3">
         <ThemeToggle />
+        <NotificationBell />
         <UserMenu />
       </div>
     </header>

@@ -13,6 +13,7 @@ import { MobileBottomNav, isNavActive, type MoreTab } from "@/components/layout/
 import { BlockNativePinch, PinchZoom } from "@/components/layout/pinch-zoom";
 import { ThemeToggle } from "@/components/common/theme-toggle";
 import { UserMenu } from "@/components/layout/user-menu";
+import { NotificationBell } from "@/features/notifications/components/notification-bell";
 import { PageTransition } from "@/components/common/motion";
 import { useAuthStore } from "@/store/auth-store";
 import { useLogout } from "@/features/auth/use-auth";
@@ -174,6 +175,7 @@ export function DashboardShell({
             <div className="hidden md:block">
               <ThemeToggle />
             </div>
+            <NotificationBell />
             <UserMenu />
           </div>
         </header>

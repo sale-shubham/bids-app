@@ -22,7 +22,7 @@ export const PUBLIC_PREFIXES = [
 ];
 
 // Member: any signed-in role.
-export const MEMBER_PREFIXES = ['/watchlist', '/profile'];
+export const MEMBER_PREFIXES = ['/watchlist', '/profile', '/notifications'];
 
 // Bidder area (SUPER_ADMIN may also enter).
 export const BIDDER_PREFIXES = ['/my-bids'];

@@ -1,7 +1,7 @@
 'use client';
 import * as React from 'react';
 import Link from 'next/link';
-import { Eye, Pencil, Plus, RotateCw, Store, Trash2 } from 'lucide-react';
+import { Eye, Gavel, Pencil, Plus, RotateCw, Store, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { Countdown } from '@/components/common/countdown';
@@ -113,6 +113,11 @@ export default function SellAuctionsPage() {
                   <Countdown startTime={a.startTime} endTime={a.endTime} status={a.status} />
                 </div>
                 <div className="flex flex-wrap gap-2">
+                  <Button asChild variant="outline" size="sm">
+                    <Link href={`/sell/auctions/${a.id}`}>
+                      <Gavel className="h-4 w-4" /> Bids
+                    </Link>
+                  </Button>
                   <Button asChild variant="outline" size="sm">
                     <Link href={`/auctions/${a.id}`}>
                       <Eye className="h-4 w-4" /> View
