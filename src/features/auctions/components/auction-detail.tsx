@@ -17,6 +17,8 @@ import { auctionErrorMessage } from '../auctions.errors';
 import type { AuctionDetail } from '../auctions.types';
 import { BidHistory } from '@/features/bids/components/bid-history';
 import { BidPanel } from '@/features/bids/components/bid-panel';
+import { LiveIndicator } from '@/features/live/components/live-indicator';
+import { useAuctionLive } from '@/features/live/use-auction-live';
 import { useAuction, useAuctionBoundaryRefetch, useDeleteAuction } from '../use-auctions';
 import { AuctionGallery } from './auction-gallery';
 import { AuctionStatusBadge } from './auction-card';
@@ -27,6 +29,7 @@ export function AuctionDetailView({ initial, serverTime }: { initial: AuctionDet
   const { data, refetch } = useAuction(initial.id, initial);
   const auction = data ?? initial;
   useAuctionBoundaryRefetch(auction, refetch);
+  useAuctionLive(initial.id);
   const member = useAuthStore((s) => s.member);
   const syncServerTime = useLiveStore((s) => s.syncServerTime);
   const del = useDeleteAuction();
@@ -75,7 +78,10 @@ export function AuctionDetailView({ initial, serverTime }: { initial: AuctionDet
             <Badge variant="secondary">{auction.category}</Badge>
           </div>
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{auction.title}</h1>
-          <Countdown startTime={auction.startTime} endTime={auction.endTime} status={auction.status} className="text-sm" />
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <Countdown startTime={auction.startTime} endTime={auction.endTime} status={auction.status} className="text-sm" />
+            {(auction.status === 'LIVE' || auction.status === 'SCHEDULED') && <LiveIndicator />}
+          </div>
         </div>
 
         <BidPanel auction={auction} />

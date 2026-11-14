@@ -2,6 +2,7 @@
 import * as React from 'react';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useServerNow } from '@/components/common/countdown';
+import { useLiveStore } from '@/store/live-store';
 import * as api from './auctions.api';
 import { nextAuctionPage } from './auctions.filters';
 import type {
@@ -43,20 +44,31 @@ export function useCategories() {
 const POLL_MS = 10_000;
 const CLOSE_JOB_LAG_MS = 70_000;
 
-// Until the WebSocket lands (Phase 4) the page polls while the tab is visible and the
-// auction can still change. `initialDataUpdatedAt: 0` makes the server-rendered
-// (anonymous) detail refetch on mount so isMe / myHighestBidPaise / contact arrive.
+// Freshness: while the live socket is open, events update the cache (features/live), so the 10 s
+// poll runs ONLY when it is not. A reconnect refetches once to catch events missed while down.
+// `initialDataUpdatedAt: 0` makes the server-rendered (anonymous) detail refetch on mount so
+// isMe / myHighestBidPaise / contact arrive.
 export function useAuction(id: string, initial?: AuctionDetail) {
-  return useQuery({
+  const liveOpen = useLiveStore((s) => s.status === 'open');
+  const connectionSeq = useLiveStore((s) => s.connectionSeq);
+  const query = useQuery({
     queryKey: ['auction', id],
     queryFn: async () => (await api.fetchAuction(id)).auction,
-    refetchInterval: (query) => {
-      const s = query.state.data?.status;
-      return s === 'LIVE' || s === 'SCHEDULED' ? POLL_MS : false;
+    refetchInterval: (q) => {
+      const s = q.state.data?.status;
+      return !liveOpen && (s === 'LIVE' || s === 'SCHEDULED') ? POLL_MS : false;
     },
     refetchIntervalInBackground: false,
     ...(initial ? { initialData: initial, initialDataUpdatedAt: 0 } : {}),
   });
+  const seenSeq = React.useRef(connectionSeq);
+  const refetch = query.refetch;
+  React.useEffect(() => {
+    if (connectionSeq === seenSeq.current) return;
+    seenSeq.current = connectionSeq;
+    void refetch();
+  }, [connectionSeq, refetch]);
+  return query;
 }
 
 /**

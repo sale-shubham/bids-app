@@ -321,8 +321,24 @@
 .animate-float {
   animation: float 6s ease-in-out infinite;
 }
+/* Live updates: price flash on change, new bid rows fade in */
+@keyframes price-flash {
+  0% { background-color: hsl(var(--primary) / 0.25); }
+  100% { background-color: transparent; }
+}
+@keyframes row-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: none; }
+}
+.animate-price-flash {
+  animation: price-flash 1.2s ease-out;
+  border-radius: 0.375rem;
+}
+.animate-row-in {
+  animation: row-in 0.35s ease-out;
+}
 @media (prefers-reduced-motion: reduce) {
-  .animate-float { animation: none; }
+  .animate-float, .animate-price-flash, .animate-row-in { animation: none; }
 }
 
 /* Hide scrollbar but keep functionality — opt-out escape hatch, matches the

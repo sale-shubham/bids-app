@@ -12,11 +12,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { Countdown, auctionPhase, useServerNow } from '@/components/common/countdown';
 import { apiErrorCode } from '@/lib/api-client';
-import { formatINR } from '@/lib/utils';
+import { cn, formatINR } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth-store';
 import type { AuctionDetail } from '@/features/auctions/auctions.types';
 import { bidErrorMessage } from '../bids.errors';
 import { basePricePaise, ceilRupees, minNextBidPaise, rupeesToPaise } from '../bids.utils';
+import { usePulseKey } from '@/features/live/use-pulse-key';
 import { usePlaceBid } from '../use-bids';
 import { AuctionResult } from './auction-result';
 
@@ -28,6 +29,7 @@ export function BidPanel({ auction }: { auction: AuctionDetail }) {
   const initialized = useAuthStore((s) => s.initialized);
   const now = useServerNow();
   const hasBids = auction.bidCount > 0;
+  const priceKey = usePulseKey(auction.currentBidPaise);
   const closed = auction.status === 'ENDED' || auction.status === 'CANCELLED';
   const phase = auctionPhase(auction, now).phase;
   const pastEnd = !closed && now !== 0 && phase === 'ended';
@@ -67,7 +69,9 @@ export function BidPanel({ auction }: { auction: AuctionDetail }) {
         <div className="flex items-end justify-between gap-4">
           <div>
             <p className="text-sm text-muted-foreground">{hasBids ? 'Current bid' : 'Starting bid'}</p>
-            <p className="text-3xl font-extrabold text-primary">{formatINR(basePricePaise(auction))}</p>
+            <p key={priceKey} className={cn('inline-block text-3xl font-extrabold text-primary', priceKey > 0 && 'animate-price-flash')}>
+              {formatINR(basePricePaise(auction))}
+            </p>
           </div>
           <p className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
             <Gavel className="h-4 w-4" aria-hidden />

@@ -11,6 +11,7 @@ import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { Countdown } from '@/components/common/countdown';
 import { auctionErrorMessage } from '@/features/auctions/auctions.errors';
 import { AuctionStatusBadge } from '@/features/auctions/components/auction-card';
+import { useAuctionLive } from '@/features/live/use-auction-live';
 import { useAuction, useAuctionBoundaryRefetch, useDeleteAuction } from '@/features/auctions/use-auctions';
 import { AuctionResult } from '@/features/bids/components/auction-result';
 import { BidHistory } from '@/features/bids/components/bid-history';
@@ -23,6 +24,7 @@ export default function SellAuctionDetailPage() {
   const router = useRouter();
   const { data: auction, isPending, error, refetch } = useAuction(id);
   useAuctionBoundaryRefetch(auction, refetch);
+  useAuctionLive(id);
   const member = useAuthStore((s) => s.member);
   const del = useDeleteAuction();
   const [confirmOpen, setConfirmOpen] = React.useState(false);

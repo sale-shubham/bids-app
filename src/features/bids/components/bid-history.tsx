@@ -5,13 +5,13 @@ import { Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useServerNow } from '@/components/common/countdown';
-import { formatINR } from '@/lib/utils';
+import { cn, formatINR } from '@/lib/utils';
 import type { BidDTO } from '../bids.types';
 import { useAuctionBids } from '../use-bids';
 
-function BidRow({ bid, highest, now }: { bid: BidDTO; highest: boolean; now: number }) {
+function BidRow({ bid, highest, now, fresh }: { bid: BidDTO; highest: boolean; now: number; fresh: boolean }) {
   return (
-    <li className="flex items-center justify-between gap-3 py-2 text-sm">
+    <li className={cn('flex items-center justify-between gap-3 py-2 text-sm', fresh && 'animate-row-in')}>
       <div className="flex min-w-0 items-center gap-2">
         <span className="truncate font-medium">{bid.isMe ? 'You' : bid.bidderLabel}</span>
         {bid.isMe && <Badge variant="default">You</Badge>}
@@ -50,6 +50,14 @@ export function BidHistory({
 
   const fullItems = history.data?.pages.flatMap((p) => p.items);
   const items = full && fullItems ? fullItems : recentBids;
+  // Rows that appeared at the top since the last render fade in (rows loaded at the bottom by
+  // "Load more" do not).
+  const ids = items.map((b) => b.id);
+  const [known, setKnown] = React.useState(() => new Set(ids));
+  let lead = 0;
+  while (lead < ids.length && !known.has(ids[lead])) lead++;
+  const fresh = lead < ids.length ? lead : 0;
+  if (ids.some((id) => !known.has(id))) setKnown(new Set([...known, ...ids]));
   const canExpand = !full && bidCount > recentBids.length;
 
   return (
@@ -66,7 +74,7 @@ export function BidHistory({
       ) : (
         <ul className="divide-y rounded-xl border px-3">
           {items.map((b, i) => (
-            <BidRow key={b.id} bid={b} highest={i === 0} now={now} />
+            <BidRow key={b.id} bid={b} highest={i === 0} now={now} fresh={i < fresh} />
           ))}
         </ul>
       )}
