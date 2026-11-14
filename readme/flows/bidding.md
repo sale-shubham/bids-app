@@ -9,8 +9,8 @@ Code: `src/features/bids/`, `src/features/notifications/`, `src/features/auction
 4. On success `usePlaceBid` writes `data.auction` into `['auction', id]`, syncs the server clock from `serverTime`, and invalidates `['auction-bids', id]`, `['my-bids']`, `['auctions']`.
 5. Errors map to copy in `bids.errors.ts`. `BID_TOO_LOW` shows `details.minBidPaise`; `BID_TOO_LOW`, `AUCTION_ENDED`, `ALREADY_HIGHEST`, `AUCTION_NOT_STARTED` also refetch the auction.
 
-## Freshness (until WebSockets, Phase 4)
-- `useAuction` polls every 10 s while the tab is visible and status is LIVE or SCHEDULED.
+## Freshness
+- Live events over WebSocket update the cache (`readme/flows/websocket.md`). `useAuction` polls every 10 s (tab visible, status LIVE or SCHEDULED) only while the socket is not open.
 - `useAuctionBoundaryRefetch` refetches once at start (SCHEDULED), once at end time, and once 70 s after end (server close job lag).
 - The server-rendered detail is anonymous, so `useAuction` marks `initialData` stale and refetches on mount to get `isMe`, `myHighestBidPaise`, `contact`.
 

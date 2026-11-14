@@ -18,13 +18,14 @@ src/
   constants/                         api.ts, routes.ts (route tables), legal.ts, apple-splash-devices.json
   features/                          auth, auctions, bids, notifications, push, payments, legal, admin  (*.api.ts, *.parse.ts, *.schema.ts, use-*.ts)
     bids/                            bids.api/parse/types/errors/utils, use-bids, components/{bid-panel,bid-history,auction-result}
+    live/                            live-socket (WS client), live-socket-provider, use-auction-live, live.reducers/types/api, components/live-indicator
     notifications/                   api, use-notifications, components/{notification-bell,notification-item}
   hooks/                             use-client-state, use-is-mobile, use-is-narrow-content, use-resend-cooldown
   lib/                               paged (paginated envelope decoding), api-client, query-client, pwa, push, razorpay, assets, device-info, utils, zod
-  providers/                         Providers (Query + theme + tooltip + toaster), AuthBootstrap
+  providers/                         Providers (Query + theme + tooltip + toaster), AuthBootstrap, LiveSocketProvider (features/live)
   store/auth-store.ts                zustand auth store
   proxy.ts                           edge route gate (nb_at / nb_rt cookies, role gating)
 public/                              sw.js, avatar-default.png  (icons/splash generated later)
 scripts/                             gen-version, generate-icons, generate-apple-splash, generate-notification-icons
-docs/, readme/                       guides (methods, theming, ui); flows/bidding.md
+docs/, readme/                       guides (methods, theming, ui); flows/bidding.md, flows/websocket.md
 ```
