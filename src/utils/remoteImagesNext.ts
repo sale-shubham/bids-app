@@ -1,6 +1,7 @@
 type RemotePattern = {
   protocol: 'http' | 'https';
   hostname: string;
+  port?: string;
 };
 
 export function buildNextImageRemotePatterns(origins?: string): {
@@ -21,6 +22,7 @@ export function buildNextImageRemotePatterns(origins?: string): {
         return {
           protocol: url.protocol.replace(':', '') as 'http' | 'https',
           hostname: url.hostname,
+          ...(url.port ? { port: url.port } : {}),
         };
       } catch {
         // Ignore invalid URLs silently

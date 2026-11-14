@@ -25,7 +25,7 @@ export function ChangePasswordCard() {
         },
         onError: (e) => {
           const message = authErrorMessage(e, 'Could not change your password');
-          if (apiErrorCode(e) === 'INVALID_CREDENTIALS') form.setError('currentPassword', { message });
+          if (apiErrorCode(e) === 'INVALID_CURRENT_PASSWORD' || apiErrorCode(e) === 'INVALID_CREDENTIALS') form.setError('currentPassword', { message });
           toast.error(message);
         },
       },

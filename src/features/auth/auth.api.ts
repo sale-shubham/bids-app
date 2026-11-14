@@ -1,6 +1,6 @@
 import { api } from '@/lib/api-client';
 import type { AuthMember } from '@/store/auth-store';
-import type { DeviceInfo } from '@/lib/device-info';
+import { getDeviceInfo, type DeviceInfo } from '@/lib/device-info';
 
 // Every success body is the bids-api envelope `{ success: true, data }`.
 export type SignupRole = 'BIDDER' | 'AUCTIONEER';
@@ -23,7 +23,7 @@ export async function signup(input: {
 
 // Signup step 2: verify the emailed code — sets the auth cookies.
 export async function signupVerify(input: { email: string; code: string }): Promise<AuthMember> {
-  const res = await api.post('/auth/signup/verify', input);
+  const res = await api.post('/auth/signup/verify', { ...input, deviceInfo: getDeviceInfo() });
   return res.data.data.member;
 }
 
@@ -34,7 +34,7 @@ export async function signupResend(input: { email: string }): Promise<{ resendAf
 
 // 403 EMAIL_NOT_VERIFIED means the backend just emailed a fresh code.
 export async function login(input: { email: string; password: string }): Promise<AuthMember> {
-  const res = await api.post('/auth/login', input);
+  const res = await api.post('/auth/login', { ...input, deviceInfo: getDeviceInfo() });
   return res.data.data.member;
 }
 
