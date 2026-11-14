@@ -21,7 +21,7 @@ const { fetchUnreadCount } = api;
 
 // App-icon badge + Web Push for notifications — readme/flows/push-notifications.md.
 
-/** The member's unread notification total. the auction socket invalidates it on every `dm:*` frame. */
+/** The member's unread notification total (`GET /notifications/unread-count`). */
 export const unreadCountKey = ['unread-count'] as const;
 
 export const pushKeys = {
@@ -36,13 +36,9 @@ const useIsMember = () => useAuthStore((s) => !!s.member);
 
 /**
  * The member's unread notification total — one cache entry (`unreadCountKey`) read by the
- * app-icon badge (useAppBadge) and the Chat nav item's count (useMemberNav),
- * so both always show the same number from one request.
- *
- * **No interval.** The WebSocket invalidates it the instant a message arrives
- * or a thread is read on any device. Focus/reconnect refetching (overriding the
- * app-wide `refetchOnWindowFocus: false`) is the safety net under the socket —
- * a connection mid-reconnect, or local dev with no WebSocket API — not polling.
+ * header bell and the app-icon badge (useAppBadge), so both show the same number from one
+ * request. Polled every 60 s while the tab is visible; also refetched on focus/reconnect.
+ * Mark-read mutations invalidate it (features/notifications).
  */
 export function useUnreadMessageCount() {
   const isMember = useIsMember();
@@ -52,6 +48,8 @@ export function useUnreadMessageCount() {
     enabled: isMember,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
     staleTime: 15_000,
   });
 }
@@ -75,8 +73,7 @@ export function useAppBadge() {
       const data = event.data as { type?: string; unread?: number } | undefined;
       if (data?.type !== 'NOTIFICATION_COUNT' || typeof data.unread !== 'number') return;
       qc.setQueryData(unreadCountKey, data.unread);
-      void qc.invalidateQueries({ queryKey: ['my-conversations'] });
-      void qc.invalidateQueries({ queryKey: ['messages'] });
+      void qc.invalidateQueries({ queryKey: ['notifications'] });
     };
     navigator.serviceWorker.addEventListener('message', onMessage);
     return () => navigator.serviceWorker.removeEventListener('message', onMessage);

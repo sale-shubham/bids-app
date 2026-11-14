@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
-import { useMySessions, useRevokeSession } from '@/features/auth/use-auth';
+import { useSessions, useRevokeSession } from '@/features/auth/use-auth';
 import { apiErrorMessage } from '@/lib/api-client';
 import { formatListTime } from '@/lib/utils';
 import type { DeviceSession } from '@/features/auth/auth.api';
@@ -36,13 +36,11 @@ function formatIp(ip?: string | null): string | null {
   return LOOPBACK_IPS.has(ip) ? 'localhost (dev machine)' : ip;
 }
 
-// This account's own logged-in devices, with self-service remove — the
-// Profile page's Devices tab, for members and super admins alike. The tab only
-// exists when `limit` (the account's own cap, `AuthMember.deviceLimit`) is
-// above 1: with one device allowed there is never anything else to sign out.
-// Past the cap, a new sign-in signs out the oldest device (bids-api's auth.md).
+// This account's own logged-in devices, with self-service remove. `limit` is the
+// account's session cap (`deviceLimit`); past it, a new sign-in signs out the
+// oldest device.
 export function MyDevicesCard({ limit }: { limit: number }) {
-  const { data: sessions, isLoading } = useMySessions();
+  const { data: sessions, isLoading } = useSessions();
   const revoke = useRevokeSession();
   const [toRemove, setToRemove] = React.useState<DeviceSession | null>(null);
 

@@ -1,9 +1,11 @@
 'use client';
 import * as React from 'react';
 
-// Countdown timer for "Resend OTP" — call `start()` after a successful send.
-export function useResendCooldown(seconds: number) {
-  const [resendIn, setResendIn] = React.useState(0);
+// Countdown timer for "Resend code". `initial` starts it already running (e.g.
+// the server's `resendAfterSec` when the step mounts); call `start(sec?)`
+// after each successful send.
+export function useResendCooldown(seconds: number, initial = 0) {
+  const [resendIn, setResendIn] = React.useState(initial);
 
   React.useEffect(() => {
     if (resendIn <= 0) return;
@@ -11,7 +13,7 @@ export function useResendCooldown(seconds: number) {
     return () => clearInterval(t);
   }, [resendIn]);
 
-  const start = React.useCallback(() => setResendIn(seconds), [seconds]);
+  const start = React.useCallback((sec?: number) => setResendIn(sec ?? seconds), [seconds]);
 
   return { resendIn, start };
 }

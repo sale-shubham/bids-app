@@ -1,17 +1,14 @@
-import Link from 'next/link';
+import { PublicHeader } from '@/components/layout/public-header';
+import { SiteFooter } from '@/components/layout/site-footer';
 
-// Public content-page chrome — reachable logged-out (signup links here before
-// an account exists), so it can't use DashboardShell. Just the brand header
-// the (auth) pages use on mobile, at every width.
+// Public content pages (legal copy) — reachable logged-out, so no DashboardShell;
+// they use the same public header as home and browse.
 export default function ContentPagesLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-30 flex h-16 items-center border-b bg-background/80 px-6 backdrop-blur-sm">
-        <Link href="/" className="text-2xl font-extrabold text-gradient">
-          NobleBid
-        </Link>
-      </header>
-      {children}
+    <div className="flex min-h-screen flex-col bg-background">
+      <PublicHeader />
+      <div className="flex-1">{children}</div>
+      <SiteFooter />
     </div>
   );
 }

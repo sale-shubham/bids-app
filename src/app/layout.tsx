@@ -6,6 +6,7 @@ import { ServiceWorkerRegister } from '@/components/common/sw-register';
 import { PwaInstallPrompt } from '@/components/common/pwa-install-prompt';
 import { PwaUpdatePrompt } from '@/components/common/pwa-update-prompt';
 import { OfflineBanner } from '@/components/common/offline-banner';
+import { SITE_URL } from '@/lib/site';
 import appleSplashDevices from '@/constants/apple-splash-devices.json';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
@@ -27,9 +28,18 @@ const appleStartupImages = appleSplashDevices.flatMap(({ width, height, ratio, l
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: 'NobleBid — Online Auctions',
   description: 'NobleBid is an online auction platform: browse live auctions, place bids and sell your items.',
   applicationName: 'NobleBid',
+  openGraph: {
+    type: 'website',
+    siteName: 'NobleBid',
+    title: 'NobleBid — Online Auctions',
+    description: 'Bid on live auctions, find ending-soon deals and sell your own items on NobleBid.',
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'NobleBid' }],
+  },
+  twitter: { card: 'summary_large_image', images: ['/og-image.png'] },
   manifest: '/manifest.webmanifest',
   // 'default', not 'black-translucent': translucent draws the installed app
   // under the iOS status bar, and iOS then lays its frosted top-edge blur over
@@ -41,12 +51,21 @@ export const metadata: Metadata = {
     title: 'NobleBid',
     startupImage: appleStartupImages,
   },
-  // TODO: /icons/* and /apple-touch-icon.png are produced by scripts/generate-icons.cjs
-  // once the NobleBid logo is supplied. src/app/icon.svg is the interim favicon.
+  // Generated from the logo by scripts/generate-icons.cjs.
   icons: {
-    icon: '/icons/icon-192x192.png',
-    apple: '/apple-touch-icon.png',
+    icon: [
+      { url: '/favicon.ico', sizes: '48x48' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180' },
+      { url: '/icons/apple-touch-icon-152x152.png', sizes: '152x152' },
+      { url: '/icons/apple-touch-icon-167x167.png', sizes: '167x167' },
+    ],
   },
+  other: { 'mobile-web-app-capable': 'yes' },
 };
 
 export const viewport: Viewport = {

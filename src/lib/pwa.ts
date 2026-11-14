@@ -58,7 +58,15 @@ export function isStandalone(): boolean {
 
 export function isIos(): boolean {
   if (typeof navigator === 'undefined') return false;
-  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+  // iPadOS 13+ reports itself as a Mac; a touch screen gives it away.
+  return /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+// iOS only offers "Add to Home Screen" from Safari itself - Chrome/Firefox/Edge
+// on iOS (CriOS/FxiOS/EdgiOS) cannot install, so the banner stays away from them.
+export function isIosSafari(): boolean {
+  if (!isIos()) return false;
+  return !/crios|fxios|edgios|opios|gsa[/]/i.test(navigator.userAgent);
 }
 
 // ---- Update detection (version.json) ----
@@ -101,5 +109,17 @@ export async function applyUpdateAndReload(): Promise<void> {
     }
   } finally {
     window.location.reload();
+  }
+}
+
+// Version shown in Profile > App (public/version.json, rewritten every build).
+export async function fetchAppVersion(): Promise<{ version: string; buildId: string | null } | null> {
+  try {
+    const res = await fetch(`/version.json?v=${Date.now()}`, { cache: 'no-store' });
+    if (!res.ok) return null;
+    const data = (await res.json()) as VersionPayload;
+    return { version: data.version, buildId: data.buildId ?? null };
+  } catch {
+    return null;
   }
 }

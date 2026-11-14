@@ -11,21 +11,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4 # ✅ latest stable
+        uses: actions/checkout@v4
 
-      - name: Set up Node.js 24 (LTS)
-        uses: actions/setup-node@v4 # ✅ latest stable
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
         with:
-          node-version: 24 # pinned to Node.js 24 (LTS)
+          node-version: 24
+          cache: npm
 
       - name: Install dependencies
-        run: npm ci # ✅ faster & cleaner than `npm install` for CI
+        run: npm ci
 
-      - name: Lint (zero warnings)
-        run: npm run lint
+      - name: Check (lint + typecheck + unit tests)
+        run: npm run check
 
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Run build
+      # CI only: placeholder public env so the build is deterministic. Real values
+      # live in Amplify; nothing here is deployed.
+      - name: Build
         run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: https://api.example.com
+          NEXT_PUBLIC_SITE_URL: https://app.example.com
+          NEXT_PUBLIC_IMAGE_ORIGINS: https://cdn.example.com
+          NEXT_PUBLIC_UPLOADS_BASE_URL: https://cdn.example.com
+          JWT_SECRET: ci-placeholder-secret-not-used-in-production

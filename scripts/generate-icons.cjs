@@ -1,16 +1,19 @@
 /**
- * Generate all PWA + favicon assets from the NobleBid master SVG.
+ * Generate all PWA + favicon assets from the NobleBid logo.
  *
- *   npm i -D sharp && node scripts/generate-icons.cjs   (then optionally: npm un sharp)
+ *   node scripts/generate-icons.cjs   (needs the `sharp` devDependency)
  *
- * sharp is NOT a kept dependency — icons are pre-generated and committed, so
- * install it only when you need to regenerate, then remove it again.
+ * Source: public/brand/logo-source.png (colourful brain mark on a TRANSPARENT
+ * background, 192x192 - drop in a larger master for crisper 384/512 icons).
+ * A multi-colour mark on the purple brand colour would clash, so app icons use
+ * a WHITE tile; the maskable icons keep the mark inside the 80% safe zone.
  *
- * Source: src/app/icon.svg (full-bleed gradient tile with the "NobleBid" mark).
- * The SVG is a complete icon, so we rasterize it straight to each size —
- * no white background / trim (unlike a bare logo). Only dep is `sharp`.
- * Outputs PWA icons (72→512 + maskable), Apple touch icons, PNG favicons,
- * a hand-built multi-size favicon.ico, and public/logo.png.
+ * Outputs: public/icons/icon-{72..512}.png, icon-{192,512}x{192,512}-maskable.png,
+ * Apple touch icons, PNG favicons + favicon.ico (linked from metadata in
+ * src/app/layout.tsx) and public/logo.png (transparent; headers and the
+ * email LOGO_URL).
+ *
+ * Then run: node scripts/generate-notification-icons.cjs && node scripts/generate-apple-splash.mjs
  */
 const fs = require('fs');
 const path = require('path');
@@ -19,27 +22,29 @@ const sharp = require('sharp');
 const ROOT = path.join(__dirname, '..');
 const PUBLIC = path.join(ROOT, 'public');
 const ICONS = path.join(PUBLIC, 'icons');
-const SRC = path.join(ROOT, 'src', 'app', 'icon.svg');
+const SRC = path.join(PUBLIC, 'brand', 'logo-source.png');
+const WHITE = { r: 255, g: 255, b: 255, alpha: 1 };
+const CLEAR = { r: 0, g: 0, b: 0, alpha: 0 };
 
 if (!fs.existsSync(SRC)) {
-  console.error('❌ Missing source: src/app/icon.svg');
+  console.error('Missing source: public/brand/logo-source.png');
   process.exit(1);
 }
 fs.mkdirSync(ICONS, { recursive: true });
 
-const svg = fs.readFileSync(SRC);
-
-// Rasterize the SVG to a size×size PNG. High density = crisp text at large sizes.
-function render(size) {
-  return sharp(svg, { density: Math.max(72, size) })
-    .resize(size, size, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+// Logo (trimmed to its bounds) centred on a size x size canvas at `fill` of the edge.
+async function render(size, { fill = 0.78, background = WHITE } = {}) {
+  const inner = Math.round(size * fill);
+  const mark = await sharp(SRC).trim().resize(inner, inner, { fit: 'contain', background: CLEAR }).toBuffer();
+  return sharp({ create: { width: size, height: size, channels: 4, background } })
+    .composite([{ input: mark, gravity: 'centre' }])
     .png()
     .toBuffer();
 }
 
 function write(buf, file) {
   fs.writeFileSync(file, buf);
-  console.log('  ✅', path.relative(ROOT, file));
+  console.log('  ok', path.relative(ROOT, file));
 }
 
 // PNG-based multi-size .ico (ICO can embed PNG payloads).
@@ -63,10 +68,13 @@ function buildIco(images) {
 }
 
 async function main() {
-  console.log('Generating icons from src/app/icon.svg …');
+  console.log('Generating icons from public/brand/logo-source.png ...');
 
   for (const s of [72, 96, 128, 144, 152, 192, 384, 512]) {
     write(await render(s), path.join(ICONS, `icon-${s}x${s}.png`));
+  }
+  for (const s of [192, 512]) {
+    write(await render(s, { fill: 0.6 }), path.join(ICONS, `icon-${s}x${s}-maskable.png`));
   }
 
   for (const s of [152, 167, 180]) {
@@ -76,9 +84,10 @@ async function main() {
   write(apple180, path.join(ICONS, 'apple-touch-icon.png'));
   write(apple180, path.join(PUBLIC, 'apple-touch-icon.png'));
 
-  const fav16 = await render(16);
-  const fav32 = await render(32);
-  const fav48 = await render(48);
+  const fav = { fill: 0.94, background: CLEAR };
+  const fav16 = await render(16, fav);
+  const fav32 = await render(32, fav);
+  const fav48 = await render(48, fav);
   write(fav16, path.join(PUBLIC, 'favicon-16x16.png'));
   write(fav32, path.join(PUBLIC, 'favicon-32x32.png'));
   fs.writeFileSync(
@@ -89,13 +98,17 @@ async function main() {
       { size: 48, buffer: fav48 },
     ]),
   );
-  console.log('  ✅', 'public/favicon.ico');
+  console.log('  ok public/favicon.ico');
 
-  write(await render(512), path.join(PUBLIC, 'logo.png'));
+  // Transparent, for headers and the email LOGO_URL.
+  write(
+    await sharp(SRC).trim().resize(512, 512, { fit: 'contain', background: CLEAR }).png().toBuffer(),
+    path.join(PUBLIC, 'logo.png'),
+  );
   console.log('Done.');
 }
 
 main().catch((e) => {
-  console.error('❌', e);
+  console.error(e);
   process.exit(1);
 });
