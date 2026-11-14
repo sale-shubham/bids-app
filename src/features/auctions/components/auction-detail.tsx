@@ -2,7 +2,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Eye, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,7 @@ import { useAuction, useAuctionBoundaryRefetch, useDeleteAuction } from '../use-
 import { AuctionGallery } from './auction-gallery';
 import { AuctionStatusBadge } from './auction-card';
 import { ShareButtons } from './share-buttons';
+import { WatchButton } from '@/features/watchlist/components/watch-button';
 
 export function AuctionDetailView({ initial, serverTime }: { initial: AuctionDetail; serverTime: string | null }) {
   const router = useRouter();
@@ -82,17 +83,29 @@ export function AuctionDetailView({ initial, serverTime }: { initial: AuctionDet
             <Countdown startTime={auction.startTime} endTime={auction.endTime} status={auction.status} className="text-sm" />
             {(auction.status === 'LIVE' || auction.status === 'SCHEDULED') && <LiveIndicator />}
           </div>
+          <div className="flex flex-wrap items-center gap-3 pt-1">
+            <WatchButton auctionId={auction.id} variant="inline" />
+            {(auction.watcherCount ?? 0) > 0 && (
+              <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+                <Eye className="h-4 w-4" aria-hidden />
+                {auction.watcherCount} {auction.watcherCount === 1 ? 'person is' : 'people are'} watching
+              </span>
+            )}
+          </div>
         </div>
 
         <BidPanel auction={auction} />
 
-        <div className="flex items-center gap-3 rounded-xl border p-3">
+        <Link
+          href={`/sellers/${auction.seller.id}`}
+          className="flex items-center gap-3 rounded-xl border p-3 transition hover:border-primary/40 hover:bg-accent/40"
+        >
           <MemberAvatar id={auction.seller.id} name={auction.seller.name} email="" avatarUrl={auction.seller.avatarUrl} size="md" />
           <div>
             <p className="text-xs text-muted-foreground">Seller</p>
             <p className="font-medium">{auction.seller.name}</p>
           </div>
-        </div>
+        </Link>
 
         <ShareButtons title={auction.title} path={`/auctions/${auction.id}`} />
 

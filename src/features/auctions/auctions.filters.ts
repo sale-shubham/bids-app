@@ -84,6 +84,7 @@ export function auctionListParams(
   param: AuctionPageParam = { page: 1 },
 ): Record<string, string | number> {
   const out: Record<string, string | number> = { status: f.status, sort: f.sort };
+  if (f.sellerId) out.sellerId = f.sellerId;
   if (f.q) out.q = f.q;
   if (f.category) out.category = f.category;
   if (f.condition) out.condition = f.condition;

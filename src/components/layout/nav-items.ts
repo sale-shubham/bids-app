@@ -3,6 +3,7 @@ import { Gavel, Heart, Home, LayoutDashboard, Store, Trophy, User } from 'lucide
 import { useAuthStore, type Role } from '@/store/auth-store';
 import type { NavItem } from './dashboard-shell';
 import type { MoreTab } from './mobile-bottom-nav';
+import { useWatchlistActiveCount } from '@/features/watchlist/use-watchlist';
 
 interface RoleNavItem extends NavItem {
   /** Roles that see this item. Omitted = every signed-in role. */
@@ -25,5 +26,8 @@ export const moreTab: MoreTab = { href: '/profile', label: 'Profile', icon: User
 /** Sidebar / bottom-bar items for the signed-in role. */
 export function useNav(): NavItem[] {
   const role = useAuthStore((s) => s.member?.role);
-  return NAV.filter((item) => !item.roles || (role && item.roles.includes(role)));
+  const watching = useWatchlistActiveCount();
+  return NAV.filter((item) => !item.roles || (role && item.roles.includes(role))).map((item) =>
+    item.href === '/watchlist' ? { ...item, badge: watching } : item,
+  );
 }

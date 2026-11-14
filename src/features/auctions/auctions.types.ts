@@ -37,6 +37,9 @@ export interface AuctionDetail extends AuctionCard {
   highestBidderId: string | null;
   winnerId: string | null;
   endedAt: string | null;
+  /** Signed-in caller only. */
+  isWatching?: boolean;
+  watcherCount?: number;
   createdAt: string;
   updatedAt: string;
   /** Latest 5 bids, newest first (bidder labels masked; `isMe` is only set for a signed-in caller). */
@@ -96,4 +99,6 @@ export interface AuctionFilters {
   minPrice?: number;
   maxPrice?: number;
   sort: AuctionSort;
+  /** Restrict to one seller (seller profile page). */
+  sellerId?: string;
 }

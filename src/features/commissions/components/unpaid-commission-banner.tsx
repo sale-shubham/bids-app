@@ -6,11 +6,12 @@ import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/auth-store';
 import { formatINR } from '@/lib/utils';
 
-/** Shown on /sell/* (except /sell/commissions) while the seller owes commission. */
+/** Shown on /sell/* (except /sell/commissions and the auction form pages, which carry their own inline banner) while the seller owes commission. */
 export function UnpaidCommissionBanner() {
   const pathname = usePathname();
   const unpaid = useAuthStore((s) => s.member?.unpaidCommissionPaise ?? 0);
-  if (unpaid <= 0 || pathname.startsWith('/sell/commissions')) return null;
+  const isFormPage = pathname === '/sell/new' || /^\/sell\/auctions\/[^/]+\/edit$/.test(pathname);
+  if (unpaid <= 0 || isFormPage || pathname.startsWith('/sell/commissions')) return null;
   return (
     <div
       role="alert"
