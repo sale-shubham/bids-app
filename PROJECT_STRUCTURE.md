@@ -7,7 +7,7 @@ src/
     (auth)/login, (auth)/signup      guest-only auth pages (placeholders until Phase 1)
     (member)/                        any signed-in role: /watchlist, /profile, /notifications
     (bidder)/my-bids                 tabs Winning / Outbid / Won / Lost
-    (auctioneer)/                    /sell/* (auctions list, new, edit, auctions/[id] = bids + result)
+    (auctioneer)/                    /sell/* (auctions list, new, edit, auctions/[id] = bids + result, commissions = pay via Razorpay)
     (admin)/                         /admin/* (layout only so far)
     pages/[slug]                     public legal pages (from API)
     suspended/                       deactivated-account page
@@ -18,6 +18,8 @@ src/
   constants/                         api.ts, routes.ts (route tables), legal.ts, apple-splash-devices.json
   features/                          auth, auctions, bids, notifications, push, payments, legal, admin  (*.api.ts, *.parse.ts, *.schema.ts, use-*.ts)
     bids/                            bids.api/parse/types/errors/utils, use-bids, components/{bid-panel,bid-history,auction-result}
+    commissions/                     commissions.api/parse/types/errors, use-commissions, use-pay-commission, components/unpaid-commission-banner
+    payments/                        payments.api (POST /payments/verify); checkout loader in lib/razorpay.ts
     live/                            live-socket (WS client), live-socket-provider, use-auction-live, live.reducers/types/api, components/live-indicator
     notifications/                   api, use-notifications, components/{notification-bell,notification-item}
   hooks/                             use-client-state, use-is-mobile, use-is-narrow-content, use-resend-cooldown
