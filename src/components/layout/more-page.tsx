@@ -2,7 +2,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTheme } from 'next-themes';
 import { toast } from 'sonner';
 import {
@@ -11,7 +11,6 @@ import {
   ChevronRight,
   Download,
   FileText,
-  Laptop,
   LogOut,
   Moon,
   RefreshCw,
@@ -34,13 +33,13 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { CountBadge } from '@/components/common/count-badge';
-import { MyDevicesCard } from '@/components/common/my-devices-card';
 import { apiErrorMessage } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 import {
   applyUpdateAndReload,
   isIos,
   isStandalone,
+  fetchAppVersion,
   promptInstall,
 } from '@/lib/pwa';
 import { useClientSnapshot, useHydrated, useInstallAvailable } from '@/hooks/use-client-state';
@@ -51,11 +50,9 @@ import { LEGAL_PAGES, legalPagePath } from '@/constants/legal';
 import { getOverflowNavItems, isNavActive } from './mobile-bottom-nav';
 import type { NavItem } from './dashboard-shell';
 
-// The legal pages aren't nav items (they're not in memberNav/adminNav — no
-// sidebar or bottom-bar slot for them, and they render outside DashboardShell
-// on their own public chrome), so this page (/profile for members,
-// /admin/profile for admins) is the only in-app entry point. Driven
-// off LEGAL_PAGES so a page added to the catalogue shows up here for free.
+// The legal pages aren't nav items (no sidebar or bottom-bar slot, and they render
+// outside DashboardShell on public chrome), so the Profile page is the in-app
+// entry point. Driven off LEGAL_PAGES so a new page shows up here for free.
 const LEGAL_ICONS: Record<string, typeof FileText> = {
   'privacy-policy': ShieldCheck,
   'terms-conditions': FileText,
@@ -68,19 +65,15 @@ export interface ProfileTab {
   content: React.ReactNode;
 }
 
-// Full-page counterpart to the mobile bottom bar's 4th tab — the Profile page
-// of both roles (/profile, /admin/profile), laid out like unikorncoatings_app's
-// profile: one tab strip, one card per tab. Each role passes its own tabs
-// (Account first); this appends the shared ones — Devices, only when the
-// account's own device cap (`AuthMember.deviceLimit`, from GET /members/me) is
-// above 1, then App (theme/install/legal/update/logout).
+// Full-page counterpart to the mobile bottom bar's 4th tab — the /profile page:
+// one tab strip, one card per tab. The page passes its own tabs (Account first);
+// this appends the shared App tab (theme/install/legal/update/logout).
 //
 // On a phone, whatever the bottom bar didn't show (see getOverflowNavItems)
 // opens the first tab as a tap grid — this page is where those items live.
 //
 // `?tab=<value>` picks the opening tab. A starting value only — switching
-// tabs does not rewrite the URL. An unknown value (or `devices` for an
-// account that has no Devices tab) opens the first tab.
+// tabs does not rewrite the URL. An unknown value opens the first tab.
 export function MorePage(props: { nav: NavItem[]; title: string; description: string; tabs: ProfileTab[] }) {
   // useSearchParams() needs a Suspense boundary; nothing above it reads the
   // query, so the fallback is never seen.
@@ -104,21 +97,16 @@ function ProfileTabs({
 }) {
   const pathname = usePathname();
   const overflow = getOverflowNavItems(nav);
-  const deviceLimit = useAuthStore((s) => s.member?.deviceLimit ?? 1);
 
   const allTabs: ProfileTab[] = [
     ...tabs,
-    ...(deviceLimit > 1
-      ? [{ value: 'devices', label: 'Devices', icon: Laptop, content: <MyDevicesCard limit={deviceLimit} /> }]
-      : []),
     // Not "Settings": a super admin also has the platform-wide Settings page
-    // (/admin/settings) in the sidebar, and this tab is only about the app on
-    // this device.
+    // in the sidebar; this tab is only about the app on this device.
     { value: 'app', label: 'App', icon: MonitorSmartphone, content: <AppCard /> },
   ];
 
   // Derived, not reset in an effect: if the picked tab is not in the list
-  // (bad `?tab=`, or Devices gone after the limit dropped) the first one shows.
+  // (bad `?tab=`) the first one shows.
   const requested = useSearchParams().get('tab');
   const [picked, setPicked] = React.useState(requested ?? '');
   const active = allTabs.some((t) => t.value === picked) ? picked : allTabs[0].value;
@@ -158,7 +146,7 @@ function ProfileTabs({
       <Tabs value={active} onValueChange={setPicked}>
         {/* A phone gets an even, text-only strip so every tab (App holds
             Logout) fits on one row; from @lg the strip hugs its tabs at the
-            left edge, icons back, like /admin/settings. */}
+            left edge, icons back. */}
         <TabsList className="w-full @lg/content:w-fit">
           {allTabs.map((t) => (
             <TabsTrigger key={t.value} value={t.value} className="flex-1 gap-1.5 px-2 @lg/content:flex-none @lg/content:px-3">
@@ -219,12 +207,10 @@ function SettingRow({
 
 const ACTION = 'w-full shrink-0 @lg/content:w-auto';
 
-// This device's new-message notifications (readme/flows/push-notifications.md):
-// the push + app-icon badge switch. Members only — admins don't DM. The same
-// usePushSubscription() query as the /chat permission toast, so turning it on
-// in either place flips the other. Always shown, disabled with the reason when
-// it can't do anything, rather than hidden: a settings tab with nothing where
-// notifications should be is the same dead end as a switch that does nothing.
+// This device's push notifications + app-icon badge switch (outbid, won, ending soon).
+// The same usePushSubscription() query as the permission prompt, so turning it on
+// in either place flips the other. Always shown, disabled with the reason when it
+// can't do anything, rather than hidden.
 function NotificationsRow() {
   const push = usePushSubscription();
   const unavailable = push.state === 'unsupported' || push.state === 'blocked' || !push.configured;
@@ -239,9 +225,9 @@ function NotificationsRow() {
           : 'Off — turn on to be told about outbid and auction alerts when NobleBid is closed.');
 
   return (
-    <SettingRow icon={Bell} title="Message notifications" description={description} inline>
+    <SettingRow icon={Bell} title="Notifications" description={description} inline>
       <Switch
-        aria-label="Message notifications on this device"
+        aria-label="Notifications on this device"
         checked={push.state === 'on'}
         disabled={unavailable || push.busy}
         onCheckedChange={(on) => void (on ? push.enable() : push.disable())}
@@ -278,6 +264,7 @@ function AppCard() {
   };
 
   const qc = useQueryClient();
+  const { data: appVersion } = useQuery({ queryKey: ['app-version'], queryFn: fetchAppVersion, staleTime: 60_000 });
   const [refreshing, setRefreshing] = React.useState(false);
   const handleClearCacheAndUpdate = async () => {
     setRefreshing(true);
@@ -378,7 +365,11 @@ function AppCard() {
           <SettingRow
             icon={RefreshCw}
             title="App version"
-            description="Clears cached data and reloads the latest version."
+            description={
+              appVersion
+                ? `Version ${appVersion.version}${appVersion.buildId ? ` (build ${appVersion.buildId})` : ''}. Clears cached data and reloads the latest version.`
+                : 'Clears cached data and reloads the latest version.'
+            }
           >
             <Button variant="outline" size="sm" className={ACTION} onClick={handleClearCacheAndUpdate} disabled={refreshing}>
               <RefreshCw className={refreshing ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} />

@@ -1,4 +1,5 @@
 'use client';
+import * as React from 'react';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -6,21 +7,39 @@ import { toast } from 'sonner';
 import { FormInput } from '@/components/common/form-input';
 import { Button } from '@/components/ui/button';
 import { loginSchema, type LoginFormValues } from '@/features/auth/auth.schema';
+import { authErrorMessage } from '@/features/auth/auth.errors';
 import { useLogin } from '@/features/auth/use-auth';
-import { apiErrorMessage } from '@/lib/api-client';
-import { getDeviceInfo } from '@/lib/device-info';
+import { VerifyEmailStep } from '@/features/auth/components/verify-email-step';
+import { apiErrorCode, apiErrorDetails } from '@/lib/api-client';
 
-// Email + password login. Phase 0 placeholder form — wired to POST /auth/login,
-// which bids-api provides from Phase 1.
+const DEFAULT_RESEND_SEC = 60;
+
+// Email + password login. EMAIL_NOT_VERIFIED switches to the OTP step (the API
+// has just emailed a fresh code); ACCOUNT_SUSPENDED is handled by the axios
+// interceptor, which sends the user to /suspended.
 export default function LoginPage() {
   const login = useLogin();
   const form = useForm<LoginFormValues>({ resolver: zodResolver(loginSchema) });
+  const [verify, setVerify] = React.useState<{ email: string; resendAfterSec: number } | null>(null);
 
   const onSubmit = (values: LoginFormValues) =>
-    login.mutate(
-      { ...values, deviceInfo: getDeviceInfo() },
-      { onError: (e) => toast.error(apiErrorMessage(e, 'Could not log in')) },
-    );
+    login.mutate(values, {
+      onError: (e) => {
+        const code = apiErrorCode(e);
+        if (code === 'EMAIL_NOT_VERIFIED') {
+          const sec = Number(apiErrorDetails(e)?.resendAfterSec);
+          setVerify({ email: values.email, resendAfterSec: sec > 0 ? sec : DEFAULT_RESEND_SEC });
+          toast.info('Please verify your email. We have sent you a new code.');
+          return;
+        }
+        if (code === 'ACCOUNT_SUSPENDED') return;
+        toast.error(authErrorMessage(e, 'Could not log in'));
+      },
+    });
+
+  if (verify) {
+    return <VerifyEmailStep {...verify} onBack={() => setVerify(null)} />;
+  }
 
   return (
     <div>
@@ -31,22 +50,31 @@ export default function LoginPage() {
           label="Email"
           type="email"
           autoComplete="email"
+          inputMode="email"
+          autoFocus
           error={form.formState.errors.email?.message}
           {...form.register('email')}
         />
-        <FormInput
-          label="Password"
-          type="password"
-          autoComplete="current-password"
-          error={form.formState.errors.password?.message}
-          {...form.register('password')}
-        />
-        <Button type="submit" className="w-full" disabled={login.isPending}>
+        <div className="space-y-1.5">
+          <FormInput
+            label="Password"
+            type="password"
+            autoComplete="current-password"
+            error={form.formState.errors.password?.message}
+            {...form.register('password')}
+          />
+          <div className="text-right">
+            <Link href="/forgot-password" className="text-sm font-medium text-primary hover:underline">
+              Forgot password?
+            </Link>
+          </div>
+        </div>
+        <Button type="submit" className="w-full" loading={login.isPending || login.isSuccess}>
           {login.isPending ? 'Logging in…' : 'Log in'}
         </Button>
       </form>
-      <p className="mt-4 text-sm text-muted-foreground">
-        New here?{' '}
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        New to NobleBid?{' '}
         <Link href="/signup" className="font-medium text-primary hover:underline">
           Create an account
         </Link>

@@ -14,7 +14,9 @@ Next.js 16 App Router PWA (React 19, TypeScript, Tailwind 4, Radix/shadcn UI). S
 - Destructive actions use `<ConfirmDialog>`; forms use zod + react-hook-form; data hooks live in `src/features/<feature>/use-<feature>.ts`.
 
 ## Commands
-`npm run dev` (port 3002) · `npm run lint` · `npm run typecheck` · `npm run check`
+`npm run dev` (port 3002) · `npm run lint` · `npm run typecheck` · `npm test` (vitest) · `npm run check` (lint + typecheck + test) · E2E: `e2e/README.md`, `readme/methods/testing.md`
 
 ## Status
-Phase 0 scaffold: shell + placeholder pages only. Real auth pages arrive in Phase 1. Icons/splash are not generated yet (run `scripts/generate-*` with the NobleBid logo).
+Phase 1: auth (login, signup + email OTP, forgot/reset password), profile, header user menu and route guards are real; /auctions, /watchlist, /my-bids, /sell/auctions, /admin are placeholders. Phase 7/8: PWA icons and splash generated from the logo (scripts/generate-*), push opt-in after first bid/watch, Amplify deploy readiness; see readme/flows/pwa.md, push-notifications.md, deployment.md.
+Phase 5: /sell/commissions lists commissions and pays them with Razorpay (stub mode when keyId is "stub"); see readme/flows/payments.md.
+Phase 6A: watchlist (hearts, /watchlist, nav badge), /leaderboard, /sellers/[id], /about, /how-it-works, /contact, server-rendered legal pages, sitemap/robots/OG image; see readme/flows/watchlist.md and seo.md.

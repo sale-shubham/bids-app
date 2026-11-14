@@ -1,12 +1,22 @@
 version: 1
+# Amplify Hosting, platform WEB_COMPUTE (Next.js SSR). Env vars are set per branch in
+# Amplify Console -> Hosting -> Environment variables (see readme/flows/deployment.md).
+# Node 24: Amplify's build image picks it up from nvm below; alternatively set the
+# build image's "Live package updates" Node.js version to 24 in App settings -> Build settings.
 frontend:
     phases:
         preBuild:
             commands:
+                - 'nvm install 24 && nvm use 24'
+                - 'node --version'
                 - 'npm ci --cache .npm --prefer-offline'
         build:
             commands:
-                - 'env | grep -e JWT_SECRET -e JWT_REFRESH_SECRET >> .env.production'
+                # Server-only values are NOT visible to the SSR compute at runtime unless they
+                # are written into .env.production here. NEXT_PUBLIC_* are inlined at build
+                # time from the environment, so they need no copying.
+                - 'echo "JWT_SECRET=${JWT_SECRET}" >> .env.production'
+                - 'if [ -n "${API_PROXY_TARGET}" ]; then echo "API_PROXY_TARGET=${API_PROXY_TARGET}" >> .env.production; fi'
                 - 'npm run build'
     artifacts:
         baseDirectory: .next

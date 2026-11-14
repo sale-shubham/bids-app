@@ -1,86 +1,110 @@
 'use client';
 import * as React from 'react';
-import { toast } from 'sonner';
+import { Bell, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { usePushSubscription } from '@/features/push/use-push';
+import { hasEngaged, onEngagement } from '@/lib/engagement';
 import { isStandalone } from '@/lib/pwa';
 
-// Asked once per surface — the installed app and the browser tab — the way
-// unikorncoatings_app asks. Once, because a person who said "Not now" does not
-// want it on every visit, and Chrome stops showing its own permission prompt
-// after a few refusals. Per surface, because the app and the tab are the same
-// origin and share localStorage: a single flag let a "Not now" in the tab use
-// up the installed app's only ask, and the home-screen icon is exactly where
-// being notified starts to matter. Installing is a new decision, so it gets a
-// new ask. (`noblebid-push-asked:app` predates the `:web` key and keeps its name, so
-// nobody who already answered in the app is asked again.)
+// Asked once per surface - the installed app and the browser tab. Once, because
+// a person who said "Not now" does not want it on every visit, and a denied
+// browser permission can never be asked for again. Per surface, because the app
+// and the tab share localStorage and installing is a new decision.
 const askedKey = (standalone: boolean) => `noblebid-push-asked:${standalone ? 'app' : 'web'}`;
 
-// Long enough not to land on a page still rendering, short enough to read as a
-// response to opening the app rather than a notification out of nowhere.
-const DELAY_MS = 4000;
+// Long enough not to land on top of the bid/watch toast, short enough to read
+// as a response to what the member just did.
+const DELAY_MS = 2500;
+
+function wasAsked(): boolean {
+  try {
+    return !!localStorage.getItem(askedKey(isStandalone()));
+  } catch {
+    return false;
+  }
+}
+
+function markAsked() {
+  try {
+    localStorage.setItem(askedKey(isStandalone()), '1');
+  } catch {
+    /* private mode - the `shown` ref still limits it to one ask per session */
+  }
+}
 
 /**
- * Offers to turn on new-message notifications, once per surface.
- *
- * Mounted from `(member)/layout.tsx` for the whole member area, not only
- * /chat (until 2026-11-04 it lived in chat/layout.tsx): someone who installs
- * the app lands on whatever page they open first, and a member who never
- * happens to open Chat was never asked — no permission, no push subscription,
- * no notification and no count on the app icon. Members only: admins don't
- * DM. Not gated on `MEMBER_CHAT` — that gates *sending*; a member without it
- * still receives messages (readme/flows/messaging.md).
- *
- * It does **not** call `Notification.requestPermission()` by itself: a browser
- * prompt that appears unasked is the one people click "Block" on, and a
- * blocked permission cannot be asked for again. So the app asks in its own
- * voice first; only "Turn on" reaches the browser. "Not now" leaves the
- * Message notifications switch on the Profile page's App tab as the way back.
+ * Soft prompt card for notifications. NOT shown on first visit: it appears only
+ * after the member's first successful bid or first watchlist add
+ * (`recordEngagement`, src/lib/engagement.ts) - the moment alerts are obviously
+ * useful. It never calls `Notification.requestPermission()` by itself: a browser
+ * prompt that appears unasked is the one people click "Block" on. Only "Turn on"
+ * reaches the browser (usePushSubscription().enable -> requests permission, then
+ * POST /push/subscribe). "Not now" leaves the Notifications switch in
+ * Profile > App as the way back. Mounted from `(member)/layout.tsx`.
  */
 export function PushPermissionPrompt() {
   const push = usePushSubscription();
+  const [open, setOpen] = React.useState(false);
   const shown = React.useRef(false);
 
-  // `state` is 'unsupported' until after mount and only becomes 'off' once the
-  // existing-subscription check has answered, so waiting on it also stops this
-  // firing for somebody already subscribed. `blockedReason` covers the cases
-  // where asking is pointless (an iPhone that has not added the app to its
-  // Home Screen, a denied permission, a dev server without the worker).
+  // `state` only becomes 'off' once the existing-subscription check has
+  // answered, so this also stays quiet for somebody already subscribed.
+  // `blockedReason` covers pointless asks (iPhone not on the Home Screen, denied
+  // permission, no worker in dev).
   const ready = push.state === 'off' && push.configured && !push.blockedReason;
-
-  // `usePushSubscription()` returns a fresh object each render; depending on it
-  // would restart the timer below every render. The action is read through a
-  // ref updated after each render instead.
-  const enable = React.useRef(push.enable);
-  React.useEffect(() => {
-    enable.current = push.enable;
-  });
 
   React.useEffect(() => {
     if (!ready || shown.current) return;
-    const key = askedKey(isStandalone());
-    try {
-      if (localStorage.getItem(key)) return;
-    } catch {
-      // Private mode / storage blocked — the ref still limits it to one ask per session.
-    }
-
-    const timer = setTimeout(() => {
-      shown.current = true;
-      try {
-        localStorage.setItem(key, '1');
-      } catch {
-        /* see above */
-      }
-      toast('Get notified about your auctions', {
-        description: 'Turn on notifications and NobleBid will show outbid and auction alerts — and a count on the app icon — even with the app closed.',
-        duration: Infinity,
-        action: { label: 'Turn on', onClick: () => void enable.current() },
-        cancel: { label: 'Not now', onClick: () => {} },
-      });
-    }, DELAY_MS);
-
-    return () => clearTimeout(timer);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const arm = () => {
+      if (shown.current || wasAsked() || !hasEngaged()) return;
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        shown.current = true;
+        markAsked();
+        setOpen(true);
+      }, DELAY_MS);
+    };
+    arm(); // engaged on an earlier visit, not asked yet
+    const off = onEngagement(arm);
+    return () => {
+      clearTimeout(timer);
+      off();
+    };
   }, [ready]);
 
-  return null;
+  if (!open) return null;
+
+  return (
+    <div
+      role="dialog"
+      aria-label="Turn on notifications"
+      className="fixed inset-x-3 bottom-24 z-50 mx-auto flex max-w-md items-start gap-3 rounded-lg border bg-card p-3 shadow-lg md:bottom-4 md:left-auto md:right-4 md:mx-0"
+    >
+      <Bell className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+      <div className="flex-1">
+        <p className="text-sm font-medium">Never miss an outbid</p>
+        <p className="text-xs text-muted-foreground">
+          Get alerts when you are outbid, win an auction or one is ending soon, with a count on the app icon, even when NobleBid is closed.
+        </p>
+        <div className="mt-2 flex gap-2">
+          <Button
+            size="sm"
+            onClick={() => {
+              setOpen(false);
+              void push.enable();
+            }}
+          >
+            Turn on
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>
+            Not now
+          </Button>
+        </div>
+      </div>
+      <button type="button" onClick={() => setOpen(false)} aria-label="Dismiss" className="text-muted-foreground hover:text-foreground">
+        <X className="h-4 w-4" />
+      </button>
+    </div>
+  );
 }

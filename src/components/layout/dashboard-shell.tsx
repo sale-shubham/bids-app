@@ -1,6 +1,5 @@
 "use client";
 import * as React from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LogOut, Menu, type LucideIcon } from "lucide-react";
@@ -13,6 +12,8 @@ import { CountBadge } from "@/components/common/count-badge";
 import { MobileBottomNav, isNavActive, type MoreTab } from "@/components/layout/mobile-bottom-nav";
 import { BlockNativePinch, PinchZoom } from "@/components/layout/pinch-zoom";
 import { ThemeToggle } from "@/components/common/theme-toggle";
+import { UserMenu } from "@/components/layout/user-menu";
+import { NotificationBell } from "@/features/notifications/components/notification-bell";
 import { PageTransition } from "@/components/common/motion";
 import { useAuthStore } from "@/store/auth-store";
 import { useLogout } from "@/features/auth/use-auth";
@@ -164,42 +165,18 @@ export function DashboardShell({
             >
               <Menu className="h-5 w-5" />
             </button>
-            {member?.role === "SUPER_ADMIN" ? (
+            {member?.role === "SUPER_ADMIN" && (
               <span className="text-sm font-medium text-muted-foreground">
                 Super Admin
               </span>
-            ) : (
-              member && (
-                <span className="max-w-40 truncate text-sm font-medium text-muted-foreground">
-                  {member.name || member.email}
-                </span>
-              )
             )}
           </div>
           <div className="flex items-center gap-3">
             <div className="hidden md:block">
               <ThemeToggle />
             </div>
-            {/* Inverted (not a theme token) backdrop: black in light mode, white in dark
-                mode, so the PNG's transparent/light background always contrasts against it.
-                A link to this role's Profile page (moreTab: /profile or /admin/profile) —
-                desktop only, like the image; on a phone the bottom bar's Profile tab is it.
-                Named "Open profile", not "Profile", so it never collides with the sidebar's
-                own Profile link. */}
-            <Link
-              href={moreTab.href}
-              aria-label="Open profile"
-              title="Profile"
-              className="relative hidden h-12 w-12 shrink-0 overflow-hidden rounded-full bg-black ring-offset-background transition-opacity hover:opacity-85 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 dark:bg-white md:block"
-            >
-              <Image
-                src="/avatar-default.png"
-                alt=""
-                fill
-                sizes="48px"
-                className="object-cover"
-              />
-            </Link>
+            <NotificationBell />
+            <UserMenu />
           </div>
         </header>
         {/* Bottom padding clears the 80px mobile bottom nav (pb-24); desktop needs less. */}

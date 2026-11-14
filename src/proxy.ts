@@ -11,7 +11,7 @@ import {
   startsWithAny,
   type Role,
 } from "@/constants/routes";
-import { API_ORIGIN } from "@/constants/api";
+import { serverApiOrigin } from "@/constants/api";
 
 // Edge-side route gate. Verifies the SAME httpOnly access-token cookie the
 // backend (bids-api) sets on every login/refresh (`nb_at`). JWT_SECRET here must
@@ -64,7 +64,7 @@ async function refreshAccess(
     // the redirect) is the new access token, read straight from the JSON
     // body the backend already returns, same as the hospital project's
     // proxy.ts does — no Set-Cookie string parsing needed for it.
-    const res = await fetch(`${API_ORIGIN}/auth/refresh`, {
+    const res = await fetch(`${serverApiOrigin()}/auth/refresh`, {
       method: "POST",
       headers: { cookie: cookieHeader },
     });
@@ -151,5 +151,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)"],
+  matcher: ["/((?!api/|_next/static|_next/image|favicon.ico|.*\\..*).*)"],
 };

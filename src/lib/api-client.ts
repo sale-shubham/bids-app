@@ -1,7 +1,7 @@
 import axios, { type AxiosError, type AxiosRequestConfig } from "axios";
 import { queryClient } from "./query-client";
 import { useAuthStore } from "@/store/auth-store";
-import { isPublicRoute } from "@/constants/routes";
+import { isAuthRoute, isPublicRoute } from "@/constants/routes";
 import { API_ORIGIN } from "@/constants/api";
 import { syncAppBadge } from "@/lib/push";
 
@@ -60,27 +60,25 @@ export function isUnreachableError(err: unknown): boolean {
   return status === undefined || status >= 500;
 }
 
-// Refresh came back 401 too — the backend already cleared the nb_at/nb_rt
-// cookies (see bids-api's auth.controller.ts's refresh()), so the
-// session is dead server-side. Wipe the client-side mirror of it (zustand
-// store + react-query cache) so no stale member/business/listing data lingers
-// in memory, then send the user to /login — a hard navigation, not
-// router.push(), since this runs inside an axios interceptor, outside React.
+// Refresh was rejected — the backend already cleared the nb_at/nb_rt cookies
+// (bids-api's auth.controller.ts refresh()), so the session is dead
+// server-side. Wipe the client-side mirror of it (zustand store + react-query
+// cache), then send the user to /login?next=<current page> — a hard
+// navigation, not router.push(), since this runs inside an axios interceptor,
+// outside React.
 let loggedOut = false;
 function forceLogout() {
   if (typeof window === "undefined" || loggedOut) return;
-  // Public pages (PUBLIC_PREFIXES — /pages/* legal copy, linked from /signup
-  // before an account exists) are reachable logged-out by design. A 401 there
-  // means "no session", not "session died" — ejecting to /login made those
-  // pages unreachable for anyone without a cookie. Drop the stale store mirror
-  // but stay put: don't clear the query cache (it holds this page's own public
-  // ['legal-page'] data) and don't navigate.
+  // Public pages (PUBLIC_PREFIXES — auctions, /pages/* legal copy) are
+  // reachable logged-out by design. A 401 there means "no session", not
+  // "session died". Drop the stale store mirror but stay put: don't clear the
+  // query cache (it holds this page's own public data) and don't navigate.
   if (isPublicRoute(window.location.pathname)) {
     useAuthStore.getState().clear();
     return;
   }
   // Must be set before queryClient.clear() — clearing the cache makes the
-  // still-mounted `['member-me']` useQuery (AuthBootstrap) refetch
+  // still-mounted `['me']` useQuery (AuthBootstrap) refetch
   // immediately, synchronously, before window.location.href's navigation
   // actually takes effect. That refetch 401s -> refresh 401s -> forceLogout()
   // again, re-entering this function while still on the *old* page (not yet
@@ -91,15 +89,24 @@ function forceLogout() {
   // Session gone = its push subscription gone server-side; clear the icon badge too.
   void syncAppBadge(0);
   // Absolute URL (same full-page navigation): Next 16 lints relative ones.
-  window.location.href = new URL("/login", window.location.origin).href;
+  const url = new URL("/login", window.location.origin);
+  if (!isAuthRoute(window.location.pathname))
+    url.searchParams.set("next", window.location.pathname + window.location.search);
+  window.location.href = url.href;
 }
 
-// ACCOUNT_SUSPENDED (2026-09-12) — a distinct backend error code (not just a
-// generic 401/403) so a paused member is routed to a dedicated "contact
-// admin" screen instead of the bare /login bounce forceLogout() above does.
-// Separate flag from `loggedOut` (own terminal state, own destination) but
-// same reasoning: must be set before queryClient.clear() re-triggers a
-// synchronous refetch that could otherwise re-enter this function mid-navigation.
+// The flags above are terminal for a full-page navigation, but a successful
+// login happens via router.push (no reload) — reset them so a later session
+// death is handled again.
+export function resetAuthFlags() {
+  loggedOut = false;
+  suspended = false;
+}
+
+// ACCOUNT_SUSPENDED — a distinct backend error code so a deactivated member is
+// routed to /suspended instead of the bare /login bounce above. Own flag, same
+// reasoning: set before queryClient.clear() re-triggers a synchronous refetch
+// that could otherwise re-enter this function.
 let suspended = false;
 function forceSuspended() {
   if (typeof window === "undefined" || suspended) return;
@@ -110,20 +117,32 @@ function forceSuspended() {
   window.location.href = new URL("/suspended", window.location.origin).href;
 }
 
+// Auth endpoints that must never trigger a refresh. Other /auth/* calls
+// (sessions, password/change, logout-all) are authenticated and DO refresh.
+const NO_REFRESH_URL = /\/auth\/(login|signup|refresh|password\/(forgot|reset))/;
+
 api.interceptors.response.use(
   (res) => res,
   async (error: AxiosError) => {
     const original = error.config as AxiosRequestConfig & { _retry?: boolean };
     const status = error.response?.status;
     const url = original?.url ?? "";
-    const code = (error.response?.data as { error?: { code?: string } } | undefined)?.error?.code;
+    const code = apiErrorCode(error);
 
     if (code === "ACCOUNT_SUSPENDED") {
       forceSuspended();
       return Promise.reject(error);
     }
 
-    if (status === 401 && !original._retry && !url.includes("/auth/")) {
+    // Credential-style 401s (wrong password) are answers, not an expired
+    // access token — never refresh/retry them.
+    if (
+      status === 401 &&
+      original &&
+      !original._retry &&
+      !NO_REFRESH_URL.test(url) &&
+      code !== "INVALID_CREDENTIALS"
+    ) {
       original._retry = true;
       refreshing ??= doRefresh().finally(() => (refreshing = null));
       const result = await refreshing;
@@ -140,13 +159,31 @@ api.interceptors.response.use(
   },
 );
 
+// Error shape from bids-api's errorHandler: { success:false, error:{ code, message, details } }.
+interface ApiErrorBody {
+  error?: { code?: string; message?: string; details?: unknown };
+}
+
+export function apiErrorCode(err: unknown): string | undefined {
+  if (!axios.isAxiosError(err)) return undefined;
+  return (err.response?.data as ApiErrorBody | undefined)?.error?.code;
+}
+
+export function apiErrorDetails(err: unknown): Record<string, unknown> | undefined {
+  if (!axios.isAxiosError(err)) return undefined;
+  const d = (err.response?.data as ApiErrorBody | undefined)?.error?.details;
+  return d && typeof d === "object" ? (d as Record<string, unknown>) : undefined;
+}
+
 // Normalize API error message for UI.
 export function apiErrorMessage(
   err: unknown,
   fallback = "Something went wrong",
 ): string {
   if (axios.isAxiosError(err)) {
-    return err.response?.data?.error?.message ?? err.message ?? fallback;
+    if (!err.response) return "Can't reach the server. Check your connection and try again.";
+    return (err.response.data as ApiErrorBody | undefined)?.error?.message ?? err.message ?? fallback;
   }
+  if (err instanceof Error && err.message) return err.message;
   return fallback;
 }

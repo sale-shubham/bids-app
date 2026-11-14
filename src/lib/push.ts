@@ -1,7 +1,6 @@
-// Web Push + app-icon badge helpers for new-DM notifications. Browser-only —
+// Web Push + app-icon badge helpers for auction notifications (outbid, won, ending soon...). Browser-only —
 // every export guards on `typeof window`. The flow and its limits are written
-// up in readme/flows/push-notifications.md. Ported from unikorncoatings_app's
-// src/lib/push.ts, including the fixes it needed in production.
+// up in readme/flows/push-notifications.md.
 
 import { swEnabled } from '@/components/common/sw-register';
 import { isStandalone } from '@/lib/pwa';
@@ -177,12 +176,6 @@ export async function syncAppBadge(count: number): Promise<void> {
   } catch {
     // Not installed, or no Badging API (Firefox). Nothing to paint.
   }
-}
-
-/** A thread was just read here: take its notification row down, if one is showing. */
-export function closeThreadNotification(conversationId: string): void {
-  if (typeof window === 'undefined') return;
-  navigator.serviceWorker?.controller?.postMessage({ type: 'CLEAR_THREAD', conversationId });
 }
 
 /**

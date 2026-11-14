@@ -19,12 +19,6 @@
 const CACHE_PREFIX = 'noblebid-';
 const FALLBACK_CACHE = `${CACHE_PREFIX}fallback`;
 
-// One entry, holding when a notification last made a sound (showOne() below).
-// A cache of its own because it must survive the `activate` sweep that drops
-// the previous deploy's assets, and because a service worker is killed between
-// pushes, so there is no variable that outlives the notification that wrote it.
-const PUSH_CACHE = `${CACHE_PREFIX}push-state`;
-
 // Registered with `dev=1` (`/sw.js?api=…&dev=1`) by <ServiceWorkerRegister> when
 // NEXT_PUBLIC_ENABLE_SW is set under `next dev`. Push needs a worker, and push
 // is the one thing worth testing locally; caching under `next dev` is not — it
@@ -91,7 +85,7 @@ self.addEventListener('activate', (event) => {
     (async () => {
       const current = await cacheName();
       const keys = await caches.keys();
-      await Promise.all(keys.filter((k) => k !== current && k !== PUSH_CACHE).map((k) => caches.delete(k)));
+      await Promise.all(keys.filter((k) => k !== current).map((k) => caches.delete(k)));
       await self.clients.claim();
     })(),
   );
@@ -135,28 +129,25 @@ self.addEventListener('fetch', (event) => {
 });
 
 /* ---------------------------------------------------------------------------
- * Push notifications — new DMs while the app is closed
+ * Push notifications - outbid, won, sold, ending soon, commissions
  * (readme/flows/push-notifications.md)
  *
- * The badge on the installed app's icon is the Badging API (setAppBadge), and
- * it is set from in here because this is the only code that runs when a push
- * arrives with the app closed — which is the whole point. The number comes
- * from the server inside the payload (`badgeCount`: the member's unread total
- * across every notification), so the worker never has to ask.
+ * Payload from bids-api (src/modules/notify/notify.service.ts):
+ *   { type, title, body, url }  - url is an in-app path such as /auctions/<id>.
+ * An optional `badgeCount` (unread total) is honoured when a payload carries it;
+ * otherwise the open app syncs the badge itself (useAppBadge -> SET_BADGE).
  *
  * showNotification() is NOT optional. Chrome only grants `userVisibleOnly`
  * subscriptions, and a push handler that shows nothing gets the browser's own
- * "this site was updated in the background" notice instead — repeated, the
- * permission is revoked. The one exception is below (alreadyWatching).
+ * "this site was updated in the background" notice instead. The one exception
+ * is below (alreadyWatching).
  * ------------------------------------------------------------------------- */
 
-// Matches the API's push payload (bids-api src/modules/push/push.service.ts):
-// { type: 'outbid' | 'auction-won' | 'ending-soon' | ..., auctionId, title, body, url?, badgeCount }.
 function parsePush(event) {
   try {
     return event.data ? event.data.json() : null;
   } catch {
-    // Not ours, or not JSON. Still worth a notification — dropping it silently
+    // Not ours, or not JSON. Still worth a notification - dropping it silently
     // would leave a browser-generated one in its place.
     return null;
   }
@@ -172,14 +163,10 @@ function setBadge(count) {
 }
 
 /**
- * Whether somebody is already looking at the thread this message belongs to.
- * The banner is then skipped — they can see the message arrive — while the
- * badge still updates. Allowed because Chrome only substitutes its own notice
- * when the handler shows nothing AND the site has no visible window; here
- * there is one by definition.
- *
- * Compares paths only, and requires `visibilityState === 'visible'`: a tab
- * parked on the thread behind twelve others is not somebody looking at it.
+ * Whether somebody is already looking at the page this notification points to.
+ * The banner is then skipped - they can see the change arrive - while the badge
+ * still updates. Requires `visibilityState === 'visible'`: a tab parked on the
+ * page behind twelve others is not somebody looking at it.
  */
 async function alreadyWatching(url) {
   let target;
@@ -199,90 +186,63 @@ async function alreadyWatching(url) {
   });
 }
 
-/**
- * Tells open pages the unread total changed. Usually redundant with the
- * WebSocket (auction socket) — but a suppressed banner plus a socket that
- * happens to be mid-reconnect would otherwise leave the person with no signal
- * at all. useAppBadge() listens for it.
- */
+/** Tells open pages the unread total changed (useAppBadge listens for it). */
 async function tellPages(unread) {
   const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
   for (const client of windows) client.postMessage({ type: 'NOTIFICATION_COUNT', unread });
 }
 
-// One row per auction: a new
-// message in the same thread replaces that thread's row (same tag) instead of
-// stacking a second one. Different threads are different rows, which the OS
-// bundles by app on its own.
-const TAG_PREFIX = 'noblebid-auction:';
+// One row per auction + type: a new outbid for the same auction replaces the
+// previous outbid row (same tag) instead of stacking; different auctions or
+// types are different rows, which the OS bundles by app on its own.
+const TAG_PREFIX = 'noblebid:';
 const isOurTag = (tag) => typeof tag === 'string' && tag.startsWith(TAG_PREFIX);
 
-// Only the first row inside this window makes a sound; the rest land silent —
-// a burst of messages is not a burst of buzzes.
-const ALERT_WINDOW_MS = 60_000;
-const LAST_ALERT_KEY = '/__push/last-alert';
+function tagFor(type, url) {
+  const match = /\/auctions\/([^/?#]+)/.exec(url);
+  return `${TAG_PREFIX}${type || 'general'}:${match ? match[1] : url}`;
+}
 
 const ICONS = {
-  // Large icon, right of the row. Round, because Android does not round a web
-  // notification's large icon for us — the square tile stayed a square.
+  // Large icon, right of the row (round, Android does not round it for us).
   icon: '/icons/notification-192x192.png',
-  // Small icon, status bar and left of the row. Android throws this image's
-  // colours away and draws a white shape from its ALPHA channel, so an opaque
-  // tile came out as a white square. This is the "NobleBid" mark as alpha only.
-  // Both from scripts/generate-notification-icons.cjs.
+  // Small status-bar icon. Android draws a white shape from its ALPHA channel
+  // only, hence a monochrome silhouette. Both from scripts/generate-notification-icons.cjs.
   badge: '/icons/badge-96x96.png',
 };
 
-/**
- * Whether this row is the one that buzzes. The timestamp lives in PUSH_CACHE
- * because the worker is killed between pushes. Two pushes handled in the same
- * instant can both alert — one extra buzz beats a silent notification.
- */
-async function shouldAlert() {
-  try {
-    const cache = await caches.open(PUSH_CACHE);
-    const res = await cache.match(LAST_ALERT_KEY);
-    const last = res ? Number(await res.text()) || 0 : 0;
-    const now = Date.now();
-    if (now - last < ALERT_WINDOW_MS) return false;
-    await cache.put(LAST_ALERT_KEY, new Response(String(now)));
-    return true;
-  } catch {
-    return true; // storage refused — no throttle rather than no sound
-  }
+function actionsFor(type) {
+  if (type === 'outbid') return [{ action: 'bid', title: 'Bid again' }];
+  return [{ action: 'view', title: 'View' }];
 }
 
-async function forgetPushState() {
-  try {
-    await caches.delete(PUSH_CACHE);
-  } catch {
-    // Nothing depends on it — the window only ever silences a row.
-  }
-}
-
-async function showOne(payload, url) {
-  const silent = !(await shouldAlert());
+function showOne(payload, url) {
+  const type = payload.type || 'general';
   return self.registration.showNotification(payload.title || 'NobleBid', {
     ...ICONS,
     body: payload.body || 'You have a new notification.',
-    tag: `${TAG_PREFIX}${payload.auctionId || 'unknown'}`,
-    // A replaced row (same thread) is silent by default; `renotify` makes it
-    // buzz again — but never together with `silent`, which Chrome rejects.
-    renotify: !silent,
-    silent,
-    data: { url },
+    tag: tagFor(type, url),
+    // A replaced row is silent by default; an outbid must buzz again.
+    renotify: type === 'outbid',
+    requireInteraction: type === 'outbid',
+    actions: actionsFor(type),
+    data: { url, type },
   });
 }
 
 self.addEventListener('push', (event) => {
   const payload = parsePush(event) ?? {};
-  const badge = Number(payload.badgeCount) || 0;
-  const url = payload.url || (payload.auctionId ? `/auctions/${payload.auctionId}` : '/watchlist');
+  const url = typeof payload.url === 'string' && payload.url.startsWith('/') ? payload.url : '/notifications';
+  const hasBadge = typeof payload.badgeCount === 'number';
 
   event.waitUntil(
     (async () => {
-      const watching = payload.auctionId ? await alreadyWatching(url) : false;
-      await Promise.all([setBadge(badge), tellPages(badge), watching ? Promise.resolve() : showOne(payload, url)]);
+      const watching = await alreadyWatching(url);
+      await Promise.all([
+        hasBadge ? setBadge(payload.badgeCount) : Promise.resolve(),
+        hasBadge ? tellPages(payload.badgeCount) : Promise.resolve(),
+        watching ? Promise.resolve() : showOne(payload, url),
+      ]);
     })(),
   );
 });
@@ -401,12 +361,17 @@ self.addEventListener('pushsubscriptionchange', (event) => {
  */
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  event.waitUntil(openTarget(event.notification.data?.url || '/auctions'));
+  event.waitUntil(openTarget(event.notification.data?.url || '/notifications'));
 });
 
 async function openTarget(target) {
   const url = new URL(target, self.location.origin);
   const clientList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+  // Same URL already open: just focus it.
+  const same = clientList.find((c) => c.url === url.href);
+  if (same) return same.focus();
+  // Otherwise reuse any window of this origin (an installed PWA has one window;
+  // openWindow inside it would launch the browser).
   for (const client of clientList) {
     if (new URL(client.url).origin !== url.origin) continue;
     await client.focus();
@@ -422,16 +387,6 @@ async function openTarget(target) {
 self.addEventListener('message', (event) => {
   const data = event.data;
 
-  // A thread was read in the app: its row is stale, take it down.
-  if (data?.type === 'CLEAR_THREAD' && data.conversationId) {
-    event.waitUntil(
-      (async () => {
-        const tag = `${TAG_PREFIX}${data.conversationId}`;
-        for (const shown of await self.registration.getNotifications({ tag })) shown.close();
-      })(),
-    );
-    return;
-  }
 
   if (data?.type !== 'SET_BADGE') return;
   const count = Number(data.count) || 0;
@@ -445,7 +400,6 @@ self.addEventListener('message', (event) => {
       for (const shown of await self.registration.getNotifications()) {
         if (isOurTag(shown.tag)) shown.close();
       }
-      await forgetPushState();
     })(),
   );
 });
