@@ -126,7 +126,6 @@ function BidControls({ auction, minNext }: { auction: AuctionDetail; minNext: nu
     const amount = pending;
     place.mutate(amount, {
       onSuccess: () => {
-        toast.success(`Bid of ${formatINR(amount)} placed`);
         setCustom('');
         setPending(null);
       },

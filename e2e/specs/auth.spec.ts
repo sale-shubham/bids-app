@@ -26,6 +26,12 @@ test('signup shows validation errors for an empty / weak form', async ({ page })
   await page.getByLabel('Confirm password').fill('different');
   await page.getByRole('button', { name: 'Create account' }).click();
   await expect(page.getByText('At least 8 characters')).toBeVisible();
+
+  // The cross-field "do not match" check only runs once every field is individually valid.
+  await fillSignup(page, testEmail(runId(), 'signup-mismatch'));
+  await page.getByLabel('Confirm password').fill(`${PASSWORD}x`);
+  await page.getByRole('checkbox').check();
+  await page.getByRole('button', { name: 'Create account' }).click();
   await expect(page.getByText('Passwords do not match')).toBeVisible();
 });
 

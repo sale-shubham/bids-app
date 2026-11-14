@@ -168,7 +168,7 @@ describe('BidPanel bidding', () => {
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['auction', 'a1'] });
   });
 
-  it('a successful bid toasts and clears the input', async () => {
+  it('a successful bid clears the input (the success toast lives in usePlaceBid)', async () => {
     const user = userEvent.setup();
     signIn(member());
     renderPanel(auction());
@@ -177,7 +177,6 @@ describe('BidPanel bidding', () => {
     await user.type(input, '1500');
     await user.click(screen.getByRole('button', { name: 'Place bid' }));
     await user.click(await screen.findByRole('button', { name: 'Bid ₹1,500' }));
-    expect(toast.success).toHaveBeenCalledWith('Bid of ₹1,500 placed');
     expect(input).toHaveValue('');
   });
 });

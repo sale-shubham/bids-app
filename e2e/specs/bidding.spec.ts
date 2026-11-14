@@ -10,10 +10,21 @@ import { loadState, storageStatePath, type TestRole } from '../lib/run.ts';
 const HOUR = 3600;
 const LIVE = { timeout: 25_000 };
 
+/** Open the page and wait until its live socket has subscribed to the auction room: events sent
+ *  before that are not replayed, so bidding earlier would race the other page's subscription. */
 async function openAs(browser: Browser, who: TestRole, path: string): Promise<Page> {
   const ctx = await browser.newContext({ storageState: storageStatePath(who) });
   const page = await ctx.newPage();
+  const subscribed = new Promise<void>((resolve) => {
+    page.on('websocket', (ws) => {
+      if (ws.url().includes('/_next/')) return;
+      ws.on('framesent', (f) => {
+        if (String(f.payload).includes('"subscribe"')) resolve();
+      });
+    });
+  });
   await page.goto(path);
+  await subscribed;
   return page;
 }
 

@@ -57,7 +57,7 @@ export async function createMember(m: NewMember): Promise<{ id: string; email: s
     db.query(
       `INSERT INTO "Member" (id, email, name, "passwordHash", role, "isActive", "emailVerifiedAt", phone, "updatedAt")
        VALUES ($1, $2, $3, $4, $5::"Role", $6, $7, $8, now())`,
-      [id, email, m.name, hash, m.role, m.isActive ?? true, m.verified === false ? null : new Date(), m.phone ?? null],
+      [id, email, m.name, hash, m.role, m.isActive ?? true, m.verified === false ? null : new Date().toISOString(), m.phone ?? null],
     ),
   );
   return { id, email, name: m.name };
@@ -94,8 +94,8 @@ export async function createAuction(a: NewAuction): Promise<{ id: string; title:
         a.images ?? [IMAGE_URL],
         a.startingBidPaise ?? 100000,
         a.minIncrementPaise ?? 10000,
-        new Date(now + a.startsInSec * 1000),
-        new Date(now + a.endsInSec * 1000),
+        new Date(now + a.startsInSec * 1000).toISOString(), // ISO: pg would serialise a Date in local time (column is timestamp without tz)
+        new Date(now + a.endsInSec * 1000).toISOString(),
         a.startsInSec <= 0 ? 'LIVE' : 'SCHEDULED',
         a.sellerId,
       ],

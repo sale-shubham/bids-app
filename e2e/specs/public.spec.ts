@@ -40,8 +40,11 @@ test('home lists any non-empty auction sections with a "View all" link', async (
 test('browse: search filter syncs to the URL and finds the seeded auction', async ({ page }) => {
   await page.goto('/auctions');
   await expect(page.getByRole('heading', { name: 'Auctions', level: 1 })).toBeVisible();
-  await page.getByLabel('Search auctions').fill(live.title);
-  await expect(page).toHaveURL(new RegExp(`q=${encodeURIComponent(live.title).replace(/%20/g, '(?:\\+|%20)')}`));
+  // Typing before React hydrates is dropped by the controlled input, so retry the fill until the URL syncs.
+  await expect(async () => {
+    await page.getByLabel('Search auctions').fill(live.title);
+    await expect(page).toHaveURL(new RegExp(`q=${encodeURIComponent(live.title).replace(/%20/g, '(?:\\+|%20)')}`), { timeout: 3000 });
+  }).toPass({ timeout: 20_000 });
   await expect(page.getByRole('link', { name: new RegExp(live.title) }).first()).toBeVisible();
 });
 
