@@ -18,3 +18,4 @@ Next.js 16 App Router PWA (React 19, TypeScript, Tailwind 4, Radix/shadcn UI). S
 
 ## Status
 Phase 1: auth (login, signup + email OTP, forgot/reset password), profile, header user menu and route guards are real; /auctions, /watchlist, /my-bids, /sell/auctions, /admin are placeholders. Icons/splash are not generated yet (run `scripts/generate-*` with the NobleBid logo).
+Phase 5: /sell/commissions lists commissions and pays them with Razorpay (stub mode when keyId is "stub"); see readme/flows/payments.md.

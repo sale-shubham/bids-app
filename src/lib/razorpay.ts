@@ -1,7 +1,7 @@
 // Razorpay Checkout loader. The hosted checkout.js script is injected once and
 // cached — there is no npm SDK for the browser side. `window.Razorpay` is opened
 // in ORDER mode with a server-created order id; the `handler` callback hands back
-// the payment id + order id + signature we POST to /payments/orders/verify.
+// the payment id + order id + signature we POST to /payments/verify.
 
 const CHECKOUT_SRC = 'https://checkout.razorpay.com/v1/checkout.js';
 
@@ -14,6 +14,8 @@ export interface RazorpayHandlerResponse {
 export interface RazorpayOptions {
   key: string;
   order_id: string;
+  amount?: number;
+  currency?: string;
   name: string;
   description?: string;
   prefill?: { name?: string; email?: string; contact?: string };
@@ -58,4 +60,48 @@ export function loadRazorpayCheckout(): Promise<boolean> {
     document.body.appendChild(script);
   });
   return loader;
+}
+
+export interface OpenCheckoutInput {
+  keyId: string;
+  orderId: string;
+  amountPaise: number;
+  currency: string;
+  description?: string;
+  prefill?: { name?: string; email?: string; contact?: string };
+}
+
+export class RazorpayCheckoutError extends Error {
+  constructor(
+    public reason: 'dismissed' | 'failed' | 'load',
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
+/** Opens Checkout in order mode. Resolves with the signed response; rejects with RazorpayCheckoutError. */
+export async function openRazorpayCheckout(input: OpenCheckoutInput): Promise<RazorpayHandlerResponse> {
+  const ok = await loadRazorpayCheckout();
+  if (!ok || !window.Razorpay) throw new RazorpayCheckoutError('load', 'Could not load the payment window.');
+  const Ctor = window.Razorpay;
+  return new Promise<RazorpayHandlerResponse>((resolve, reject) => {
+    const rzp = new Ctor({
+      key: input.keyId,
+      order_id: input.orderId,
+      amount: input.amountPaise,
+      currency: input.currency,
+      name: 'NobleBid',
+      description: input.description,
+      prefill: input.prefill,
+      theme: { color: '#7C3AED' },
+      modal: { ondismiss: () => reject(new RazorpayCheckoutError('dismissed', 'Payment cancelled')) },
+      handler: resolve,
+    });
+    rzp.on('payment.failed', (resp) => {
+      const desc = (resp as { error?: { description?: string } })?.error?.description;
+      reject(new RazorpayCheckoutError('failed', desc || 'Payment failed'));
+    });
+    rzp.open();
+  });
 }

@@ -1,6 +1,7 @@
 'use client';
 import * as React from 'react';
 import { Camera, Loader2 } from 'lucide-react';
+import Link from 'next/link';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -49,6 +50,7 @@ export function ProfileIdentityCard() {
             label: 'Unpaid commission',
             value: formatINR(member.unpaidCommissionPaise),
             warn: member.unpaidCommissionPaise > 0,
+            href: '/sell/commissions',
           },
         ]
       : [
@@ -110,7 +112,11 @@ export function ProfileIdentityCard() {
             <div key={d.label} className="min-w-0">
               <dt className="text-xs text-muted-foreground">{d.label}</dt>
               <dd className="mt-1 flex items-center gap-2 text-sm font-medium">
-                {d.value}
+                {'href' in d && d.href ? (
+                  <Link href={d.href} className="text-primary hover:underline">{d.value}</Link>
+                ) : (
+                  d.value
+                )}
                 {'warn' in d && d.warn && <Badge variant="warning">Due</Badge>}
               </dd>
             </div>
