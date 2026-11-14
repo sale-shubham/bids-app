@@ -1,0 +1,18 @@
+node_modules/
+.next/
+dist/
+build/
+.serverless/
+.esbuild/
+*.log
+
+# Secrets
+.env
+.env.*
+!.env.example
+!.env.production.example
+
+# TypeScript incremental build cache
+tsconfig.tsbuildinfo
+*.tsbuildinfo
+public/version.json

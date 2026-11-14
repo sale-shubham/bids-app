@@ -1,0 +1,511 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+@utility container {
+  margin-inline: auto;
+  padding-inline: 1.5rem;
+  @media (width >= --theme(--breakpoint-sm)) {
+    max-width: none;
+  }
+  @media (width >= 1280px) {
+    max-width: 1280px;
+  }
+}
+
+/* `inline`: utilities use these values as written (e.g. `var(--font-inter)`)
+   instead of `var(--font-sans)` resolved on :root, where next/font's
+   `--font-inter` (set on <body>) does not exist. */
+@theme inline {
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
+
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+  @keyframes shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+}
+
+/* Tailwind 4's preflight dropped `cursor: pointer` on buttons; keep v3's. (Its
+   other v3 default, gray-200 borders, is covered by `border-border` below.) */
+@layer base {
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+/* Tailwind 4's space-y-* puts the gap as margin-bottom on each child but the
+   last; v3 put it as margin-top on each child after the first. Vertical
+   margins don't apply to inline boxes, so with v4 an inline child (a <Label>
+   above an input) lost its gap. Restore v3: margin-top on followers, and no
+   margin-bottom from space-y on any child — including the first, or a flex
+   column (no margin collapsing, e.g. CardHeader) gets the gap twice. */
+@utility space-y-* {
+  & > :not([hidden]) ~ :not([hidden]) {
+    margin-block-start: calc(var(--spacing) * --value(number));
+    margin-block-end: 0;
+  }
+  & > :not([hidden]):first-child {
+    margin-block-end: 0;
+  }
+}
+
+@utility bg-brand {
+  background-color: hsl(var(--brand-to));
+  background-image: linear-gradient(
+    135deg,
+    hsl(var(--brand-from)),
+    hsl(var(--brand-to))
+  );
+}
+
+@utility text-gradient {
+  background-image: linear-gradient(
+    135deg,
+    hsl(var(--brand-from)),
+    hsl(var(--brand-to))
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@utility shadow-soft {
+  box-shadow: var(--highlight), var(--shadow-sm);
+}
+
+@utility shadow-elevated {
+  box-shadow: var(--highlight), var(--shadow-md);
+}
+
+@utility shadow-float {
+  box-shadow: var(--highlight), var(--shadow-lg);
+}
+
+@utility shadow-brand {
+  box-shadow: var(--shadow-brand);
+}
+
+@utility surface {
+  /* raised surface lift — pair with bg-card for premium depth in dark */
+  box-shadow: var(--highlight), var(--shadow-sm);
+}
+
+@utility bg-grid {
+  /* subtle mesh — layers the brand gradient + highlight radials in ONE declaration
+     so it never overrides bg-brand's background-image. */
+  background-color: hsl(var(--brand-to));
+  background-image:
+    radial-gradient(circle at 18% 12%, hsl(0 0% 100% / 0.14), transparent 42%),
+    radial-gradient(circle at 85% 0%, hsl(0 0% 100% / 0.1), transparent 38%),
+    linear-gradient(135deg, hsl(var(--brand-from)), hsl(var(--brand-to)));
+}
+
+/* NobleBid design tokens — purple #7C3AED / pink #DB2777 / amber #D97706. No hardcoded colors in components. */
+@layer base {
+  :root {
+    --background: 270 25% 98%;        /* soft off-white */
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* NobleBid brand purple #7C3AED */
+    --primary: 262 83% 58%;
+    --primary-foreground: 0 0% 100%;
+    --brand-from: 262 83% 58%;   /* purple #7C3AED */
+    --brand-to: 333 71% 51%;     /* pink #DB2777 */
+
+    --secondary: 215 25% 95%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 215 25% 95%;
+    --muted-foreground: 215 16% 46%;  /* tuned for AA contrast on light */
+
+    --accent: 262 90% 96%;
+    --accent-foreground: 262 83% 45%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 71% 41%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 32 95% 44%;               /* amber #D97706 */
+    --warning-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 262 83% 58%;
+
+    --radius: 0.75rem;
+
+    /* elevation — soft, layered shadows (neuromorphic-lite) */
+    --shadow-xs: 0 1px 2px 0 hsl(222 47% 11% / 0.04);
+    --shadow-sm: 0 1px 3px 0 hsl(222 47% 11% / 0.06), 0 1px 2px -1px hsl(222 47% 11% / 0.04);
+    --shadow-md: 0 4px 12px -2px hsl(222 47% 11% / 0.08), 0 2px 6px -2px hsl(222 47% 11% / 0.05);
+    --shadow-lg: 0 12px 32px -8px hsl(222 47% 11% / 0.12), 0 4px 12px -4px hsl(222 47% 11% / 0.07);
+    --shadow-brand: 0 10px 30px -8px hsl(262 83% 58% / 0.35);
+    --highlight: inset 0 1px 0 0 hsl(0 0% 100% / 0.6);
+  }
+
+  .dark {
+    /* deep neutral-navy base — less chroma at the darkest layer (Linear/Vercel look) */
+    --background: 222 24% 7%;
+    --foreground: 210 20% 98%;        /* ≈#FAFAFA — never pure white */
+
+    /* elevation comes from lightness, not shadow */
+    --card: 222 22% 11%;              /* +4% L over bg → cards lift */
+    --card-foreground: 210 20% 98%;
+    --popover: 222 24% 10%;
+    --popover-foreground: 210 20% 98%;
+
+    --primary: 262 90% 66%;
+    --primary-foreground: 0 0% 100%;
+    --brand-from: 262 90% 66%;
+    --brand-to: 333 75% 55%;
+
+    --secondary: 217 20% 16%;
+    --secondary-foreground: 210 20% 98%;
+
+    --muted: 217 20% 16%;
+    --muted-foreground: 215 16% 66%;  /* ≈#A1A1AA — secondary text tier */
+
+    --accent: 262 30% 22%;
+    --accent-foreground: 210 20% 98%;
+
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 65% 47%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 36 95% 52%;
+    --warning-foreground: 222 47% 9%;
+
+    --border: 217 19% 20%;            /* visible hairline */
+    --input: 217 19% 23%;
+    --ring: 262 90% 66%;
+
+    /* shadows stay (cast onto bg) but pair with the inset highlight below */
+    --shadow-xs: 0 1px 2px 0 hsl(0 0% 0% / 0.3);
+    --shadow-sm: 0 1px 3px 0 hsl(0 0% 0% / 0.4);
+    --shadow-md: 0 4px 14px -2px hsl(0 0% 0% / 0.5);
+    --shadow-lg: 0 14px 40px -10px hsl(0 0% 0% / 0.6);
+    --shadow-brand: 0 10px 30px -8px hsl(262 90% 50% / 0.5);
+    /* hairline top-highlight — the premium "lift" on raised surfaces */
+    --highlight: inset 0 1px 0 0 hsl(0 0% 100% / 0.05);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+    line-height: 1.6;                 /* roomier reading rhythm */
+    letter-spacing: -0.011em;         /* subtle tightening — modern SaaS feel */
+    text-rendering: optimizeLegibility;
+  }
+  /* headings: tighter tracking + balanced wrapping */
+  h1, h2, h3, h4 {
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+  /* tabular figures for money / points / metrics */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum';
+  }
+}
+
+/* Skeleton shimmer */
+.skeleton {
+  @apply relative overflow-hidden bg-muted;
+}
+.skeleton::after {
+  @apply absolute inset-0 -translate-x-full;
+  content: '';
+  background: linear-gradient(90deg, transparent, hsl(var(--foreground) / 0.06), transparent);
+  animation: shimmer 1.5s infinite;
+}
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Full-page auth-guard loader — ring spinner, themed via --muted / --primary */
+.app-loader {
+  width: 48px;
+  height: 48px;
+  border: 5px solid hsl(var(--muted));
+  border-bottom-color: hsl(var(--primary));
+  border-radius: 50%;
+  display: inline-block;
+  box-sizing: border-box;
+  animation: app-loader-spin 1s linear infinite;
+}
+@keyframes app-loader-spin {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* gentle floating motion for hero accents */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-float { animation: none; }
+}
+
+/* Hide scrollbar but keep functionality — opt-out escape hatch, matches the
+   sibling pcplastic_app project's pattern. Higher specificity than the
+   app-wide themed scrollbar below, so it wins wherever applied. */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* App-wide themed scrollbar — every scrollable area (page, sidebar nav,
+   dialogs, popovers, tables) gets the same thin, palette-matched scrollbar
+   instead of the browser's default gray/black one, same structure as
+   pcplastic_app's global scrollbar (there: `--border` thumb; here: `--primary`
+   per this app's own color call). */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--primary) / 0.5) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--primary) / 0.5);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(var(--primary) / 0.8);
+}
+
+/* ── Admin rich-text output ────────────────────────────────────────────────
+   HTML authored in the /admin/settings legal-page editor (react-quill-new) and
+   rendered by <RichText> on /pages/[slug]. This project has no typography
+   plugin, so the vertical rhythm for the injected tags lives here. Quill also
+   emits its own `ql-align-*` / `ql-indent-*` classes — handled at the bottom. */
+.rich-text {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.9375rem;
+  line-height: 1.75;
+}
+.rich-text > * + * {
+  margin-top: 1rem;
+}
+.rich-text h1,
+.rich-text h2,
+.rich-text h3,
+.rich-text h4 {
+  color: hsl(var(--foreground));
+  font-weight: 600;
+  line-height: 1.3;
+  margin-top: 2rem;
+}
+.rich-text h1 { font-size: 1.5rem; }
+.rich-text h2 { font-size: 1.25rem; }
+.rich-text h3 { font-size: 1.125rem; }
+.rich-text h4 { font-size: 1rem; }
+.rich-text strong { color: hsl(var(--foreground)); font-weight: 600; }
+.rich-text a {
+  color: hsl(var(--primary));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.rich-text ul,
+.rich-text ol {
+  padding-left: 1.5rem;
+}
+.rich-text ul { list-style: disc; }
+.rich-text ol { list-style: decimal; }
+.rich-text li + li { margin-top: 0.375rem; }
+.rich-text blockquote {
+  border-left: 3px solid hsl(var(--primary) / 0.5);
+  padding-left: 1rem;
+  font-style: italic;
+}
+.rich-text pre,
+.rich-text code {
+  background: hsl(var(--muted));
+  border-radius: var(--radius);
+  font-size: 0.875em;
+}
+.rich-text pre { overflow-x: auto; padding: 0.75rem 1rem; }
+.rich-text code { padding: 0.125rem 0.375rem; }
+.rich-text img { max-width: 100%; height: auto; border-radius: var(--radius); }
+.rich-text hr { border-color: hsl(var(--border)); }
+/* Tables can outgrow the column — scroll them, never the page. */
+.rich-text table {
+  display: block;
+  width: max-content;
+  min-width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+.rich-text th,
+.rich-text td {
+  border: 1px solid hsl(var(--border));
+  padding: 0.375rem 0.625rem;
+}
+.rich-text .ql-align-center { text-align: center; }
+.rich-text .ql-align-right { text-align: right; }
+.rich-text .ql-align-justify { text-align: justify; }
+.rich-text .ql-indent-1 { padding-left: 2rem; }
+.rich-text .ql-indent-2 { padding-left: 4rem; }
+.rich-text .ql-indent-3 { padding-left: 6rem; }
+
+/* ── Quill (snow theme) re-skin ────────────────────────────────────────────
+   The vendor stylesheet is imported by <RichTextEditor>; these overrides pull
+   its hardcoded grays onto this app's semantic tokens so it works in dark mode. */
+.ql-toolbar.ql-snow,
+.ql-container.ql-snow {
+  border-color: hsl(var(--border));
+}
+.ql-toolbar.ql-snow {
+  border-radius: var(--radius) var(--radius) 0 0;
+  background: hsl(var(--muted) / 0.4);
+}
+.ql-container.ql-snow {
+  border-radius: 0 0 var(--radius) var(--radius);
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: inherit;
+  font-size: 0.9375rem;
+}
+.ql-editor { min-height: 14rem; }
+.ql-editor.ql-blank::before {
+  color: hsl(var(--muted-foreground));
+  font-style: normal;
+}
+.ql-snow .ql-stroke { stroke: hsl(var(--foreground)); }
+.ql-snow .ql-fill { fill: hsl(var(--foreground)); }
+.ql-snow .ql-picker { color: hsl(var(--foreground)); }
+.ql-snow .ql-picker-options {
+  background: hsl(var(--popover));
+  border-color: hsl(var(--border));
+  color: hsl(var(--popover-foreground));
+}
+.ql-snow.ql-toolbar button:hover .ql-stroke,
+.ql-snow.ql-toolbar button.ql-active .ql-stroke {
+  stroke: hsl(var(--primary));
+}
+.ql-snow.ql-toolbar button:hover .ql-fill,
+.ql-snow.ql-toolbar button.ql-active .ql-fill {
+  fill: hsl(var(--primary));
+}
+.ql-snow .ql-tooltip {
+  background: hsl(var(--popover));
+  border-color: hsl(var(--border));
+  color: hsl(var(--popover-foreground));
+  box-shadow: var(--shadow-md);
+}
+.ql-snow .ql-tooltip input[type='text'] {
+  background: hsl(var(--background));
+  border-color: hsl(var(--input));
+  color: hsl(var(--foreground));
+}
+/* Quill positions the link tooltip with an inline `left` computed from the
+   caret — on phones that pushes it past the editor and gives the whole page a
+   horizontal scrollbar. Pin it to the editor's left edge and let it wrap. */
+@media (max-width: 640px) {
+  .ql-snow .ql-tooltip {
+    left: 0 !important;
+    max-width: 100%;
+    white-space: normal;
+  }
+  .ql-snow .ql-tooltip input[type='text'] {
+    width: 100%;
+  }
+}
+
+/* Native pinch-zoom off at the document level: allow one-finger panning, and
+   nothing else, so the browser never scales the page (fixed bottom nav and
+   chat FAB included). Chrome/Android honour this; iOS Safari additionally needs
+   the gesturestart block in pinch-zoom.tsx. Content zoom lives in <PinchZoom>. */
+html,
+body {
+  touch-action: pan-x pan-y;
+}

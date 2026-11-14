@@ -1,0 +1,16 @@
+{
+  "name": "pce-plugins",
+  "owner": {
+    "name": "AIAlphaTech",
+    "email": "aialphatechno@gmail.com"
+  },
+  "description": "Vendored official Claude Code plugins for the pcecommerce Next.js e-commerce app. Source: https://github.com/anthropics/claude-code/tree/main/plugins",
+  "version": "1.0.0",
+  "plugins": [
+    { "name": "code-review", "source": "./code-review", "description": "Automated PR code review, confidence-scored, multi-agent" },
+    { "name": "feature-dev", "source": "./feature-dev", "description": "Feature workflow: explore -> architect -> review agents" },
+    { "name": "commit-commands", "source": "./commit-commands", "description": "Git: /commit, /commit-push-pr, /clean_gone" },
+    { "name": "pr-review-toolkit", "source": "./pr-review-toolkit", "description": "Specialized PR review agents (tests, types, silent-failure, simplify)" },
+    { "name": "frontend-design", "source": "./frontend-design", "description": "Anti-generic UI/UX implementation skill (React / Next.js)" }
+  ]
+}

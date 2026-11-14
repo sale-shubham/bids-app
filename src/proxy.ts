@@ -1,0 +1,155 @@
+import { jwtVerify } from "jose";
+import { NextResponse, type NextRequest } from "next/server";
+import {
+  ADMIN_PREFIX,
+  AUCTIONEER_PREFIX,
+  AUTH_ROUTES,
+  BIDDER_PREFIXES,
+  MEMBER_PREFIXES,
+  homeFor,
+  safeNextPath,
+  startsWithAny,
+  type Role,
+} from "@/constants/routes";
+import { API_ORIGIN } from "@/constants/api";
+
+// Edge-side route gate. Verifies the SAME httpOnly access-token cookie the
+// backend (bids-api) sets on every login/refresh (`nb_at`). JWT_SECRET here must
+// equal the backend's JWT_SECRET (server-only env var, never NEXT_PUBLIC_ — see
+// .env.example). No token is ever read/written by client JS.
+//
+// Areas: public (no gate), member (any role), bidder (/my-bids),
+// auctioneer (/sell/*), admin (/admin/*). SUPER_ADMIN may enter every area.
+interface AccessPayload {
+  sub: string;
+  role: Role;
+  sid: string;
+}
+
+const ACCESS_COOKIE = "nb_at";
+const REFRESH_COOKIE = "nb_rt";
+const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+
+// Route tables live in src/constants/routes.ts — shared with AuthBootstrap and
+// api-client.ts's forceLogout() so the edge gate and the client gates can't
+// disagree about which paths are public.
+
+async function verifyAccess(token: string): Promise<AccessPayload | null> {
+  try {
+    const { payload } = await jwtVerify(token, secret, {
+      algorithms: ["HS256"],
+    });
+    return payload as unknown as AccessPayload;
+  } catch {
+    return null;
+  }
+}
+
+// Access token is short-lived (15 min) by design; the refresh cookie is the
+// real 30-day session. A merely-expired access cookie shouldn't bounce a
+// still-logged-in user to /login on every navigation, so mirror the backend's
+// own refresh call here (server-to-server fetch, not subject to browser CORS)
+// before giving up — same idea as the hospital project's middleware.ts.
+async function refreshAccess(
+  request: NextRequest,
+): Promise<{ payload: AccessPayload; setCookies: string[] } | null> {
+  const cookieHeader = request.headers.get("cookie");
+  if (!cookieHeader?.includes(`${REFRESH_COOKIE}=`)) return null;
+  try {
+    // Server-to-server call (Edge -> backend) — forward the incoming Cookie
+    // header ourselves (there's no browser cookie jar on this leg for
+    // `withCredentials` to draw on). The backend's Set-Cookie response
+    // headers are forwarded verbatim to the real browser below, untouched —
+    // we don't reconstruct them. The one value we need locally (to decide
+    // the redirect) is the new access token, read straight from the JSON
+    // body the backend already returns, same as the hospital project's
+    // proxy.ts does — no Set-Cookie string parsing needed for it.
+    const res = await fetch(`${API_ORIGIN}/auth/refresh`, {
+      method: "POST",
+      headers: { cookie: cookieHeader },
+    });
+    if (!res.ok) return null;
+    const setCookies = res.headers.getSetCookie?.() ?? [];
+    const body = (await res.json()) as { data?: { accessToken?: string } };
+    const newAccess = body?.data?.accessToken;
+    const payload = newAccess ? await verifyAccess(newAccess) : null;
+    return payload ? { payload, setCookies } : null;
+  } catch {
+    return null;
+  }
+}
+
+// Where to send someone who already has a session but hit /login: back to
+// the page they were bounced from (`?next=`, set below), else the role's
+// home. Members only, same rule as use-auth.ts's landingFor() — every
+// ?next= worth honoring is a member page, and an admin always lands on /admin.
+function destinationFor(request: NextRequest, role: Role) {
+  const next = role === "SUPER_ADMIN" ? null : safeNextPath(request.nextUrl.searchParams.get("next"));
+  return next ?? homeFor(role);
+}
+
+// The bounce itself — keep the attempted path (with its query) so the login
+// can return to it.
+function loginRedirect(request: NextRequest) {
+  const url = new URL("/login", request.url);
+  url.searchParams.set("next", request.nextUrl.pathname + request.nextUrl.search);
+  return NextResponse.redirect(url);
+}
+
+export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const isAuthRoute = startsWithAny(pathname, AUTH_ROUTES);
+  const isAdminRoute = startsWithAny(pathname, [ADMIN_PREFIX]);
+  const isAuctioneerRoute = startsWithAny(pathname, [AUCTIONEER_PREFIX]);
+  const isBidderRoute = startsWithAny(pathname, BIDDER_PREFIXES);
+  const isMemberRoute = startsWithAny(pathname, MEMBER_PREFIXES);
+  if (!isAuthRoute && !isAdminRoute && !isAuctioneerRoute && !isBidderRoute && !isMemberRoute)
+    return NextResponse.next();
+
+  const accessCookie = request.cookies.get(ACCESS_COOKIE)?.value;
+
+  let payload = accessCookie ? await verifyAccess(accessCookie) : null;
+  let refreshedCookies: string[] = [];
+
+  if (!payload) {
+    const refreshed = await refreshAccess(request);
+    if (refreshed) {
+      payload = refreshed.payload;
+      refreshedCookies = refreshed.setCookies;
+      console.log(
+        `[proxy] ${pathname} — refreshed access token, sub=${payload.sub} role=${payload.role}`,
+      );
+    } else {
+      console.log(
+        `[proxy] ${pathname} — refresh failed or no ${REFRESH_COOKIE} cookie`,
+      );
+    }
+  }
+
+  const role = payload?.role;
+  let response: NextResponse;
+
+  if (isAuthRoute && role) {
+    response = NextResponse.redirect(
+      new URL(destinationFor(request, role), request.url),
+    );
+  } else if (!isAuthRoute && !role) {
+    response = loginRedirect(request);
+  } else if (isAdminRoute && role !== "SUPER_ADMIN") {
+    response = NextResponse.redirect(new URL(homeFor(role!), request.url));
+  } else if (isAuctioneerRoute && role === "BIDDER") {
+    response = NextResponse.redirect(new URL(homeFor(role), request.url));
+  } else if (isBidderRoute && role === "AUCTIONEER") {
+    response = NextResponse.redirect(new URL(homeFor(role), request.url));
+  } else {
+    response = NextResponse.next();
+  }
+
+  for (const cookie of refreshedCookies)
+    response.headers.append("set-cookie", cookie);
+  return response;
+}
+
+export const config = {
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)"],
+};

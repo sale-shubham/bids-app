@@ -1,0 +1,12 @@
+protected_branches="^(main|dev)$"
+
+while read local_ref local_sha remote_ref remote_sha
+do
+    remote_branch=$(echo "$remote_ref" | sed 's/refs\/heads\///')
+    if [[ "$remote_branch" =~ $protected_branches ]]; then
+        echo "❌ Direct push to '$remote_branch' blocked. Create a PR instead."
+        exit 1
+    fi
+done
+
+exit 0
