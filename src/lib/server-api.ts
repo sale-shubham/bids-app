@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { API_ORIGIN } from '@/constants/api';
+import { serverApiOrigin } from '@/constants/api';
 
 // Server-side (RSC / generateMetadata) fetch helper. Browser code uses `api`
 // (axios) instead — never import this from a client component.
@@ -29,7 +29,7 @@ export async function serverFetch(
   path: string,
   { params, revalidate, notFoundOn404 = true }: Options = {},
 ): Promise<unknown> {
-  const url = new URL(`${API_ORIGIN}${path}`);
+  const url = new URL(`${serverApiOrigin()}${path}`);
   for (const [k, v] of Object.entries(params ?? {})) {
     if (v !== undefined && v !== '') url.searchParams.set(k, String(v));
   }

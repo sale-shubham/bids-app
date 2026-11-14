@@ -2,7 +2,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTheme } from 'next-themes';
 import { toast } from 'sonner';
 import {
@@ -39,6 +39,7 @@ import {
   applyUpdateAndReload,
   isIos,
   isStandalone,
+  fetchAppVersion,
   promptInstall,
 } from '@/lib/pwa';
 import { useClientSnapshot, useHydrated, useInstallAvailable } from '@/hooks/use-client-state';
@@ -263,6 +264,7 @@ function AppCard() {
   };
 
   const qc = useQueryClient();
+  const { data: appVersion } = useQuery({ queryKey: ['app-version'], queryFn: fetchAppVersion, staleTime: 60_000 });
   const [refreshing, setRefreshing] = React.useState(false);
   const handleClearCacheAndUpdate = async () => {
     setRefreshing(true);
@@ -363,7 +365,11 @@ function AppCard() {
           <SettingRow
             icon={RefreshCw}
             title="App version"
-            description="Clears cached data and reloads the latest version."
+            description={
+              appVersion
+                ? `Version ${appVersion.version}${appVersion.buildId ? ` (build ${appVersion.buildId})` : ''}. Clears cached data and reloads the latest version.`
+                : 'Clears cached data and reloads the latest version.'
+            }
           >
             <Button variant="outline" size="sm" className={ACTION} onClick={handleClearCacheAndUpdate} disabled={refreshing}>
               <RefreshCw className={refreshing ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} />

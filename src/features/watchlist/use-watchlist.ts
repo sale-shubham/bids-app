@@ -2,6 +2,7 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { apiErrorMessage } from '@/lib/api-client';
+import { recordEngagement } from '@/lib/engagement';
 import { nextPagedParam } from '@/lib/paged';
 import { useAuthStore } from '@/store/auth-store';
 import * as api from './watchlist.api';
@@ -60,6 +61,9 @@ export function useToggleWatch() {
         };
       });
       return { prev };
+    },
+    onSuccess: (_d, { watching }) => {
+      if (watching) recordEngagement('watch'); // unlocks the push soft prompt
     },
     onError: (e, _vars, ctx) => {
       if (ctx?.prev) qc.setQueryData(watchlistIdsKey, ctx.prev);

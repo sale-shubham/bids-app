@@ -1,19 +1,32 @@
-// The backend's absolute origin — one value for every caller: the browser's
-// axios instance (src/lib/api-client.ts), src/proxy.ts's server-side refresh,
-// the service worker (passed to /sw.js as `?api=`, see
-// src/components/common/sw-register.tsx) and that worker's CSP
-// (next.config.ts). There is no same-origin proxy in front of the API any
-// more (removed 2026-11-03), so the browser always calls it directly; see
-// readme/flows/api-connection.md.
+// The backend base URL the BROWSER uses - one value for every browser-side
+// caller: the axios instance (src/lib/api-client.ts) and the service worker
+// (passed to /sw.js as `?api=`, see src/components/common/sw-register.tsx).
 //
-// For the auth cookies to work the API host must share the app's registrable
-// domain on a deployed branch (dev.example.com → api.dev.example.com,
-// app.example.com → api.example.com), so `Domain=COOKIE_DOMAIN` cookies stay
-// first-party, and the API's CORS must allow the app origin with credentials.
+// Two deployment modes (readme/flows/deployment.md):
+//  1. Custom domain: NEXT_PUBLIC_API_URL is the API's absolute URL on the app's
+//     own site (https://api.example.com) so the auth cookies stay first-party,
+//     and the API's CORS allows the app origin with credentials.
+//  2. Same-origin proxy ("no custom domain"): NEXT_PUBLIC_API_URL=/api and the
+//     server env API_PROXY_TARGET holds the raw API Gateway URL; next.config.ts
+//     rewrites /api/:path* to it, so the browser only ever talks to the app origin.
 //
-// It lives here rather than being read from `process.env` at each call site so
-// the fallback is applied everywhere: `src/proxy.ts` once interpolated the
-// variable raw, which produced a request to "undefined/auth/refresh" whenever
-// it was missing from the deploy env. A trailing slash is dropped so
-// `${API_ORIGIN}/path` never doubles it.
-export const API_ORIGIN = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000').replace(/\/+$/, '');
+// A trailing slash is dropped so `${API_ORIGIN}/path` never doubles it. The
+// fallback keeps a build without the variable from crashing (next.config.ts warns).
+export const API_ORIGIN = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000').replace(/\/+$/, '');
+
+/** True in proxy mode: the browser base is a same-origin path such as `/api`. */
+export const API_IS_RELATIVE = API_ORIGIN.startsWith('/');
+
+/**
+ * The absolute backend origin for SERVER-side code (RSC fetches, src/proxy.ts),
+ * where a relative base cannot be fetched. Absolute NEXT_PUBLIC_API_URL wins;
+ * in proxy mode it is the server-only API_PROXY_TARGET. Never import into
+ * client code: API_PROXY_TARGET is not inlined into the browser bundle.
+ */
+export function serverApiOrigin(): string {
+  if (!API_IS_RELATIVE) return API_ORIGIN;
+  const target = process.env.API_PROXY_TARGET?.replace(/\/+$/, '');
+  if (target) return target;
+  console.warn('[api] NEXT_PUBLIC_API_URL is relative but API_PROXY_TARGET is not set - server requests fall back to http://localhost:4000');
+  return 'http://localhost:4000';
+}

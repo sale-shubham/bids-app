@@ -51,12 +51,21 @@ export const metadata: Metadata = {
     title: 'NobleBid',
     startupImage: appleStartupImages,
   },
-  // TODO: /icons/* and /apple-touch-icon.png are produced by scripts/generate-icons.cjs
-  // once the NobleBid logo is supplied. src/app/icon.svg is the interim favicon.
+  // Generated from the logo by scripts/generate-icons.cjs.
   icons: {
-    icon: '/icons/icon-192x192.png',
-    apple: '/apple-touch-icon.png',
+    icon: [
+      { url: '/favicon.ico', sizes: '48x48' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180' },
+      { url: '/icons/apple-touch-icon-152x152.png', sizes: '152x152' },
+      { url: '/icons/apple-touch-icon-167x167.png', sizes: '167x167' },
+    ],
   },
+  other: { 'mobile-web-app-capable': 'yes' },
 };
 
 export const viewport: Viewport = {

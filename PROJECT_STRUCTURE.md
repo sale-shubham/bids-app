@@ -3,7 +3,7 @@
 ```
 src/
   app/
-    layout.tsx, manifest.ts, globals.css, icon.svg, page.tsx   root shell + Home placeholder
+    layout.tsx, manifest.ts, globals.css, page.tsx   root shell + Home placeholder
     (auth)/login, (auth)/signup      guest-only auth pages (placeholders until Phase 1)
     (member)/                        any signed-in role: /watchlist, /profile, /notifications
     (bidder)/my-bids                 tabs Winning / Outbid / Won / Lost

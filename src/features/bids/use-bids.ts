@@ -1,6 +1,7 @@
 'use client';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { nextPagedParam } from '@/lib/paged';
+import { recordEngagement } from '@/lib/engagement';
 import * as api from './bids.api';
 import type { MyBidsTab } from './bids.types';
 
@@ -9,6 +10,7 @@ export function usePlaceBid(auctionId: string) {
   return useMutation({
     mutationFn: (amountPaise: number) => api.placeBid(auctionId, amountPaise),
     onSuccess: (data) => {
+      recordEngagement('bid'); // unlocks the push soft prompt + install banner
       // The response carries the fresh auction (server offset already synced in bids.api).
       if (data.auction) qc.setQueryData(['auction', auctionId], data.auction);
       void qc.invalidateQueries({ queryKey: ['auction-bids', auctionId] });
