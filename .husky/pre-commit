@@ -1,0 +1,13 @@
+protected_branches="^(main|dev)$"
+# `git branch --show-current` also works before the first commit (no HEAD yet);
+# `git rev-parse --abbrev-ref HEAD` fails there with exit 128.
+current_branch=$(git branch --show-current)
+
+if [[ "$current_branch" =~ $protected_branches ]]; then
+    echo "❌ Direct commit on '$current_branch' blocked. Create a feature branch."
+    exit 1
+fi
+
+npm ci --dry-run || { echo "package-lock.json out of sync — run 'npm install' and commit the updated lock file"; exit 1; }
+npm run lint
+npm run typecheck
