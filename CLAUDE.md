@@ -17,4 +17,4 @@ Next.js 16 App Router PWA (React 19, TypeScript, Tailwind 4, Radix/shadcn UI). S
 `npm run dev` (port 3002) · `npm run lint` · `npm run typecheck` · `npm run check`
 
 ## Status
-Phase 0 scaffold: shell + placeholder pages only. Real auth pages arrive in Phase 1. Icons/splash are not generated yet (run `scripts/generate-*` with the NobleBid logo).
+Phase 1: auth (login, signup + email OTP, forgot/reset password), profile, header user menu and route guards are real; /auctions, /watchlist, /my-bids, /sell/auctions, /admin are placeholders. Icons/splash are not generated yet (run `scripts/generate-*` with the NobleBid logo).

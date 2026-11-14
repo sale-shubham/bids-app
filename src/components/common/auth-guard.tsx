@@ -1,30 +1,32 @@
 "use client";
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore, type Role } from "@/store/auth-store";
 import { homeFor } from "@/constants/routes";
 
-type Allowed = Role;
-
-// Client-side route guard. Server components also gate, but this keeps SPA nav safe.
+// Client-side route guard. The edge gate (src/proxy.ts) already redirects on
+// page loads; this keeps SPA navigation and a mid-session logout safe.
 export function AuthGuard({
   allow,
   children,
 }: {
-  allow: Allowed[];
+  allow: Role[];
   children: React.ReactNode;
 }) {
   const { member, initialized } = useAuthStore();
   const router = useRouter();
+  const pathname = usePathname();
 
   React.useEffect(() => {
     if (!initialized) return;
     if (!member) {
-      router.replace("/login");
+      // Keep the page (path + query) so login can return to it.
+      const here = pathname + window.location.search;
+      router.replace(`/login?next=${encodeURIComponent(here)}`);
     } else if (!allow.includes(member.role)) {
       router.replace(homeFor(member.role));
     }
-  }, [initialized, member, allow, router]);
+  }, [initialized, member, allow, router, pathname]);
 
   if (!initialized || !member || !allow.includes(member.role)) {
     return (
