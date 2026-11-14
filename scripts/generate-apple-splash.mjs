@@ -15,7 +15,7 @@ const root = path.resolve(import.meta.dirname, '..');
 const OUT_DIR = path.join(root, 'public', 'splash');
 const ICON = path.join(root, 'public', 'icons', 'icon-512x512.png');
 // Same as the manifest's background_color, so iOS and Android launch alike.
-const BACKGROUND = '#0a0a0a';
+const BACKGROUND = '#ffffff';
 // Icon edge as a fraction of the screen's shorter side, and its corner radius
 // as a fraction of the icon edge (the iOS home-screen icon shape).
 const ICON_SCALE = 0.32;
