@@ -4,19 +4,24 @@ import type { Role } from "@/constants/routes";
 
 export type { Role };
 
-// Who is logged in. Login is email + password; email OTP is only used for
-// signup verification and forgot-password.
+// Who is logged in: the `GET /members/me` shape. Login / verify responses may
+// carry a subset; AuthBootstrap refetches `['me']` to fill in the rest.
 export interface AuthMember {
   id: string;
   email: string;
-  name: string | null;
+  name: string;
+  phone: string | null;
+  avatarUrl: string | null;
+  address: string | null;
   role: Role;
   isActive: boolean;
-  // Only on GET /members/me — "Member since" on the Profile page.
-  createdAt?: string;
-  // Only on GET /members/me — this account's device/session cap. The Profile
-  // page shows its Devices tab only when it is above 1.
-  deviceLimit?: number;
+  emailVerifiedAt: string | null;
+  unpaidCommissionPaise: number;
+  auctionsWon: number;
+  moneySpentPaise: number;
+  createdAt: string;
+  // This account's concurrent-session cap.
+  deviceLimit: number;
 }
 
 interface AuthState {
