@@ -80,6 +80,8 @@ export interface AuctionCard {
   /** Ended with a winner. */
   sold?: boolean;
   endedAt?: string | null;
+  /** Paid promotion is active: shown with a "Promoted" badge. */
+  promoted?: boolean;
 }
 
 export interface AuctionDetail extends AuctionCard {

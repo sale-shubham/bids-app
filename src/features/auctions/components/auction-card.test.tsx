@@ -101,3 +101,12 @@ describe('AuctionStatusBadge', () => {
     expect(screen.getByText(label)).toBeInTheDocument();
   });
 });
+
+describe('AuctionCard promoted badge', () => {
+  it('shows a Promoted badge only for promoted auctions', () => {
+    const { rerender } = render(<AuctionCard auction={card({ promoted: true })} />);
+    expect(screen.getByText('Promoted')).toBeInTheDocument();
+    rerender(<AuctionCard auction={card({ promoted: false })} />);
+    expect(screen.queryByText('Promoted')).not.toBeInTheDocument();
+  });
+});

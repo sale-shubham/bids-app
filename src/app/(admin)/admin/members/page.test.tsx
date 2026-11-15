@@ -35,6 +35,7 @@ const member: AdminMember = {
   twoFactorEnabled: true,
   payoutStatus: 'ACTIVE',
   activeStrikes: 0,
+  creditBalancePaise: 0,
 };
 const page = (m: AdminMember) => ({ items: [m], meta: { total: 1, page: 1, pageSize: 10, totalPages: 1 } });
 

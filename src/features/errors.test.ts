@@ -16,6 +16,8 @@ import { depositErrorMessage, depositRequiredMessage, isStaleDepositError } from
 import { isStaleOfferError, offerErrorMessage } from './second-chance/second-chance.errors';
 import { strikeErrorMessage } from './strikes/strikes.errors';
 import { isStaleRiskError, riskErrorMessage } from './risk/risk.errors';
+import { featuredErrorMessage } from './featured/featured.errors';
+import { memberErrorMessage } from './members/members.errors';
 import { followErrorMessage } from './follows/follows.errors';
 import { preferenceErrorMessage } from './notification-preferences/notification-preferences.errors';
 import { savedSearchErrorMessage } from './saved-searches/saved-searches.errors';
@@ -266,5 +268,25 @@ describe('engagement error codes', () => {
   });
   it('PHONE_NOT_VERIFIED points to the Security tab', () => {
     expect(preferenceErrorMessage(apiError('PHONE_NOT_VERIFIED', 'x', undefined, 409))).toMatch(/Security/);
+  });
+});
+
+describe('Phase G error codes', () => {
+  it('featured listings', () => {
+    expect(featuredErrorMessage(apiError('AUCTION_ENDED'))).toMatch(/already ended/);
+    expect(featuredErrorMessage(apiError('FEATURE_DISABLED'))).toMatch(/not available/);
+    expect(featuredErrorMessage(apiError('INSUFFICIENT_CREDITS'))).toMatch(/credit balance/);
+    expect(featuredErrorMessage(apiError('INVALID_SIGNATURE'))).toMatch(/could not verify the payment/);
+    expect(featuredErrorMessage(apiError('OTHER', 'Server text'))).toBe('Server text');
+  });
+  it('auctions map AUCTION_ENDED', () => {
+    expect(auctionErrorMessage(apiError('AUCTION_ENDED'))).toMatch(/already ended/);
+  });
+  it('commissions map INSUFFICIENT_CREDITS', () => {
+    expect(commissionErrorMessage(apiError('INSUFFICIENT_CREDITS'))).toMatch(/credit balance/);
+  });
+  it('members map INVALID_GSTIN', () => {
+    expect(memberErrorMessage(apiError('INVALID_GSTIN'))).toMatch(/GSTIN is not valid/);
+    expect(memberErrorMessage(apiError('OTHER', 'Server text'))).toBe('Server text');
   });
 });

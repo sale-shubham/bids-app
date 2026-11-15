@@ -72,6 +72,7 @@ function parseMember(raw: unknown): AdminMember {
     twoFactorEnabled: m.twoFactorEnabled === true,
     payoutStatus: strOrNull(m.payoutStatus),
     activeStrikes: num(m.activeStrikes),
+    creditBalancePaise: num(m.creditBalancePaise),
   };
 }
 
@@ -139,6 +140,10 @@ export function parseSettings(body: unknown): AdminSettings {
     checkoutMode: resolveCheckoutMode(d.checkoutMode),
     depositThresholdPaise: num(d.depositThresholdPaise, 0),
     depositRateBps: num(d.depositRateBps, 1000),
+    featuredEnabled: d.featuredEnabled === true,
+    featuredPrices: Object.fromEntries(
+      ['1', '3', '7'].map((k) => [k, num(obj(d.featuredPrices)[k], 0)]),
+    ),
   };
 }
 

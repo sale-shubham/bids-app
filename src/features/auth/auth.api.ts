@@ -16,6 +16,8 @@ export async function signup(input: {
   email: string;
   password: string;
   role: SignupRole;
+  /** Remembered `?ref=` code, when there is one. */
+  referralCode?: string;
 }): Promise<OtpSent> {
   const res = await api.post('/auth/signup', input);
   return res.data.data;

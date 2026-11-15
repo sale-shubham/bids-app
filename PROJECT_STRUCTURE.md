@@ -16,7 +16,7 @@ src/
     (bidder)/my-bids                 BIDDER only; tabs Winning / Outbid / Won / Lost
     (bidder)/purchases, purchases/[id]  BIDDER only; checkout list + detail (pay, confirm received, report a problem)
     (auctioneer)/                    AUCTIONEER only; /sell/* (auctions list, new, edit, bulk = CSV bulk upload, auctions/[id] = bids + result, commissions = pay via Razorpay, sales + sales/[id] = ship + payout amounts, payouts = payout account onboarding, analytics = seller analytics)
-    (admin)/                         SUPER_ADMIN only: /admin (dashboard + charts), /admin/members, auctions, commissions, payments, sales (release / refund), reviews, reports, risk (shill-bid queue), settings (incl. checkout mode + bid deposits), profile
+    (admin)/                         SUPER_ADMIN only: /admin (dashboard + charts), /admin/members, auctions, commissions, payments, sales (release / refund), invoices, reviews, reports, risk (shill-bid queue), settings (incl. checkout mode + bid deposits), profile
     sitemap.ts, robots.ts            SEO (app public pages + /auctions/sitemap, fail-soft); public/og-image.png = default OG image
   components/
     ui/                              shadcn/Radix primitives
@@ -47,6 +47,9 @@ src/
     strikes/                         strikes.api/parse/types/errors, use-strikes, components/{strike-banner,member-strikes-dialog}
     second-chance/                   second-chance.api/parse/types/errors, use-second-chance, components/{offer-bits,seller-offer-card,offers-section,offer-detail-page}
     risk/                            risk.api/parse/types/utils/errors, use-risk (admin queue)
+    featured/                        featured.api/types/errors, use-featured (promote, promoted), components/{promote-card,promoted-strip}
+    referrals/                       referral-code (?ref= capture), referrals.api/types, use-referrals, components/{refer-card,credit-ledger}
+    invoices/                        invoices.api/types/schema, use-invoices, components/invoices-card
     reports/                         reports.api/types/constants/schema/errors, use-reports, components/{report-dialog,report-button}
     questions/                       questions.api/types/schema/errors, use-questions, components/questions-section
     follows/                         follows.api/errors, use-follows, components/{follow-button,following-card}
@@ -71,7 +74,7 @@ src/
 public/                              sw.js, version.json, icons/, splash/, brand/logo-source.png, logo, favicons, og-image, avatar-default
 scripts/                             gen-version, generate-icons, generate-apple-splash, generate-notification-icons
 e2e/                                 Playwright suite (see e2e/README.md)
-docs/, readme/                       guides: methods/, ui/, theming/, flows/ (admin, auctions, auth, bidding, deployment, payments, push-notifications, pwa, seo, watchlist, websocket, reviews, questions, saved-searches, reports, deposits, strikes, risk, follows, notification-preferences, analytics)
+docs/, readme/                       guides: methods/, ui/, theming/, flows/ (admin, auctions, auth, bidding, deployment, payments, push-notifications, pwa, seo, watchlist, websocket, reviews, questions, saved-searches, reports, deposits, strikes, risk, follows, notification-preferences, analytics, featured, referrals, invoices)
 ```
 
 ### Phase F additions (categories)

@@ -11,6 +11,7 @@ import { signupSchema, type SignupFormValues } from '@/features/auth/auth.schema
 import { authErrorMessage } from '@/features/auth/auth.errors';
 import { useSignup } from '@/features/auth/use-auth';
 import { VerifyEmailStep } from '@/features/auth/components/verify-email-step';
+import { captureReferralCode, clearReferralCode, readReferralCode } from '@/features/referrals/referral-code';
 import { apiErrorCode } from '@/lib/api-client';
 import { legalPagePath } from '@/constants/legal';
 import { cn } from '@/lib/utils';
@@ -29,12 +30,25 @@ export default function SignupPage() {
   const [verify, setVerify] = React.useState<{ email: string; resendAfterSec: number } | null>(null);
   const { errors } = form.formState;
 
+  // `?ref=CODE` (from a friend's invite link) is remembered for 30 days and sent with signup.
+  React.useEffect(() => {
+    captureReferralCode(new URLSearchParams(window.location.search).get('ref'));
+  }, []);
+
   const onSubmit = (values: SignupFormValues) =>
     signup.mutate(
-      { name: values.name, email: values.email, password: values.password, role: values.role },
       {
-        onSuccess: (data) =>
-          setVerify({ email: data.email ?? values.email, resendAfterSec: data.resendAfterSec }),
+        name: values.name,
+        email: values.email,
+        password: values.password,
+        role: values.role,
+        ...(readReferralCode() ? { referralCode: readReferralCode()! } : {}),
+      },
+      {
+        onSuccess: (data) => {
+          clearReferralCode();
+          setVerify({ email: data.email ?? values.email, resendAfterSec: data.resendAfterSec });
+        },
         onError: (e) => {
           const message = authErrorMessage(e, 'Could not create your account');
           if (apiErrorCode(e) === 'EMAIL_TAKEN') form.setError('email', { message });

@@ -13,5 +13,7 @@ export async function fetchPublicSettings(): Promise<PublicSettings> {
     checkoutMode: resolveCheckoutMode(d.checkoutMode),
     depositThresholdPaise: typeof d.depositThresholdPaise === 'number' ? d.depositThresholdPaise : undefined,
     depositRateBps: typeof d.depositRateBps === 'number' ? d.depositRateBps : undefined,
+    featuredEnabled: d.featuredEnabled === true,
+    featuredPrices: d.featuredPrices && typeof d.featuredPrices === 'object' ? d.featuredPrices : {},
   };
 }

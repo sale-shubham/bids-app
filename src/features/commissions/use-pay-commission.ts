@@ -2,9 +2,10 @@
 import { apiErrorCode } from '@/lib/api-client';
 import { ME_KEY } from '@/features/members/use-members';
 import { useRazorpayPayment } from '@/features/payments/use-razorpay-payment';
-import { createCommissionCheckout, fetchCommission } from './commissions.api';
+import { CREDITS_KEY, REFERRAL_KEY } from '@/features/referrals/use-referrals';
+import { createCommissionCheckout, fetchCommission, payCommissionWithCredits } from './commissions.api';
 import { commissionErrorMessage } from './commissions.errors';
-import { useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 const INVALIDATE = [['commissions'], ME_KEY] as const;
 
@@ -15,7 +16,7 @@ const INVALIDATE = [['commissions'], ME_KEY] as const;
  */
 export function usePayCommission(confirmStub: () => Promise<boolean>) {
   const qc = useQueryClient();
-  return useRazorpayPayment({
+  const card = useRazorpayPayment({
     createCheckout: createCommissionCheckout,
     isAlreadyPaid: async (id) => (await fetchCommission(id)).status === 'PAID',
     invalidateKeys: INVALIDATE,
@@ -26,4 +27,11 @@ export function usePayCommission(confirmStub: () => Promise<boolean>) {
       if (apiErrorCode(err) === 'COMMISSION_NOT_DUE') for (const queryKey of INVALIDATE) void qc.invalidateQueries({ queryKey });
     },
   });
+  const credits = useMutation({
+    mutationFn: payCommissionWithCredits,
+    onSuccess: () => {
+      for (const queryKey of [...INVALIDATE, REFERRAL_KEY, CREDITS_KEY]) void qc.invalidateQueries({ queryKey });
+    },
+  });
+  return { ...card, payWithCredits: credits };
 }

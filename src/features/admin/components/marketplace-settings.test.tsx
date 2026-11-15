@@ -21,6 +21,8 @@ const settings = (mode: AdminSettings['checkoutMode']): AdminSettings => ({
   checkoutMode: mode,
   depositThresholdPaise: 10_000_000,
   depositRateBps: 1000,
+  featuredEnabled: true,
+  featuredPrices: { '1': 9900, '3': 24900, '7': 49900 },
 });
 
 beforeEach(() => {
@@ -82,5 +84,19 @@ describe('Bid deposit fields', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Save settings' }));
     expect(await screen.findByText('Must be between 1% and 50%')).toBeInTheDocument();
     expect(m.mutate).not.toHaveBeenCalled();
+  });
+});
+
+describe('Featured listing fields', () => {
+  it('shows the prices in rupees and saves edits as paise with the enabled flag', async () => {
+    render(<MarketplaceSettings />);
+    expect(screen.getByLabelText('3-day price (₹)')).toHaveValue('249');
+    const one = screen.getByLabelText('1-day price (₹)');
+    await userEvent.clear(one);
+    await userEvent.type(one, '120');
+    await userEvent.click(screen.getByLabelText('Sellers can pay to promote auctions'));
+    await userEvent.click(screen.getByRole('button', { name: 'Save settings' }));
+    await waitFor(() => expect(m.mutate).toHaveBeenCalled());
+    expect(m.mutate.mock.calls[0][0]).toMatchObject({ featuredEnabled: false, featuredPrices: { '1': 12000, '3': 24900, '7': 49900 } });
   });
 });

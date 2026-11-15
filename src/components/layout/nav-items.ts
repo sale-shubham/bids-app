@@ -1,5 +1,5 @@
 'use client';
-import { Archive, Banknote, BarChart3, FileUp, Flag, FolderTree, Gavel, Heart, Landmark, LayoutDashboard, LogIn, Receipt, Settings, ShieldAlert, ShoppingBag, Star, Store, Trophy, User, Users, Wallet } from 'lucide-react';
+import { Archive, Banknote, BarChart3, FileUp, Flag, FolderTree, Gavel, Heart, Landmark, LayoutDashboard, LogIn, FileText, Receipt, Settings, ShieldAlert, ShoppingBag, Star, Store, Trophy, User, Users, Wallet } from 'lucide-react';
 import { useAuthStore, type Role } from '@/store/auth-store';
 import type { NavItem } from './dashboard-shell';
 import type { MoreTab } from './mobile-bottom-nav';
@@ -34,6 +34,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: '/admin/commissions', label: 'Commissions', icon: Receipt },
   { href: '/admin/payments', label: 'Payments', icon: Wallet },
   { href: '/admin/sales', label: 'Sales', icon: ShoppingBag },
+  { href: '/admin/invoices', label: 'Invoices', icon: FileText },
   { href: '/admin/reviews', label: 'Reviews', icon: Star },
   { href: '/admin/reports', label: 'Reports', icon: Flag },
   { href: '/admin/risk', label: 'Risk', icon: ShieldAlert },

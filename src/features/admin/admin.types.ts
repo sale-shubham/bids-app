@@ -42,6 +42,8 @@ export interface AdminMember {
   payoutStatus: string | null;
   /** Unpaid-purchase strikes still in force (not removed, not expired). */
   activeStrikes: number;
+  /** Credit balance (referral rewards etc.) in paise. */
+  creditBalancePaise: number;
 }
 
 export type MemberStatusFilter = '' | 'active' | 'inactive';
@@ -86,6 +88,10 @@ export interface AdminSettings {
   depositThresholdPaise: number;
   /** Deposit as a share of the starting bid, in basis points (100 .. 5000). */
   depositRateBps: number;
+  /** Paid featured listings on? Optional so an older API response still parses. */
+  featuredEnabled?: boolean;
+  /** Price in paise per promotion length: keys `1`, `3`, `7`. */
+  featuredPrices?: Record<string, number>;
 }
 
 export type LegalSlug = 'terms-conditions' | 'privacy-policy' | 'refund-policy' | 'prohibited-items';

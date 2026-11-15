@@ -41,6 +41,10 @@ export async function fetchMembers(f: MemberFilters, page: number, pageSize: num
 export const updateMember = (id: string, body: { isActive?: boolean; role?: Role; verified?: boolean }) =>
   api.patch(`/admin/members/${id}`, body).then((r) => r.data.data);
 
+/** Adds (positive) or removes (negative) credits; `note` is shown to the member in their ledger. */
+export const adjustCredits = (id: string, body: { amountPaise: number; note: string }) =>
+  api.post(`/admin/members/${encodeURIComponent(id)}/credits`, body).then((r) => r.data.data);
+
 export async function fetchAdminAuctions(
   f: { status: string; q: string },
   page: number,

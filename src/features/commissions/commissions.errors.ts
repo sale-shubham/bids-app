@@ -6,6 +6,7 @@ const MESSAGES: Record<string, string> = {
   ORDER_NOT_FOUND: 'We could not find this payment order. Please try again.',
   INVALID_SIGNATURE: 'We could not verify the payment. If money was deducted, it will be confirmed shortly.',
   PAYMENT_NOT_CAPTURED: 'Your payment has not been captured yet. It will be confirmed shortly.',
+  INSUFFICIENT_CREDITS: 'Your credit balance does not cover this commission.',
   AMOUNT_MISMATCH: 'The amount paid does not match the commission. Please contact support.',
 };
 

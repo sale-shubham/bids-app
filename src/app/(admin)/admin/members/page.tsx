@@ -1,7 +1,7 @@
 'use client';
 import * as React from 'react';
 import { Suspense } from 'react';
-import { BadgeCheck, ShieldAlert, ShieldCheck, UserCog, Users } from 'lucide-react';
+import { BadgeCheck, Coins, ShieldAlert, ShieldCheck, UserCog, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { SearchInput } from '@/components/common/search-input';
 import { StatusBadge } from '@/components/common/status-badge';
+import { AdjustCreditsDialog } from '@/features/admin/components/adjust-credits-dialog';
 import { AdminList, PageHeader } from '@/features/admin/components/admin-list';
 import { useAdminMembers, useUpdateMember } from '@/features/admin/use-admin';
 import { useUrlState } from '@/features/admin/use-url-state';
@@ -69,6 +70,7 @@ function MembersView() {
   const [statusTarget, setStatusTarget] = React.useState<AdminMember | null>(null);
   const [verifyTarget, setVerifyTarget] = React.useState<AdminMember | null>(null);
   const [strikesTarget, setStrikesTarget] = React.useState<AdminMember | null>(null);
+  const [creditsTarget, setCreditsTarget] = React.useState<AdminMember | null>(null);
   const [roleTarget, setRoleTarget] = React.useState<AdminMember | null>(null);
   const [newRole, setNewRole] = React.useState<Role>('BIDDER');
 
@@ -137,6 +139,9 @@ function MembersView() {
         <Button size="sm" variant="outline" onClick={() => setStrikesTarget(m)}>
           <ShieldAlert className="h-4 w-4" /> Strikes{m.activeStrikes > 0 ? ` (${m.activeStrikes})` : ''}
         </Button>
+        <Button size="sm" variant="outline" onClick={() => setCreditsTarget(m)}>
+          <Coins className="h-4 w-4" /> Adjust credits
+        </Button>
         {(m.verified || m.phoneVerifiedAt) && (
           <Button size="sm" variant="outline" onClick={() => setVerifyTarget(m)}>
             <ShieldCheck className="h-4 w-4" /> {m.verified ? 'Revoke verification' : 'Restore verification'}
@@ -199,6 +204,7 @@ function MembersView() {
                 <TableHead>Status</TableHead>
                 <TableHead>Joined</TableHead>
                 <TableHead className="text-right">Unpaid comm.</TableHead>
+                <TableHead className="text-right">Credits</TableHead>
                 <TableHead className="text-right">Wins</TableHead>
                 <TableHead className="text-right">Spent</TableHead>
                 <TableHead>Actions</TableHead>
@@ -225,6 +231,7 @@ function MembersView() {
                   </TableCell>
                   <TableCell className="whitespace-nowrap">{formatDate(m.createdAt)}</TableCell>
                   <TableCell className="text-right tnum">{formatINR(m.unpaidCommissionPaise)}</TableCell>
+                  <TableCell className="text-right tnum">{formatINR(m.creditBalancePaise)}</TableCell>
                   <TableCell className="text-right tnum">{m.auctionsWon}</TableCell>
                   <TableCell className="text-right tnum">{formatINR(m.moneySpentPaise)}</TableCell>
                   <TableCell>{actions(m)}</TableCell>
@@ -251,7 +258,11 @@ function MembersView() {
                 <span className="text-muted-foreground">Joined {formatDate(m.createdAt)}</span>
               </div>
               <TrustBadges m={m} />
-              <dl className="grid grid-cols-3 gap-2 text-sm">
+              <dl className="grid grid-cols-4 gap-2 text-sm">
+                <div>
+                  <dt className="text-xs text-muted-foreground">Credits</dt>
+                  <dd className="tnum">{formatINR(m.creditBalancePaise)}</dd>
+                </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">Unpaid</dt>
                   <dd className="tnum">{formatINR(m.unpaidCommissionPaise)}</dd>
@@ -271,6 +282,7 @@ function MembersView() {
         )}
       />
 
+      <AdjustCreditsDialog member={creditsTarget} onClose={() => setCreditsTarget(null)} />
       <MemberStrikesDialog member={strikesTarget} onClose={() => setStrikesTarget(null)} />
 
       <ConfirmDialog

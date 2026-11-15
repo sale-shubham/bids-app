@@ -2,11 +2,13 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { Loader2, Receipt } from 'lucide-react';
+import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { EmptyState } from '@/components/common/empty-state';
 import { InfiniteScroll } from '@/components/common/infinite-scroll';
 import { StatusBadge } from '@/components/common/status-badge';
@@ -14,6 +16,8 @@ import { CoverImage } from '@/features/auctions/components/auction-card';
 import { useCommissions, useCommissionSummary } from '@/features/commissions/use-commissions';
 import { useStubPaymentConfirm } from '@/features/payments/use-stub-payment-confirm';
 import { usePayCommission } from '@/features/commissions/use-pay-commission';
+import { commissionErrorMessage } from '@/features/commissions/commissions.errors';
+import { useCreditBalance } from '@/features/referrals/use-referrals';
 import type { CommissionDTO, CommissionTab } from '@/features/commissions/commissions.types';
 import { formatDate, formatINR } from '@/lib/utils';
 
@@ -35,13 +39,17 @@ function CommissionRow({
   c,
   paying,
   disabled,
+  balancePaise,
   onPay,
 }: {
   c: CommissionDTO;
   paying: boolean;
   disabled: boolean;
-  onPay: () => void;
+  balancePaise: number;
+  onPay: (useCredits: boolean) => void;
 }) {
+  const [useCredits, setUseCredits] = React.useState(false);
+  const canUseCredits = c.status === 'DUE' && balancePaise >= c.amountPaise;
   const dateLabel = c.status === 'PAID' ? 'Paid on' : 'Due date';
   const dateValue = c.status === 'PAID' ? c.paidAt : c.dueAt;
   return (
@@ -74,8 +82,14 @@ function CommissionRow({
         <div className="flex flex-wrap items-center gap-2 @lg/content:justify-end">
           {c.status === 'DUE' && c.isOverdue && <Badge variant="destructive">Overdue</Badge>}
           <StatusBadge status={c.status} />
+          {canUseCredits && (
+            <label className="flex items-center gap-2 text-xs">
+              <input type="checkbox" className="h-4 w-4 accent-primary" checked={useCredits} onChange={(e) => setUseCredits(e.target.checked)} />
+              Pay with credits (balance {formatINR(balancePaise)})
+            </label>
+          )}
           {c.status === 'DUE' && (
-            <Button size="sm" onClick={onPay} disabled={disabled}>
+            <Button size="sm" onClick={() => onPay(canUseCredits && useCredits)} disabled={disabled}>
               {paying && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
               Pay {formatINR(c.amountPaise)}
             </Button>
@@ -93,7 +107,18 @@ export default function SellCommissionsPage() {
   const items = list.data?.pages.flatMap((p) => p.items) ?? [];
 
   const { confirmStub, stubDialog } = useStubPaymentConfirm();
-  const { pay, payingId } = usePayCommission(confirmStub);
+  const { pay, payingId, payWithCredits } = usePayCommission(confirmStub);
+  const balance = useCreditBalance();
+  const [creditTarget, setCreditTarget] = React.useState<CommissionDTO | null>(null);
+
+  const confirmCredits = () => {
+    if (!creditTarget) return;
+    payWithCredits.mutate(creditTarget.id, {
+      onSuccess: () => toast.success('Commission paid with credits.'),
+      onError: (e) => toast.error(commissionErrorMessage(e)),
+      onSettled: () => setCreditTarget(null),
+    });
+  };
 
   const s = summary.data;
 
@@ -164,8 +189,9 @@ export default function SellCommissionsPage() {
               key={c.id}
               c={c}
               paying={payingId === c.id}
-              disabled={payingId !== null}
-              onPay={() => void pay(c.id)}
+              disabled={payingId !== null || payWithCredits.isPending}
+              balancePaise={balance}
+              onPay={(useCredits) => (useCredits ? setCreditTarget(c) : void pay(c.id))}
             />
           ))}
           <InfiniteScroll
@@ -176,6 +202,15 @@ export default function SellCommissionsPage() {
         </div>
       )}
 
+      <ConfirmDialog
+        open={!!creditTarget}
+        onOpenChange={(o) => !o && setCreditTarget(null)}
+        title="Pay with credits?"
+        description={creditTarget ? `${formatINR(creditTarget.amountPaise)} will be taken from your credit balance to pay this commission.` : undefined}
+        confirmLabel="Pay with credits"
+        loading={payWithCredits.isPending}
+        onConfirm={confirmCredits}
+      />
       {stubDialog}
     </div>
   );
