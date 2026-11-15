@@ -1,5 +1,5 @@
 'use client';
-import { Gavel, Heart, LayoutDashboard, LogIn, Receipt, Settings, Store, Trophy, User, Users, Wallet } from 'lucide-react';
+import { Gavel, Heart, LayoutDashboard, LogIn, Receipt, Settings, Star, Store, Trophy, User, Users, Wallet } from 'lucide-react';
 import { useAuthStore, type Role } from '@/store/auth-store';
 import type { NavItem } from './dashboard-shell';
 import type { MoreTab } from './mobile-bottom-nav';
@@ -26,6 +26,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: '/admin/auctions', label: 'Auctions', icon: Gavel },
   { href: '/admin/commissions', label: 'Commissions', icon: Receipt },
   { href: '/admin/payments', label: 'Payments', icon: Wallet },
+  { href: '/admin/reviews', label: 'Reviews', icon: Star },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
   { href: '/admin/profile', label: 'Profile', icon: User, pinBottomDesktop: true, hideMobile: true },
 ];

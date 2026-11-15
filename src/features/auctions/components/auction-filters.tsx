@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { SaveSearchButton } from '@/features/saved-searches/components/save-search-button';
 import { BROWSE_STATUSES, DEFAULT_FILTERS, SORT_OPTIONS, filtersToSearchParams, parseFilters } from '../auctions.filters';
 import { useCategories } from '../use-auctions';
 import type { AuctionFilters, AuctionSort, BrowseStatus } from '../auctions.types';
@@ -115,11 +116,14 @@ export function AuctionFilterBar() {
         </div>
       </div>
 
-      {dirty && (
-        <Button type="button" variant="ghost" size="sm" onClick={() => update({ ...DEFAULT_FILTERS, status: filters.status, sort: filters.sort, minPrice: undefined, maxPrice: undefined })}>
-          Clear filters
-        </Button>
-      )}
+      <div className="flex flex-wrap items-center gap-2">
+        <SaveSearchButton filters={filters} />
+        {dirty && (
+          <Button type="button" variant="ghost" size="sm" onClick={() => update({ ...DEFAULT_FILTERS, status: filters.status, sort: filters.sort, minPrice: undefined, maxPrice: undefined })}>
+            Clear filters
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

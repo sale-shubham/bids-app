@@ -6,6 +6,9 @@ import { authErrorMessage } from './auth/auth.errors';
 import { auctionErrorMessage } from './auctions/auctions.errors';
 import { bidErrorMessage, buyNowErrorMessage, minBidFromError } from './bids/bids.errors';
 import { commissionErrorMessage } from './commissions/commissions.errors';
+import { questionErrorMessage } from './questions/questions.errors';
+import { reviewErrorMessage } from './reviews/reviews.errors';
+import { savedSearchErrorMessage } from './saved-searches/saved-searches.errors';
 
 function apiError(code?: string, message = 'Server says no', details?: unknown, status = 400) {
   const err = new AxiosError('Request failed');
@@ -45,6 +48,26 @@ describe('formatINR', () => {
   it('shows two decimals when there are paise', () => {
     expect(formatINR(125050)).toBe('₹1,250.50');
     expect(formatINR(5)).toBe('₹0.05');
+  });
+});
+
+describe('Phase B error maps', () => {
+  it('reviews', () => {
+    expect(reviewErrorMessage(apiError('REVIEW_NOT_ALLOWED'))).toMatch(/winner/);
+    expect(reviewErrorMessage(apiError('ALREADY_REVIEWED'))).toMatch(/already rated/);
+    expect(reviewErrorMessage(apiError('ALREADY_REPLIED'))).toMatch(/already replied/);
+    expect(reviewErrorMessage(apiError('OTHER', 'Server text'))).toBe('Server text');
+    expect(reviewErrorMessage(42)).toBe('Something went wrong');
+  });
+  it('questions', () => {
+    expect(questionErrorMessage(apiError('QUESTION_NOT_ALLOWED'))).toMatch(/cannot ask/);
+    expect(questionErrorMessage(apiError('ALREADY_ANSWERED'))).toMatch(/already been answered/);
+    expect(questionErrorMessage(apiError('RATE_LIMITED'))).toMatch(/too many questions/);
+    expect(questionErrorMessage(apiError(undefined, 'Slow down', undefined, 429))).toBe('Slow down');
+  });
+  it('saved searches', () => {
+    expect(savedSearchErrorMessage(apiError('SAVED_SEARCH_LIMIT'))).toMatch(/at most 10/);
+    expect(savedSearchErrorMessage(apiError('OTHER', 'Server text'))).toBe('Server text');
   });
 });
 

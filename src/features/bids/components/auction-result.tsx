@@ -6,6 +6,8 @@ import { useAuthStore } from '@/store/auth-store';
 import { formatINR } from '@/lib/utils';
 import type { AuctionDetail } from '@/features/auctions/auctions.types';
 import type { AuctionContact } from '../bids.types';
+import { RateSellerButton } from '@/features/reviews/components/rate-seller-button';
+import { StarDisplay } from '@/features/reviews/components/star-rating';
 
 function ContactCard({ title, contact }: { title: string; contact: AuctionContact }) {
   return (
@@ -74,6 +76,24 @@ export function AuctionResult({ auction }: { auction: AuctionDetail }) {
             <p className="text-sm text-muted-foreground">The seller&apos;s contact details will appear here shortly.</p>
           )}
         </>
+      )}
+
+      {sold && isWinner && auction.canReview && !auction.review && (
+        <RateSellerButton auctionId={auction.id} sellerName={auction.seller.name} />
+      )}
+
+      {sold && auction.review && (
+        <div className="space-y-1.5 rounded-lg border bg-background p-3 text-sm">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{isWinner ? 'Your rating' : 'Buyer rating'}</p>
+          <StarDisplay rating={auction.review.rating} />
+          {auction.review.comment && <p className="whitespace-pre-line wrap-break-word">{auction.review.comment}</p>}
+          {auction.review.sellerReply && (
+            <p className="whitespace-pre-line wrap-break-word rounded-md bg-muted/60 p-2">
+              <span className="block text-xs font-medium text-muted-foreground">Seller reply</span>
+              {auction.review.sellerReply}
+            </p>
+          )}
+        </div>
       )}
 
       {sold && isSeller && (

@@ -25,7 +25,8 @@ export const BIDDER_PREFIXES = ['/my-bids'];
 // Auctioneer area (AUCTIONEER only).
 export const AUCTIONEER_PREFIX = '/sell';
 
-// Admin area: SUPER_ADMIN only.
+// Admin area: SUPER_ADMIN only (/admin, /admin/members, /admin/auctions, /admin/commissions,
+// /admin/payments, /admin/reviews, /admin/settings, /admin/profile).
 export const ADMIN_PREFIX = '/admin';
 
 // Exact-match, or prefix followed by `/`.

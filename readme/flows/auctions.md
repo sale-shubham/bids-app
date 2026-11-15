@@ -8,12 +8,14 @@ There is no Home page in the app: the landing page, About, How it works and Cont
 ## Browse (`/auctions`)
 - Server-rendered first page + `generateMetadata`; then client `useInfiniteQuery` with key `['auctions', filters]` and `InfiniteScroll`. A client `RecentlyViewed` strip (device-local, see below) sits under the list.
 - Filters live in the URL (`auctions.filters.ts`: `parseFilters` / `filtersToParams`, defaults omitted so URLs stay clean): `status` (`live` default, `upcoming`, `ended`), `q` (max 100 chars), `category`, `condition` (`NEW` / `USED`), `minPrice` / `maxPrice` in rupees, `sort` (`endingSoon` default, `newest`, `priceAsc`, `priceDesc`, `mostBids`). Unknown values fall back to defaults.
+- `SaveSearchButton` (BIDDERs, when q / category / condition / price is set) next to "Clear filters" saves the filters as an alert (`saved-searches.md`).
 - Categories: `useCategories()` (`['auctions', 'categories']`, stale 5 min).
 
 ## Detail (`/auctions/[id]`)
 - Server component with `generateMetadata` (title, description, OG image) via `getAuctionDetailServer()`; the client `AuctionDetailView` then keeps `['auction', id]` in the TanStack Query cache, and `features/live` updates it from WebSocket frames (`websocket.md`).
-- Parts: `AuctionGallery` (+ `ImageLightbox`), `Countdown`, bid panel and history (`bidding.md`), `WatchButton` (`watchlist.md`), `ShareButtons`.
+- Parts: `AuctionGallery` (+ `ImageLightbox`), `Countdown`, bid panel and history (`bidding.md`), `WatchButton` (`watchlist.md`), `ShareButtons`, the seller card with `RatingSummary` ("4.6 (12)" or "No ratings yet", `reviews.md`) and `QuestionsSection` under the description (`questions.md`).
 - `ShareButtons`: Copy link (clipboard), WhatsApp (`wa.me/?text=`), and the native share sheet when `navigator.share` exists.
+- The seller page (`/sellers/[id]`) shows the rating summary in the header and a paginated reviews list with seller replies (`reviews.md`).
 - Owner tools on the detail page (shown to the auction's own seller only; SUPER_ADMIN manages auctions under `/admin/auctions`): edit / delete only while `bidCount === 0` and the auction is not ENDED / CANCELLED. Delete uses `<ConfirmDialog>`.
 - Recently viewed: each visit adds an `AuctionCard` snapshot to `recently-viewed-store` (shown by `RecentlyViewed` on `/auctions`; zustand `persist`, localStorage key `nb-recently-viewed`, newest first, max 10, `skipHydration` + `rehydrate()` after mount to avoid a hydration mismatch; storage errors fall back to memory).
 
