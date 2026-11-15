@@ -2,12 +2,9 @@ import { serverGet } from '@/lib/server-api';
 
 // Public (unauthenticated) settings + legal copy, for server components.
 
-export interface PublicSettings {
-  commissionRateBps: number;
-  minIncrementPaise: number;
-  antiSnipingMinutes: number;
-  categories: string[];
-}
+import type { PublicSettings } from './settings.types';
+
+export type { PublicSettings };
 
 export interface LegalDoc {
   slug: string;

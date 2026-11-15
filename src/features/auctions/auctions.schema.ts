@@ -1,4 +1,6 @@
 import { z } from '@/lib/zod';
+import { DEFAULT_MAX_PRICE_PAISE } from '@/features/settings/settings.utils';
+import { formatINR } from '@/lib/utils';
 import type { AuctionDetail, AuctionWritePayload } from './auctions.types';
 
 // Mirrors bids-api's create/update rules. Rupee inputs are strings in the form
@@ -22,13 +24,15 @@ export function paiseToRupees(paise: number): string {
   return String(paise / 100);
 }
 
+// `min`/`max` are in PAISE; the input is a rupee string.
+const tooHigh = (label: string, max: number) => `${label} can be at most ${formatINR(max)}`;
 const money = (min: number, max: number, label: string) =>
   z
     .string()
     .trim()
     .refine((v) => v !== '' && Number.isFinite(Number(v)), `${label} is required`)
     .refine((v) => !Number.isFinite(Number(v)) || Number(v) * 100 >= min, `${label} must be at least ₹${min / 100}`)
-    .refine((v) => !Number.isFinite(Number(v)) || Number(v) * 100 <= max, `${label} is too large`);
+    .refine((v) => !Number.isFinite(Number(v)) || Math.round(Number(v) * 100) <= max, tooHigh(label, max));
 
 /** Combine "YYYY-MM-DD" + "HH:mm" (local time) into a Date; null when incomplete. */
 export function combineDateTime(date: string, time: string): Date | null {
@@ -64,8 +68,10 @@ export function resolveWindow(v: Pick<AuctionFormValues, 'startNow' | 'startDate
 /**
  * `originalStart`: when editing, an unchanged start time (even if already in the
  * past because the auction is live) is allowed.
+ * `maxPricePaise`: platform maximum price (public settings); caps the starting
+ * bid and the minimum increment.
  */
-export function makeAuctionFormSchema(originalStart?: string) {
+export function makeAuctionFormSchema(originalStart?: string, maxPricePaise: number = DEFAULT_MAX_PRICE_PAISE) {
   return z
     .object({
       title: z.string().trim().min(5, 'At least 5 characters').max(120, 'At most 120 characters'),
@@ -77,11 +83,12 @@ export function makeAuctionFormSchema(originalStart?: string) {
       category: z.string().trim().min(1, 'Choose a category').max(60),
       condition: z.enum(['NEW', 'USED'], { error: 'Choose a condition' }),
       images: z.array(z.string()).min(1, 'Add at least one image').max(8, 'At most 8 images'),
-      startingBid: money(100, 2_000_000_000, 'Starting bid'),
+      startingBid: money(100, maxPricePaise, 'Starting bid'),
       minIncrement: z
         .string()
         .trim()
-        .refine((v) => v === '' || (Number.isFinite(Number(v)) && Number(v) * 100 >= 100), 'Minimum increment is ₹1'),
+        .refine((v) => v === '' || (Number.isFinite(Number(v)) && Number(v) * 100 >= 100), 'Minimum increment is ₹1')
+        .refine((v) => v === '' || !Number.isFinite(Number(v)) || Math.round(Number(v) * 100) <= maxPricePaise, tooHigh('Minimum increment', maxPricePaise)),
       startNow: z.boolean(),
       startDate: z.string(),
       startTime: z.string(),

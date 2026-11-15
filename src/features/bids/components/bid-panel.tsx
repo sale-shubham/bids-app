@@ -17,6 +17,7 @@ import { useAuthStore } from '@/store/auth-store';
 import type { AuctionDetail } from '@/features/auctions/auctions.types';
 import { bidErrorMessage } from '../bids.errors';
 import { basePricePaise, ceilRupees, minNextBidPaise, rupeesToPaise } from '../bids.utils';
+import { useMaxPricePaise } from '@/features/settings/use-settings';
 import { usePulseKey } from '@/features/live/use-pulse-key';
 import { usePlaceBid } from '../use-bids';
 import { AuctionResult } from './auction-result';
@@ -103,6 +104,7 @@ function Note({ children }: { children: React.ReactNode }) {
 function BidControls({ auction, minNext }: { auction: AuctionDetail; minNext: number }) {
   const qc = useQueryClient();
   const place = usePlaceBid(auction.id);
+  const maxPricePaise = useMaxPricePaise();
   const [custom, setCustom] = React.useState('');
   const [customError, setCustomError] = React.useState<string | null>(null);
   const [pending, setPending] = React.useState<number | null>(null);
@@ -117,6 +119,7 @@ function BidControls({ auction, minNext }: { auction: AuctionDetail; minNext: nu
     const paise = rupeesToPaise(custom);
     if (paise === null) return setCustomError('Enter a whole rupee amount.');
     if (paise < minNext) return setCustomError(`Bid at least ${formatINR(minNext)}.`);
+    if (paise > maxPricePaise) return setCustomError(`Bid can be at most ${formatINR(maxPricePaise)}.`);
     setCustomError(null);
     setPending(paise);
   };

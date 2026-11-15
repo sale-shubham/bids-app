@@ -68,6 +68,8 @@ export interface AdminSettings {
   minIncrementPaise: number;
   antiSnipingMinutes: number;
   categories: string[];
+  /** Platform maximum price in paise (100_000 .. 1_000_000_000_000). */
+  maxPricePaise: number;
 }
 
 export type LegalSlug = 'terms-conditions' | 'privacy-policy' | 'refund-policy';

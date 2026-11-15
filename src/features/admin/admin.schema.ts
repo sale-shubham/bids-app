@@ -1,4 +1,5 @@
 import { z } from '@/lib/zod';
+import { formatINR } from '@/lib/utils';
 import type { AdminSettings } from './admin.types';
 
 // Form-side rules for /admin/settings; mirror bids-api. Commission is shown as a
@@ -15,6 +16,10 @@ const numeric = (label: string) =>
     .trim()
     .refine((v) => v !== '' && Number.isFinite(Number(v)), `${label} is required`);
 
+/** Platform maximum price bounds (rupees): ₹1,000 .. ₹1,000 crore (matches bids-api). */
+export const MAX_PRICE_MIN_RUPEES = 1_000;
+export const MAX_PRICE_MAX_RUPEES = 10_000_000_000;
+
 export const categoryNameSchema = z.string().trim().min(2, 'At least 2 characters').max(40, 'At most 40 characters');
 
 export const marketplaceSchema = z.object({
@@ -27,6 +32,10 @@ export const marketplaceSchema = z.object({
   antiSnipingMinutes: numeric('Anti-sniping window')
     .refine((v) => Number.isInteger(Number(v)), 'Whole minutes only')
     .refine((v) => Number(v) >= 0 && Number(v) <= 30, 'Must be between 0 and 30 minutes'),
+  maxPriceRupees: numeric('Maximum price')
+    .refine((v) => /^\d+(\.\d{1,2})?$/.test(v), 'At most 2 decimal places')
+    .refine((v) => Number(v) >= MAX_PRICE_MIN_RUPEES, `Must be at least ${formatINR(MAX_PRICE_MIN_RUPEES * 100)}`)
+    .refine((v) => Number(v) <= MAX_PRICE_MAX_RUPEES, `Must be at most ${formatINR(MAX_PRICE_MAX_RUPEES * 100)}`),
   categories: z
     .array(categoryNameSchema)
     .min(1, 'Add at least one category')
@@ -41,6 +50,7 @@ export function settingsToForm(s: AdminSettings): MarketplaceValues {
     commissionPercent: bpsToPercent(s.commissionRateBps),
     minIncrementRupees: paiseToRupeesStr(s.minIncrementPaise),
     antiSnipingMinutes: String(s.antiSnipingMinutes),
+    maxPriceRupees: paiseToRupeesStr(s.maxPricePaise),
     categories: s.categories,
   };
 }
@@ -50,6 +60,7 @@ export function formToSettings(v: MarketplaceValues): AdminSettings {
     commissionRateBps: percentToBps(v.commissionPercent),
     minIncrementPaise: rupeesToPaiseNum(v.minIncrementRupees),
     antiSnipingMinutes: Number(v.antiSnipingMinutes),
+    maxPricePaise: rupeesToPaiseNum(v.maxPriceRupees),
     categories: v.categories.map((c) => c.trim()),
   };
 }

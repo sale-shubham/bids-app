@@ -10,7 +10,7 @@ SUPER_ADMIN only. Routes live in `src/app/(admin)/admin/**`, guarded by `AuthGua
 | `/admin/commissions` | Status tabs; waive due commissions (reason field is a client-side note only) |
 | `/admin/payments` | Status tabs; gateway ids with copy buttons |
 | `/admin/profile` | The shared profile view (`components/common/profile-page.tsx`, same cards as `/profile`): Account, Security (password, devices, sign out) and App tabs |
-| `/admin/settings` | Tab `marketplace` (commission %, min increment INR, anti-sniping, categories editor) and tab `legal` (slug select + rich text) |
+| `/admin/settings` | Tab `marketplace` (commission %, min increment INR, anti-sniping, maximum price INR (`maxPricePaise`, ₹1,000 to ₹1,000 crore), categories editor) and tab `legal` (slug select + rich text) |
 
 ## Code map (`src/features/admin/`)
 - `admin.api.ts` - axios calls. `admin.parse.ts` - the ONLY place response keys are mapped (change it if the backend renames fields). `admin.types.ts`, `admin.schema.ts` (settings form <-> API: % <-> bps, rupees <-> paise).

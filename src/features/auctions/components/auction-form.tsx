@@ -17,6 +17,7 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { apiErrorCode } from '@/lib/api-client';
 import { cn, formatINR } from '@/lib/utils';
+import { useMaxPricePaise } from '@/features/settings/use-settings';
 import { useAuthStore } from '@/store/auth-store';
 import { auctionErrorMessage } from '../auctions.errors';
 import {
@@ -36,10 +37,11 @@ export function AuctionForm({ auction }: { auction?: AuctionDetail }) {
   const router = useRouter();
   const member = useAuthStore((s) => s.member);
   const categories = useCategories();
+  const maxPricePaise = useMaxPricePaise();
   const create = useCreateAuction();
   const update = useUpdateAuction(auction?.id ?? '');
   const defaults = React.useMemo(() => defaultFormValues(auction), [auction]);
-  const schema = React.useMemo(() => makeAuctionFormSchema(auction?.startTime), [auction?.startTime]);
+  const schema = React.useMemo(() => makeAuctionFormSchema(auction?.startTime, maxPricePaise), [auction?.startTime, maxPricePaise]);
 
   const form = useForm<AuctionFormValues>({ resolver: zodResolver(schema), defaultValues: defaults });
   const { control, register, handleSubmit, setValue, formState } = form;

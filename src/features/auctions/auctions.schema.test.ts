@@ -40,8 +40,8 @@ const form = (over: Partial<AuctionFormValues> = {}): AuctionFormValues => ({
   ...over,
 });
 
-const issues = (v: AuctionFormValues, original?: string) => {
-  const r = makeAuctionFormSchema(original).safeParse(v);
+const issues = (v: AuctionFormValues, original?: string, max?: number) => {
+  const r = makeAuctionFormSchema(original, max).safeParse(v);
   return r.success ? [] : r.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`);
 };
 
@@ -55,6 +55,13 @@ describe('money helpers', () => {
 });
 
 describe('makeAuctionFormSchema', () => {
+  it('caps starting bid and increment at the platform maximum', () => {
+    expect(issues(form({ startingBid: '100000000' }))).toEqual([]); // ₹10 crore default
+    expect(issues(form({ startingBid: '100000001' }))).toContain('startingBid: Starting bid can be at most ₹10,00,00,000');
+    expect(issues(form({ startingBid: '2000000' }), undefined, 100_000_000)).toContain('startingBid: Starting bid can be at most ₹10,00,000');
+    expect(issues(form({ startingBid: '1000', minIncrement: '2000000' }), undefined, 100_000_000)).toContain('minIncrement: Minimum increment can be at most ₹10,00,000');
+    expect(issues(form({ startingBid: '9000000000' }), undefined, 1_000_000_000_000)).toEqual([]);
+  });
   it('accepts a valid start-now / 7 day form', () => {
     expect(issues(form())).toEqual([]);
   });

@@ -15,7 +15,10 @@ describe('bids.utils', () => {
   it('rupeesToPaise accepts positive whole rupees only', () => {
     expect(rupeesToPaise('1500')).toBe(150000);
     expect(rupeesToPaise(' 1,500 ')).toBe(150000);
-    for (const bad of ['', '0', '-5', '12.5', 'abc', '1e3', '1234567890']) expect(rupeesToPaise(bad)).toBeNull();
+    for (const bad of ['', '0', '-5', '12.5', 'abc', '1e3', '1234567890123']) expect(rupeesToPaise(bad)).toBeNull();
+  });
+  it('rupeesToPaise handles amounts beyond int4 paise', () => {
+    expect(rupeesToPaise('100000000')).toBe(10_000_000_000);
   });
   it('ceilRupees rounds up', () => {
     expect(ceilRupees(100000)).toBe(1000);
