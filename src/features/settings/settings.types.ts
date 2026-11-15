@@ -19,4 +19,8 @@ export interface PublicSettings {
   depositThresholdPaise?: number;
   /** Deposit as a share of the starting bid, in basis points. */
   depositRateBps?: number;
+  /** Paid featured listings on? Absent on older API versions (treated as off). */
+  featuredEnabled?: boolean;
+  /** Price in paise per promotion length in days (`"1"`, `"3"`, `"7"`). */
+  featuredPrices?: Record<string, number>;
 }

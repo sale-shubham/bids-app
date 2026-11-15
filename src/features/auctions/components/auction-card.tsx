@@ -2,7 +2,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Gavel, ImageOff, Video } from 'lucide-react';
+import { Gavel, ImageOff, Megaphone, Video } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Countdown } from '@/components/common/countdown';
 import { VerifiedBadge } from '@/components/common/verified-badge';
@@ -80,6 +80,11 @@ export function AuctionCard({ auction, priority }: { auction: AuctionCardData; p
             className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
           <AuctionStatusBadge status={auction.status} className="absolute left-2 top-2 border-border bg-background/90 backdrop-blur-xs" />
+          {auction.promoted && (
+            <Badge variant="warning" className="absolute bottom-2 right-2 gap-1 border-border bg-background/90 backdrop-blur-xs">
+              <Megaphone className="h-3 w-3" aria-hidden /> Promoted
+            </Badge>
+          )}
           {auction.hasVideo && (
             <span
               title="Has video"

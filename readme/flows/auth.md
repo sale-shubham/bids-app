@@ -19,3 +19,6 @@ Code: `src/features/auth/` (api, schema, errors, `use-auth.ts`, `components/{log
 
 ## Packages
 `qrcode` (+ `@types/qrcode`) renders the 2FA QR code client-side; the secret never leaves the browser.
+
+## Referral code on signup
+`/signup?ref=CODE` is remembered for 30 days (`localStorage` key `nb_ref`, `features/referrals/referral-code.ts`) and sent as `referralCode` in `POST /auth/signup`; cleared after a successful signup. See `referrals.md`.

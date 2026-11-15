@@ -23,3 +23,8 @@ export async function createCommissionCheckout(id: string) {
   const res = await api.post(`/commissions/${id}/checkout`);
   return parseCheckout(res.data);
 }
+
+/** Pays a commission from the credit balance. 409 INSUFFICIENT_CREDITS when the balance does not cover it. */
+export async function payCommissionWithCredits(id: string) {
+  await api.post(`/commissions/${encodeURIComponent(id)}/checkout`, { useCredits: true });
+}

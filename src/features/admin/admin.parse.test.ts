@@ -73,6 +73,8 @@ describe('admin.parse', () => {
       checkoutMode: 'optional',
       depositThresholdPaise: 0,
       depositRateBps: 1000,
+      featuredEnabled: false,
+      featuredPrices: { '1': 0, '3': 0, '7': 0 },
     });
     expect(parseSettings({ data: { depositThresholdPaise: 10_000_000, depositRateBps: 1500 } })).toMatchObject({ depositThresholdPaise: 10_000_000, depositRateBps: 1500 });
     expect(parseSettings({ data: { checkoutMode: 'required' } }).checkoutMode).toBe('required');

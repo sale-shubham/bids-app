@@ -30,3 +30,8 @@ SUPER_ADMIN only. Routes live in `src/app/(admin)/admin/**`, guarded by `AuthGua
 
 ## Categories (`/admin/categories`, Phase F)
 Nav item "Categories". Tree list with active switch, auction counts, create / edit dialog with attribute schema editor, delete via `<ConfirmDialog>` (disabled when in use). Full description in `categories.md`. Settings > Marketplace no longer has a category editor (it links to this page); `categories` in admin settings is read-only and omitted from the save payload.
+
+## Phase G part 2 (featured, credits, invoices)
+- Settings > Marketplace gains a "Featured listings" card: enabled switch + 1 / 3 / 7 day prices in rupees (`featuredEnabled`, `featuredPrices` in `AdminSettings`; always sent on save).
+- Settings > "Invoice details" tab: `InvoiceSettings` (`GET/PUT /admin/settings/invoice`). `/admin/invoices` lists issued invoices (type + search, download). See `invoices.md`.
+- Members: `creditBalancePaise` column and an "Adjust credits" action (`AdjustCreditsDialog`, `POST /admin/members/:id/credits`, ConfirmDialog with a signed rupee amount and a note). See `referrals.md`.

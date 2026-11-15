@@ -22,3 +22,7 @@ A sold auction creates a 5% commission (DUE). While `me.unpaidCommissionPaise > 
 
 ## Queries
 `['commissions', tab]` infinite (tabs due/paid/waived/all, page size 20), `['commissions','summary']`, `['me']`.
+
+## Credits and promotions (Phase G part 2)
+- `verifyPayment` also returns `referenceType: 'FEATURE'` (paid promotion, see `featured.md`).
+- `usePayCommission` returns `{ pay, payingId, payWithCredits }`: `payWithCredits` is a mutation for `POST /commissions/:id/checkout { useCredits: true }` (response `{ paidWithCredits: true, commission }`). The commissions page shows "Pay with credits (balance X)" per DUE row when the balance covers it and confirms in a `ConfirmDialog`; it invalidates `['commissions']`, `['me']`, `['referral']`, `['credits']`. `INSUFFICIENT_CREDITS` is mapped in `commissions.errors.ts`. Details: `referrals.md`.

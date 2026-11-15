@@ -122,6 +122,9 @@ onClick={() => setToDelete(auction)}
 | `src/features/bids/components/bid-panel.tsx` | Place / raise a maximum bid ("Confirm your maximum bid"), and Buy It Now ("Buy it now"; confirm label shows the price) |
 | `src/app/(auctioneer)/sell/auctions/page.tsx` | Delete auction (row action on My auctions) |
 | `src/app/(auctioneer)/sell/auctions/[id]/page.tsx` | Delete auction (seller's auction page) |
+| `src/features/featured/components/promote-card.tsx` | Pay for a promotion with credits |
+| `src/app/(auctioneer)/sell/commissions/page.tsx` | Pay a commission with credits |
+| `src/features/admin/components/adjust-credits-dialog.tsx` | Admin credit adjustment (form inside the dialog) |
 | `src/features/auctions/components/auction-detail.tsx` | Delete auction (owner only, from the public detail page) |
 | `src/app/(auctioneer)/sell/commissions/page.tsx` | Simulate a commission payment in Razorpay stub mode ("Test mode", via `useStubPaymentConfirm`) |
 | `src/app/(admin)/admin/auctions/page.tsx` | Cancel auction (admin, destructive) |

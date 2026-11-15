@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FormInput } from '@/components/common/form-input';
@@ -130,6 +131,27 @@ function MarketplaceForm({ settings }: { settings: AdminSettings }) {
             {CHECKOUT_MODE_OPTIONS.find((o) => o.value === checkoutMode)?.help}
           </p>
           {errors.checkoutMode && <p className="text-xs text-destructive">{errors.checkoutMode.message}</p>}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Featured listings</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-3">
+            <Controller
+              control={control}
+              name="featuredEnabled"
+              render={({ field }) => <Switch id="featured-enabled" checked={field.value} onCheckedChange={field.onChange} />}
+            />
+            <Label htmlFor="featured-enabled">Sellers can pay to promote auctions</Label>
+          </div>
+          <div className="grid gap-4 @lg/content:grid-cols-3">
+            <FormInput label="1-day price (₹)" inputMode="decimal" error={errors.featuredPrice1?.message} {...register('featuredPrice1')} />
+            <FormInput label="3-day price (₹)" inputMode="decimal" error={errors.featuredPrice3?.message} {...register('featuredPrice3')} />
+            <FormInput label="7-day price (₹)" inputMode="decimal" error={errors.featuredPrice7?.message} {...register('featuredPrice7')} />
+          </div>
         </CardContent>
       </Card>
 

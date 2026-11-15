@@ -208,3 +208,10 @@ See `readme/ui/layout.md` for how these assemble.
 - `features/notification-preferences/components/`: `NotificationPreferencesCard`, `WhatsappCard` (profile Notifications tab).
 - `features/analytics/components/`: `SellerAnalyticsPage`, `AuctionAnalyticsSection`, `DailyChart`, `DaysSwitch` (7 / 30 / 90 `aria-pressed` group).
 - `admin-charts.tsx` now exports `TOOLTIP` / `AXIS` chart styles for reuse.
+
+## Phase G part 2
+- `features/featured/components/`: `PromoteCard` (`auctionId`, `status`; hides itself when promotions are off or the auction ended), `PromotedStrip` (`category`; up to 2 promoted auctions under a "Promoted" heading). `AuctionCard` shows a "Promoted" badge when `auction.promoted`.
+- `features/referrals/components/`: `ReferCard`, `CreditLedger` (profile Refer & earn tab).
+- `features/invoices/components/`: `InvoicesCard` (profile Invoices tab). `components/common/billing-details-card.tsx`: `BillingDetailsCard` (GSTIN + billing state, profile Account tab).
+- `features/admin/components/`: `InvoiceSettings`, `AdjustCreditsDialog` (`member`, `onClose`).
+- Test setup stubs `ResizeObserver` (Radix Switch).

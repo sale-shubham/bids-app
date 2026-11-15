@@ -35,6 +35,9 @@ export interface AuthMember {
   whatsappOptInAt?: string | null;
   /** Unpaid-purchase strikes in force (Phase E). */
   activeStrikes?: number;
+  /** Billing details for GST invoices (Phase G). */
+  gstin?: string | null;
+  billingState?: string | null;
 }
 
 interface AuthState {

@@ -21,11 +21,11 @@ describe('legalPagesFormSchema', () => {
 });
 
 describe('marketplaceSchema (admin settings)', () => {
-  const ok = { commissionPercent: '5.00', minIncrementRupees: '100', antiSnipingMinutes: '2', maxPriceRupees: '100000000', depositThresholdRupees: '100000', depositRatePercent: '10', checkoutMode: 'optional' as const };
+  const ok = { commissionPercent: '5.00', minIncrementRupees: '100', antiSnipingMinutes: '2', maxPriceRupees: '100000000', depositThresholdRupees: '100000', depositRatePercent: '10', checkoutMode: 'optional' as const, featuredEnabled: false, featuredPrice1: '99', featuredPrice3: '249', featuredPrice7: '499' };
   it('accepts valid settings and converts to API units', () => {
     const r = marketplaceSchema.safeParse(ok);
     expect(r.success).toBe(true);
-    expect(formToSettings(r.data!)).toEqual({ commissionRateBps: 500, minIncrementPaise: 10000, antiSnipingMinutes: 2, maxPricePaise: 10_000_000_000, depositThresholdPaise: 10_000_000, depositRateBps: 1000, checkoutMode: 'optional' });
+    expect(formToSettings(r.data!)).toEqual({ commissionRateBps: 500, minIncrementPaise: 10000, antiSnipingMinutes: 2, maxPricePaise: 10_000_000_000, depositThresholdPaise: 10_000_000, depositRateBps: 1000, checkoutMode: 'optional', featuredEnabled: false, featuredPrices: { '1': 9900, '3': 24900, '7': 49900 } });
   });
   it('deposit fields: rupees <-> paise and percent <-> bps, 0 threshold = off', () => {
     const off = formToSettings(marketplaceSchema.parse({ ...ok, depositThresholdRupees: '0', depositRatePercent: '12.5' }));
@@ -40,10 +40,15 @@ describe('marketplaceSchema (admin settings)', () => {
     expect(formToSettings(marketplaceSchema.parse({ ...ok, checkoutMode: 'required' })).checkoutMode).toBe('required');
   });
   it('round-trips settings through the form', () => {
-    const s = { commissionRateBps: 750, minIncrementPaise: 12550, antiSnipingMinutes: 5, maxPricePaise: 250_000_000_000, depositThresholdPaise: 5_000_000, depositRateBps: 2000, checkoutMode: 'required' as const };
-    expect(settingsToForm(s)).toEqual({ commissionPercent: '7.50', minIncrementRupees: '125.5', antiSnipingMinutes: '5', maxPriceRupees: '2500000000', depositThresholdRupees: '50000', depositRatePercent: '20.00', checkoutMode: 'required' });
+    const s = { commissionRateBps: 750, minIncrementPaise: 12550, antiSnipingMinutes: 5, maxPricePaise: 250_000_000_000, depositThresholdPaise: 5_000_000, depositRateBps: 2000, checkoutMode: 'required' as const, featuredEnabled: true, featuredPrices: { '1': 9900, '3': 24900, '7': 49900 } };
+    expect(settingsToForm(s)).toEqual({ commissionPercent: '7.50', minIncrementRupees: '125.5', antiSnipingMinutes: '5', maxPriceRupees: '2500000000', depositThresholdRupees: '50000', depositRatePercent: '20.00', checkoutMode: 'required', featuredEnabled: true, featuredPrice1: '99', featuredPrice3: '249', featuredPrice7: '499' });
     expect(bpsToPercent(500)).toBe('5.00');
     expect(percentToBps('7.5')).toBe(750);
+  });
+  it('featured prices: at least 1 rupee, at most 2 decimals', () => {
+    expect(msgs(marketplaceSchema.safeParse({ ...ok, featuredPrice1: '0' }))).toContain('Must be at least ₹1');
+    expect(msgs(marketplaceSchema.safeParse({ ...ok, featuredPrice7: '1.234' }))).toContain('At most 2 decimal places');
+    expect(formToSettings(marketplaceSchema.parse({ ...ok, featuredEnabled: true, featuredPrice3: '12.5' })).featuredPrices?.['3']).toBe(1250);
   });
   it('rejects out-of-range or malformed numbers', () => {
     expect(msgs(marketplaceSchema.safeParse({ ...ok, commissionPercent: '31' }))).toContain('Must be between 0% and 30%');

@@ -11,6 +11,10 @@ export interface UpdateMeInput {
   phone?: string | null;
   address?: string | null;
   avatarUrl?: string | null;
+  /** 15-character GSTIN; null clears it. */
+  gstin?: string | null;
+  /** 2-digit GST state code; null clears it. */
+  billingState?: string | null;
 }
 
 export async function updateMe(input: UpdateMeInput): Promise<Partial<AuthMember>> {

@@ -20,6 +20,12 @@ const numeric = (label: string) =>
 export const MAX_PRICE_MIN_RUPEES = 1_000;
 export const MAX_PRICE_MAX_RUPEES = 10_000_000_000;
 
+const priceField = (label: string) =>
+  numeric(label)
+    .refine((v) => /^\d+(\.\d{1,2})?$/.test(v), 'At most 2 decimal places')
+    .refine((v) => Number(v) >= 1, 'Must be at least ₹1')
+    .refine((v) => Number(v) <= MAX_PRICE_MAX_RUPEES, `Must be at most ${formatINR(MAX_PRICE_MAX_RUPEES * 100)}`);
+
 export const marketplaceSchema = z.object({
   commissionPercent: numeric('Commission')
     .refine((v) => Number(v) >= 0 && Number(v) <= 30, 'Must be between 0% and 30%')
@@ -41,6 +47,10 @@ export const marketplaceSchema = z.object({
     .refine((v) => /^\d+(\.\d{1,2})?$/.test(v), 'At most 2 decimal places')
     .refine((v) => Number(v) >= 1 && Number(v) <= 50, 'Must be between 1% and 50%'),
   checkoutMode: z.enum(['off', 'optional', 'required'], { message: 'Choose a checkout mode' }),
+  featuredEnabled: z.boolean(),
+  featuredPrice1: priceField('1-day price'),
+  featuredPrice3: priceField('3-day price'),
+  featuredPrice7: priceField('7-day price'),
 });
 
 export type MarketplaceValues = z.infer<typeof marketplaceSchema>;
@@ -54,6 +64,10 @@ export function settingsToForm(s: AdminSettings): MarketplaceValues {
     depositThresholdRupees: paiseToRupeesStr(s.depositThresholdPaise),
     depositRatePercent: bpsToPercent(s.depositRateBps),
     checkoutMode: s.checkoutMode,
+    featuredEnabled: s.featuredEnabled ?? false,
+    featuredPrice1: paiseToRupeesStr(s.featuredPrices?.['1'] || 9900),
+    featuredPrice3: paiseToRupeesStr(s.featuredPrices?.['3'] || 24900),
+    featuredPrice7: paiseToRupeesStr(s.featuredPrices?.['7'] || 49900),
   };
 }
 
@@ -66,5 +80,11 @@ export function formToSettings(v: MarketplaceValues): AdminSettings {
     depositThresholdPaise: rupeesToPaiseNum(v.depositThresholdRupees),
     depositRateBps: percentToBps(v.depositRatePercent),
     checkoutMode: v.checkoutMode,
+    featuredEnabled: v.featuredEnabled,
+    featuredPrices: {
+      '1': rupeesToPaiseNum(v.featuredPrice1),
+      '3': rupeesToPaiseNum(v.featuredPrice3),
+      '7': rupeesToPaiseNum(v.featuredPrice7),
+    },
   };
 }

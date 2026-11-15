@@ -14,6 +14,7 @@ import { auctionErrorMessage } from '@/features/auctions/auctions.errors';
 import { AuctionStatusBadge } from '@/features/auctions/components/auction-card';
 import { useAuctionLive } from '@/features/live/use-auction-live';
 import { useAuction, useAuctionBoundaryRefetch, useDeleteAuction } from '@/features/auctions/use-auctions';
+import { PromoteCard } from '@/features/featured/components/promote-card';
 import { AuctionAnalyticsSection } from '@/features/analytics/components/auction-analytics-section';
 import { AuctionResult } from '@/features/bids/components/auction-result';
 import { BidHistory } from '@/features/bids/components/bid-history';
@@ -107,6 +108,8 @@ export default function SellAuctionDetailPage() {
           </CardContent>
         )}
       </Card>
+
+      <PromoteCard auctionId={auction.id} status={auction.status} />
 
       <AuctionAnalyticsSection auctionId={auction.id} />
 

@@ -94,6 +94,14 @@ export function useUpdateMember() {
   });
 }
 
+export function useAdjustCredits() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id: string; amountPaise: number; note: string }) => api.adjustCredits(id, body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.all }),
+  });
+}
+
 export function useCancelAdminAuction() {
   const qc = useQueryClient();
   return useMutation({
