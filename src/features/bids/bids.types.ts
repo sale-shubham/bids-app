@@ -46,4 +46,6 @@ export interface MyBidRow {
   myBidCount: number;
   lastBidAt: string;
   state: MyBidState;
+  /** Won and not rated yet. */
+  canReview?: boolean;
 }

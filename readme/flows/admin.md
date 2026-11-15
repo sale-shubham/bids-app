@@ -1,6 +1,6 @@
 # Admin area (frontend)
 
-SUPER_ADMIN only. Routes live in `src/app/(admin)/admin/**`, guarded by `AuthGuard allow={['SUPER_ADMIN']}` in `(admin)/layout.tsx`. SUPER_ADMIN may only use `/admin/*` plus the public pages (member routes redirect to `/admin`; BIDDER / AUCTIONEER hitting `/admin` go to their home). The sidebar (`useNav()`, `nav-items.ts`) lists Dashboard, Members, Auctions, Commissions, Payments, Settings and Profile; on a phone the bottom bar shows the first three plus a Profile tab, the rest sit in the Profile page's tap grid.
+SUPER_ADMIN only. Routes live in `src/app/(admin)/admin/**`, guarded by `AuthGuard allow={['SUPER_ADMIN']}` in `(admin)/layout.tsx`. SUPER_ADMIN may only use `/admin/*` plus the public pages (member routes redirect to `/admin`; BIDDER / AUCTIONEER hitting `/admin` go to their home). The sidebar (`useNav()`, `nav-items.ts`) lists Dashboard, Members, Auctions, Commissions, Payments, Reviews, Settings and Profile; on a phone the bottom bar shows the first three plus a Profile tab, the rest sit in the Profile page's tap grid.
 
 | Route | Purpose |
 | --- | --- |
@@ -9,6 +9,7 @@ SUPER_ADMIN only. Routes live in `src/app/(admin)/admin/**`, guarded by `AuthGua
 | `/admin/auctions` | Status tabs + search; cancel (`DELETE /auctions/:id`) with a bid-count warning |
 | `/admin/commissions` | Status tabs; waive due commissions (reason field is a client-side note only) |
 | `/admin/payments` | Status tabs; gateway ids with copy buttons |
+| `/admin/reviews` | Visible / hidden / all tabs + search; Hide / Unhide through `<ConfirmDialog>` (`PATCH /admin/reviews/:id`); see `reviews.md` |
 | `/admin/profile` | The shared profile view (`components/common/profile-page.tsx`, same cards as `/profile`): Account, Security (password, devices, sign out) and App tabs |
 | `/admin/settings` | Tab `marketplace` (commission %, min increment INR, anti-sniping, maximum price INR (`maxPricePaise`, ₹1,000 to ₹1,000 crore), categories editor) and tab `legal` (slug select + rich text) |
 

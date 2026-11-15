@@ -14,6 +14,7 @@ import { formatINR } from '@/lib/utils';
 import { CoverImage } from '@/features/auctions/components/auction-card';
 import type { MyBidRow, MyBidState, MyBidsTab } from '@/features/bids/bids.types';
 import { useMyBids } from '@/features/bids/use-bids';
+import { RateSellerButton } from '@/features/reviews/components/rate-seller-button';
 
 const TABS: { value: MyBidsTab; label: string }[] = [
   { value: 'winning', label: 'Winning' },
@@ -75,6 +76,7 @@ function MyBidCard({ row }: { row: MyBidRow }) {
             </Link>
           </Button>
         )}
+        {row.state === 'WON' && row.canReview && <RateSellerButton auctionId={a.id} sellerName={a.seller.name} />}
         <Button asChild variant="outline" size="sm">
           <Link href={`/auctions/${a.id}`}>{row.state === 'WON' ? 'Seller contact' : 'View'}</Link>
         </Button>

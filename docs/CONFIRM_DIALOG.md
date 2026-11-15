@@ -123,6 +123,9 @@ onClick={() => setToDelete(auction)}
 | `src/app/(admin)/admin/auctions/page.tsx` | Cancel auction (admin, destructive) |
 | `src/app/(admin)/admin/members/page.tsx` | Activate / deactivate member (destructive when deactivating); change role (destructive when granting `SUPER_ADMIN`, with the role `Select` as `children`) |
 | `src/app/(admin)/admin/commissions/page.tsx` | Waive commission (destructive, "This cannot be undone") |
+| `src/app/(admin)/admin/reviews/page.tsx` | Hide / unhide a review (destructive when hiding) |
+| `src/features/questions/components/questions-section.tsx` | Hide a question (seller) |
+| `src/features/saved-searches/components/alerts-card.tsx` | Delete a saved search alert (Profile > Alerts) |
 | `src/components/layout/dashboard-shell.tsx` | Logout (sidebar footer button) |
 | `src/components/layout/user-menu.tsx` | Log out (header account menu) |
 | `src/components/layout/more-page.tsx` | Logout (Profile page, App tab) |

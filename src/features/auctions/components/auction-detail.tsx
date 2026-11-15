@@ -23,6 +23,8 @@ import { useAuction, useAuctionBoundaryRefetch, useDeleteAuction } from '../use-
 import { AuctionGallery } from './auction-gallery';
 import { AuctionStatusBadge } from './auction-card';
 import { ShareButtons } from './share-buttons';
+import { RatingSummary } from '@/features/reviews/components/star-rating';
+import { QuestionsSection } from '@/features/questions/components/questions-section';
 import { WatchButton } from '@/features/watchlist/components/watch-button';
 
 export function AuctionDetailView({ initial, serverTime }: { initial: AuctionDetail; serverTime: string | null }) {
@@ -106,6 +108,7 @@ export function AuctionDetailView({ initial, serverTime }: { initial: AuctionDet
           <div>
             <p className="text-xs text-muted-foreground">Seller</p>
             <p className="font-medium">{auction.seller.name}</p>
+            <RatingSummary avg={auction.seller.ratingAvg} count={auction.seller.ratingCount} />
           </div>
         </Link>
 
@@ -146,6 +149,10 @@ export function AuctionDetailView({ initial, serverTime }: { initial: AuctionDet
         </h2>
         <RichText html={auction.description} />
       </section>
+
+      <div className="@3xl/content:col-span-2">
+        <QuestionsSection auctionId={auction.id} sellerId={auction.seller.id} ended={auction.status === 'ENDED' || auction.status === 'CANCELLED'} />
+      </div>
 
       <ConfirmDialog
         open={confirmOpen}

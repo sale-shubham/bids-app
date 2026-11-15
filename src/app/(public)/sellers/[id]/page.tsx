@@ -3,6 +3,8 @@ import { CalendarDays, Gavel, PackageCheck } from 'lucide-react';
 import { MemberAvatar } from '@/components/common/member-avatar';
 import { formatDate } from '@/lib/utils';
 import { getSellerServer } from '@/features/sellers/sellers.server';
+import { RatingSummary } from '@/features/reviews/components/star-rating';
+import { SellerReviews } from '@/features/reviews/components/seller-reviews';
 import { SellerAuctions } from '@/features/sellers/components/seller-auctions';
 
 type Props = { params: Promise<{ id: string }> };
@@ -10,7 +12,7 @@ type Props = { params: Promise<{ id: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const seller = await getSellerServer(id);
-  const description = `${seller.name} on NobleBid: ${seller.auctionsSold} auctions sold, ${seller.activeAuctions} live right now.`;
+  const description = `${seller.name} on NobleBid: ${seller.auctionsSold} auctions sold, ${seller.activeAuctions} live right now.${seller.ratingAvg != null ? ` Rated ${seller.ratingAvg.toFixed(1)} from ${seller.ratingCount} reviews.` : ''}`;
   return {
     title: `${seller.name} — Seller on NobleBid`,
     description,
@@ -37,12 +39,16 @@ export default async function SellerPage({ params }: Props) {
               <PackageCheck className="h-4 w-4" aria-hidden /> {seller.auctionsSold} auctions sold
             </li>
             <li className="inline-flex items-center gap-1.5">
+              <RatingSummary avg={seller.ratingAvg} count={seller.ratingCount} />
+            </li>
+            <li className="inline-flex items-center gap-1.5">
               <Gavel className="h-4 w-4" aria-hidden /> {seller.activeAuctions} active
             </li>
           </ul>
         </div>
       </section>
       <SellerAuctions sellerId={seller.id} />
+      <SellerReviews sellerId={seller.id} />
     </div>
   );
 }

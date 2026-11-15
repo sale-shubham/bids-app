@@ -1,4 +1,5 @@
 import type { AuctionContact, BidDTO } from '@/features/bids/bids.types';
+import type { ReviewDTO } from '@/features/reviews/reviews.types';
 
 export type AuctionStatus = 'SCHEDULED' | 'LIVE' | 'ENDED' | 'CANCELLED';
 export type AuctionCondition = 'NEW' | 'USED';
@@ -12,6 +13,9 @@ export interface AuctionSeller {
   id: string;
   name: string;
   avatarUrl: string | null;
+  /** Average seller rating; absent on snapshots saved before ratings existed. */
+  ratingAvg?: number | null;
+  ratingCount?: number;
 }
 
 export interface AuctionCard {
@@ -56,6 +60,10 @@ export interface AuctionDetail extends AuctionCard {
   reservePricePaise?: number | null;
   /** Counterparty contact — only for the winner and the seller once the auction ended with a winner. */
   contact?: AuctionContact | null;
+  /** The winner's review of the seller, once left. */
+  review?: ReviewDTO | null;
+  /** The viewer won this auction and has not rated the seller yet. */
+  canReview?: boolean;
 }
 
 export interface PageMeta {
