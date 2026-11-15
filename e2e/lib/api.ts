@@ -40,8 +40,8 @@ export function login(ctx: APIRequestContext, email: string, password = PASSWORD
   return api.post<{ member: { id: string; role: string } }>(ctx, '/auth/login', { email, password });
 }
 
-export function placeBid(ctx: APIRequestContext, auctionId: string, amountPaise: number) {
-  return api.post(ctx, `/auctions/${auctionId}/bids`, { amountPaise });
+export function placeBid(ctx: APIRequestContext, auctionId: string, maxAmountPaise: number) {
+  return api.post(ctx, `/auctions/${auctionId}/bids`, { maxAmountPaise });
 }
 
 /** True when `target` answers with anything below 500. */

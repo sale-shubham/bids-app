@@ -1,7 +1,7 @@
 'use client';
 import * as React from 'react';
 import { Suspense } from 'react';
-import { BadgeCheck, ShieldAlert, UserCog, Users } from 'lucide-react';
+import { BadgeCheck, Coins, ShieldAlert, ShieldCheck, UserCog, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,12 +11,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { SearchInput } from '@/components/common/search-input';
 import { StatusBadge } from '@/components/common/status-badge';
+import { AdjustCreditsDialog } from '@/features/admin/components/adjust-credits-dialog';
 import { AdminList, PageHeader } from '@/features/admin/components/admin-list';
 import { useAdminMembers, useUpdateMember } from '@/features/admin/use-admin';
 import { useUrlState } from '@/features/admin/use-url-state';
 import type { AdminMember, MemberRoleFilter, MemberStatusFilter } from '@/features/admin/admin.types';
 import { apiErrorCode, apiErrorMessage } from '@/lib/api-client';
 import { formatDate, formatINR } from '@/lib/utils';
+import { MemberStrikesDialog } from '@/features/strikes/components/member-strikes-dialog';
 import { useAuthStore, type Role } from '@/store/auth-store';
 
 const DEFAULTS = { q: '', role: '', status: '' };
@@ -41,6 +43,21 @@ function Verified({ at }: { at: string | null }) {
   );
 }
 
+// Trust signals: verified-seller badge (KYC'd payout account), strikes and payout account status.
+function TrustBadges({ m }: { m: AdminMember }) {
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {m.verified && (
+        <Badge variant="success" className="gap-1">
+          <ShieldCheck className="h-3 w-3" aria-hidden /> Verified
+        </Badge>
+      )}
+      {m.activeStrikes > 0 && <Badge variant="warning">{m.activeStrikes} {m.activeStrikes === 1 ? 'strike' : 'strikes'}</Badge>}
+      {m.payoutStatus && <Badge variant="outline">Payout: {m.payoutStatus.replace(/_/g, ' ').toLowerCase()}</Badge>}
+    </div>
+  );
+}
+
 function MembersView() {
   const { values, page, pageSize, update } = useUrlState(DEFAULTS);
   const filters = { q: values.q, role: values.role as MemberRoleFilter, status: values.status as MemberStatusFilter };
@@ -49,6 +66,9 @@ function MembersView() {
   const selfId = useAuthStore((s) => s.member?.id);
 
   const [statusTarget, setStatusTarget] = React.useState<AdminMember | null>(null);
+  const [verifyTarget, setVerifyTarget] = React.useState<AdminMember | null>(null);
+  const [strikesTarget, setStrikesTarget] = React.useState<AdminMember | null>(null);
+  const [creditsTarget, setCreditsTarget] = React.useState<AdminMember | null>(null);
   const [roleTarget, setRoleTarget] = React.useState<AdminMember | null>(null);
   const [newRole, setNewRole] = React.useState<Role>('BIDDER');
 
@@ -64,6 +84,21 @@ function MembersView() {
         onSuccess: () => {
           toast.success(next ? 'Member activated' : 'Member deactivated');
           setStatusTarget(null);
+        },
+        onError: fail,
+      },
+    );
+  };
+
+  const confirmVerification = () => {
+    if (!verifyTarget) return;
+    const next = !verifyTarget.verified;
+    mutate.mutate(
+      { id: verifyTarget.id, verified: next },
+      {
+        onSuccess: () => {
+          toast.success(next ? 'Verification restored' : 'Verification revoked');
+          setVerifyTarget(null);
         },
         onError: fail,
       },
@@ -99,6 +134,17 @@ function MembersView() {
         <Button size="sm" variant="outline" disabled={isSelf} onClick={() => openRole(m)} title={isSelf ? 'You cannot modify your own account' : undefined}>
           <UserCog className="h-4 w-4" /> Role
         </Button>
+        <Button size="sm" variant="outline" onClick={() => setStrikesTarget(m)}>
+          <ShieldAlert className="h-4 w-4" /> Strikes{m.activeStrikes > 0 ? ` (${m.activeStrikes})` : ''}
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => setCreditsTarget(m)}>
+          <Coins className="h-4 w-4" /> Adjust credits
+        </Button>
+        {(m.verified || (m.role === 'AUCTIONEER' && m.payoutStatus === 'ACTIVE')) && (
+          <Button size="sm" variant="outline" onClick={() => setVerifyTarget(m)}>
+            <ShieldCheck className="h-4 w-4" /> {m.verified ? 'Revoke verification' : 'Restore verification'}
+          </Button>
+        )}
       </div>
     );
   };
@@ -152,9 +198,11 @@ function MembersView() {
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Verified</TableHead>
+                <TableHead>Trust</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Joined</TableHead>
                 <TableHead className="text-right">Unpaid comm.</TableHead>
+                <TableHead className="text-right">Credits</TableHead>
                 <TableHead className="text-right">Wins</TableHead>
                 <TableHead className="text-right">Spent</TableHead>
                 <TableHead>Actions</TableHead>
@@ -173,11 +221,15 @@ function MembersView() {
                   <TableCell>
                     <Verified at={m.emailVerifiedAt} />
                   </TableCell>
+                  <TableCell className="min-w-44">
+                    <TrustBadges m={m} />
+                  </TableCell>
                   <TableCell>
                     <StatusBadge status={m.isActive ? 'ACTIVE' : 'INACTIVE'} />
                   </TableCell>
                   <TableCell className="whitespace-nowrap">{formatDate(m.createdAt)}</TableCell>
                   <TableCell className="text-right tnum">{formatINR(m.unpaidCommissionPaise)}</TableCell>
+                  <TableCell className="text-right tnum">{formatINR(m.creditBalancePaise)}</TableCell>
                   <TableCell className="text-right tnum">{m.auctionsWon}</TableCell>
                   <TableCell className="text-right tnum">{formatINR(m.moneySpentPaise)}</TableCell>
                   <TableCell>{actions(m)}</TableCell>
@@ -203,7 +255,12 @@ function MembersView() {
                 <Verified at={m.emailVerifiedAt} />
                 <span className="text-muted-foreground">Joined {formatDate(m.createdAt)}</span>
               </div>
-              <dl className="grid grid-cols-3 gap-2 text-sm">
+              <TrustBadges m={m} />
+              <dl className="grid grid-cols-4 gap-2 text-sm">
+                <div>
+                  <dt className="text-xs text-muted-foreground">Credits</dt>
+                  <dd className="tnum">{formatINR(m.creditBalancePaise)}</dd>
+                </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">Unpaid</dt>
                   <dd className="tnum">{formatINR(m.unpaidCommissionPaise)}</dd>
@@ -223,6 +280,9 @@ function MembersView() {
         )}
       />
 
+      <AdjustCreditsDialog member={creditsTarget} onClose={() => setCreditsTarget(null)} />
+      <MemberStrikesDialog member={strikesTarget} onClose={() => setStrikesTarget(null)} />
+
       <ConfirmDialog
         open={!!statusTarget}
         onOpenChange={(o) => !o && setStatusTarget(null)}
@@ -236,6 +296,21 @@ function MembersView() {
         variant={statusTarget?.isActive ? 'destructive' : 'default'}
         loading={mutate.isPending}
         onConfirm={confirmStatus}
+      />
+
+      <ConfirmDialog
+        open={!!verifyTarget}
+        onOpenChange={(o) => !o && setVerifyTarget(null)}
+        title={verifyTarget?.verified ? 'Revoke verification?' : 'Restore verification?'}
+        description={
+          verifyTarget?.verified
+            ? `${verifyTarget.email} will lose the Verified seller badge.`
+            : `${verifyTarget?.email ?? 'This member'} will get the Verified seller badge back.`
+        }
+        confirmLabel={verifyTarget?.verified ? 'Revoke' : 'Restore'}
+        variant={verifyTarget?.verified ? 'destructive' : 'default'}
+        loading={mutate.isPending}
+        onConfirm={confirmVerification}
       />
 
       <ConfirmDialog

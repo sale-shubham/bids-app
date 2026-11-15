@@ -1,5 +1,5 @@
 'use client';
-import { Gavel, Heart, LayoutDashboard, LogIn, Receipt, Settings, Store, Trophy, User, Users, Wallet } from 'lucide-react';
+import { Archive, Banknote, BarChart3, FileUp, Flag, FolderTree, Gavel, Heart, Landmark, LayoutDashboard, LogIn, FileText, Receipt, Settings, ShieldAlert, ShoppingBag, Star, Store, Trophy, User, Users, Wallet } from 'lucide-react';
 import { useAuthStore, type Role } from '@/store/auth-store';
 import type { NavItem } from './dashboard-shell';
 import type { MoreTab } from './mobile-bottom-nav';
@@ -16,7 +16,13 @@ const MEMBER_NAV: RoleNavItem[] = [
   { href: '/auctions', label: 'Auctions', icon: Gavel },
   { href: '/watchlist', label: 'Watchlist', icon: Heart },
   { href: '/my-bids', label: 'My bids', icon: Trophy, roles: ['BIDDER'] },
+  { href: '/purchases', label: 'Purchases', icon: ShoppingBag, roles: ['BIDDER'] },
   { href: '/sell/auctions', label: 'Sell', icon: Store, roles: ['AUCTIONEER'] },
+  { href: '/sell/analytics', label: 'Analytics', icon: BarChart3, roles: ['AUCTIONEER'] },
+  { href: '/sell/sales', label: 'Sales', icon: Banknote, roles: ['AUCTIONEER'] },
+  { href: '/sell/payouts', label: 'Payouts', icon: Landmark, roles: ['AUCTIONEER'] },
+  { href: '/sell/bulk', label: 'Bulk upload', icon: FileUp, roles: ['AUCTIONEER'] },
+  { href: '/sold', label: 'Sold archive', icon: Archive },
   { href: '/profile', label: 'Profile', icon: User, pinBottomDesktop: true, hideMobile: true },
 ];
 
@@ -24,8 +30,14 @@ const ADMIN_NAV: NavItem[] = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/members', label: 'Members', icon: Users },
   { href: '/admin/auctions', label: 'Auctions', icon: Gavel },
+  { href: '/admin/categories', label: 'Categories', icon: FolderTree },
   { href: '/admin/commissions', label: 'Commissions', icon: Receipt },
   { href: '/admin/payments', label: 'Payments', icon: Wallet },
+  { href: '/admin/sales', label: 'Sales', icon: ShoppingBag },
+  { href: '/admin/invoices', label: 'Invoices', icon: FileText },
+  { href: '/admin/reviews', label: 'Reviews', icon: Star },
+  { href: '/admin/reports', label: 'Reports', icon: Flag },
+  { href: '/admin/risk', label: 'Risk', icon: ShieldAlert },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
   { href: '/admin/profile', label: 'Profile', icon: User, pinBottomDesktop: true, hideMobile: true },
 ];
@@ -33,6 +45,7 @@ const ADMIN_NAV: NavItem[] = [
 // Logged-out visitors on the public pages (browse + watch live bids; bidding needs a login).
 export const GUEST_NAV: NavItem[] = [
   { href: '/auctions', label: 'Auctions', icon: Gavel },
+  { href: '/sold', label: 'Sold archive', icon: Archive },
   { href: '/leaderboard', label: 'Leaderboard', icon: Trophy },
 ];
 

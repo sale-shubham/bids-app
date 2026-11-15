@@ -5,6 +5,7 @@ export interface LiveBid {
   amountPaise: number;
   createdAt: string;
   bidderLabel: string;
+  kind: 'MANUAL' | 'AUTO' | 'BUY_NOW';
 }
 
 export interface BidPlacedEvent {
@@ -14,6 +15,7 @@ export interface BidPlacedEvent {
   bidCount: number;
   endTime: string;
   highestBidderId: string | null;
+  reserveMet: boolean;
   bid: LiveBid;
 }
 export interface AuctionExtendedEvent {
@@ -57,7 +59,8 @@ const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinit
 
 function parseBid(v: unknown): LiveBid | null {
   if (!isObj(v) || !str(v.id) || !num(v.amountPaise) || !str(v.createdAt) || typeof v.bidderLabel !== 'string') return null;
-  return { id: v.id, amountPaise: v.amountPaise, createdAt: v.createdAt, bidderLabel: v.bidderLabel };
+  const kind = v.kind === 'AUTO' || v.kind === 'BUY_NOW' ? v.kind : 'MANUAL';
+  return { id: v.id, amountPaise: v.amountPaise, createdAt: v.createdAt, bidderLabel: v.bidderLabel, kind };
 }
 
 /** Validate one parsed frame. Returns null for anything that is not a known event (pong, error, junk). */
@@ -74,6 +77,7 @@ export function parseLiveEvent(raw: unknown): LiveEvent | null {
         bidCount: raw.bidCount,
         endTime: raw.endTime,
         highestBidderId: str(raw.highestBidderId) ? raw.highestBidderId : null,
+        reserveMet: raw.reserveMet === true,
         bid,
       };
     }

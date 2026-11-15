@@ -8,6 +8,10 @@ export interface SellerProfile {
   createdAt: string;
   auctionsSold: number;
   activeAuctions: number;
+  ratingAvg: number | null;
+  ratingCount: number;
+  verified?: boolean;
+  followerCount?: number;
 }
 
 /** Calls notFound() when the member does not exist. */

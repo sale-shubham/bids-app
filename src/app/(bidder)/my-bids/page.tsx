@@ -14,6 +14,9 @@ import { formatINR } from '@/lib/utils';
 import { CoverImage } from '@/features/auctions/components/auction-card';
 import type { MyBidRow, MyBidState, MyBidsTab } from '@/features/bids/bids.types';
 import { useMyBids } from '@/features/bids/use-bids';
+import { RateSellerButton } from '@/features/reviews/components/rate-seller-button';
+import { StrikeBanner } from '@/features/strikes/components/strike-banner';
+import { BuyerSaleEntry } from '@/features/sales/components/buyer-sale-entry';
 
 const TABS: { value: MyBidsTab; label: string }[] = [
   { value: 'winning', label: 'Winning' },
@@ -56,7 +59,14 @@ function MyBidCard({ row }: { row: MyBidRow }) {
         </Link>
         <p className="text-sm text-muted-foreground">
           Your highest bid <span className="font-semibold text-foreground">{formatINR(row.myHighestBidPaise)}</span> · Current{' '}
-          {formatINR(a.bidCount > 0 ? a.currentBidPaise : a.startingBidPaise)} · {row.myBidCount} of your {row.myBidCount === 1 ? 'bid' : 'bids'}
+          {formatINR(a.bidCount > 0 ? a.currentBidPaise : a.startingBidPaise)}
+          {typeof row.myMaxBidPaise === 'number' && (
+            <>
+              {' '}
+              · your max <span className="font-semibold text-foreground">{formatINR(row.myMaxBidPaise)}</span>
+            </>
+          )}{' '}
+          · {row.myBidCount} of your {row.myBidCount === 1 ? 'bid' : 'bids'}
         </p>
         <Countdown startTime={a.startTime} endTime={a.endTime} status={a.status} />
       </div>
@@ -68,8 +78,10 @@ function MyBidCard({ row }: { row: MyBidRow }) {
             </Link>
           </Button>
         )}
+        {row.state === 'WON' && row.canReview && <RateSellerButton auctionId={a.id} sellerName={a.seller.name} />}
+        {row.state === 'WON' && row.saleId && row.saleStatus && <BuyerSaleEntry saleId={row.saleId} status={row.saleStatus} />}
         <Button asChild variant="outline" size="sm">
-          <Link href={`/auctions/${a.id}`}>{row.state === 'WON' ? 'Seller contact' : 'View'}</Link>
+          <Link href={`/auctions/${a.id}`}>{row.state === 'WON' && !row.saleId ? 'Seller contact' : 'View'}</Link>
         </Button>
       </div>
     </li>
@@ -87,6 +99,8 @@ export default function MyBidsPage() {
         <h1 className="text-2xl font-bold tracking-tight">My bids</h1>
         <p className="text-muted-foreground">Auctions you are winning, outbid on, won or lost.</p>
       </div>
+
+      <StrikeBanner />
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as MyBidsTab)}>
         <TabsList>

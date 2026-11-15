@@ -26,11 +26,4 @@ export interface CommissionSummary {
   overdueCount: number;
 }
 
-export interface CheckoutPayload {
-  orderId: string;
-  amountPaise: number;
-  currency: string;
-  keyId: string;
-  description: string;
-  prefill: { name?: string; email?: string; contact?: string };
-}
+export type { CheckoutPayload } from '@/features/payments/payments.types';

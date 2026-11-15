@@ -13,7 +13,7 @@ export function minNextBidPaise(a: PriceInfo & { minIncrementPaise: number }) {
 /** Whole rupees (digits only) to paise, or null when the text is not a positive integer. */
 export function rupeesToPaise(text: string): number | null {
   const t = text.trim().replace(/,/g, '');
-  if (!/^\d{1,9}$/.test(t)) return null;
+  if (!/^\d{1,12}$/.test(t)) return null;
   const n = Number(t);
   return n > 0 ? n * 100 : null;
 }

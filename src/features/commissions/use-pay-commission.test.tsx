@@ -7,6 +7,7 @@ const toast = vi.hoisted(() => Object.assign(vi.fn(), { success: vi.fn(), error:
 const api = vi.hoisted(() => ({
   createCommissionCheckout: vi.fn(),
   fetchCommission: vi.fn(),
+  payCommissionWithCredits: vi.fn(),
   verifyPayment: vi.fn(),
 }));
 
@@ -14,6 +15,7 @@ vi.mock('sonner', () => ({ toast }));
 vi.mock('./commissions.api', () => ({
   createCommissionCheckout: api.createCommissionCheckout,
   fetchCommission: api.fetchCommission,
+  payCommissionWithCredits: api.payCommissionWithCredits,
 }));
 vi.mock('@/features/payments/payments.api', () => ({ verifyPayment: api.verifyPayment }));
 

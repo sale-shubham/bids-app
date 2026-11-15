@@ -21,13 +21,18 @@ Props: `open`, `onOpenChange`, `title`, `description?`, `confirmLabel?` (default
 | Action | Confirm required |
 |---|---|
 | Place a bid | Yes (bids cannot be withdrawn) |
+| Buy It Now | Yes (ends the auction immediately) |
 | Delete an auction (owner) | Yes |
+| Delete a category (admin; disabled while it has auctions or subcategories) | Yes |
 | Cancel an auction (admin) | Yes |
 | Activate / deactivate a member (admin) | Yes |
 | Change a member's role (admin) | Yes |
 | Waive a commission (admin) | Yes |
 | Log out (this device, or all devices) | Yes |
 | Remove a signed-in device | Yes |
+| Confirm a purchase was received (buyer; "This releases the payment to the seller.") | Yes |
+| Report a problem on a purchase (buyer; reason 10 to 1000 characters in `children`) | Yes |
+| Release / refund a sale (admin; refund has an optional note) | Yes |
 | Pay a commission | Razorpay Checkout is the confirmation step; in stub mode (`keyId` = `"stub"`) a `ConfirmDialog` asks before simulating the payment |
 
 **Does NOT require confirm:** read-only actions, reversible toggles (watchlist heart, notification switch, theme), marking notifications read, navigation.
@@ -114,14 +119,28 @@ onClick={() => setToDelete(auction)}
 
 | File | Action confirmed |
 |---|---|
-| `src/features/bids/components/bid-panel.tsx` | Place a bid ("Confirm your bid", confirm label shows the amount) |
+| `src/features/bids/components/bid-panel.tsx` | Place / raise a maximum bid ("Confirm your maximum bid"), and Buy It Now ("Buy it now"; confirm label shows the price) |
 | `src/app/(auctioneer)/sell/auctions/page.tsx` | Delete auction (row action on My auctions) |
 | `src/app/(auctioneer)/sell/auctions/[id]/page.tsx` | Delete auction (seller's auction page) |
+| `src/features/featured/components/promote-card.tsx` | Pay for a promotion with credits |
+| `src/app/(auctioneer)/sell/commissions/page.tsx` | Pay a commission with credits |
+| `src/features/admin/components/adjust-credits-dialog.tsx` | Admin credit adjustment (form inside the dialog) |
 | `src/features/auctions/components/auction-detail.tsx` | Delete auction (owner only, from the public detail page) |
-| `src/app/(auctioneer)/sell/commissions/page.tsx` | Simulate a commission payment in Razorpay stub mode ("Test mode") |
+| `src/app/(auctioneer)/sell/commissions/page.tsx` | Simulate a commission payment in Razorpay stub mode ("Test mode", via `useStubPaymentConfirm`) |
 | `src/app/(admin)/admin/auctions/page.tsx` | Cancel auction (admin, destructive) |
 | `src/app/(admin)/admin/members/page.tsx` | Activate / deactivate member (destructive when deactivating); change role (destructive when granting `SUPER_ADMIN`, with the role `Select` as `children`) |
+| `src/features/sales/components/purchase-actions.tsx` | Confirm received; Report a problem (destructive, reason `Textarea` as `children`); Razorpay stub "Test mode" via `useStubPaymentConfirm` |
+| `src/features/sales/components/admin-sale-actions.tsx` | Release payment; Refund buyer (destructive, optional note as `children`) |
+| `src/features/second-chance/components/seller-offer-card.tsx` | Offer to the runner-up (seller) |
+| `src/features/second-chance/components/offer-detail-page.tsx` | Accept ("You agree to buy this for ₹X. Pay within 3 days.") / Decline (destructive) a second-chance offer |
+| `src/features/strikes/components/member-strikes-dialog.tsx` | Remove a strike (admin, destructive, optional note as `children`) |
+| `src/features/deposits/components/set-deposit-dialog.tsx` | Set / clear an auction's bid deposit (admin, rupee input + "No deposit" as `children`); the deposit payment itself uses Razorpay Checkout (stub: "Test mode" via `useStubPaymentConfirm`) |
+| `src/app/(admin)/admin/risk/page.tsx` | Dismiss / Mark action taken on a shill-bid flag (optional note) |
+| `src/features/payments/use-stub-payment-confirm.tsx` | Simulate a payment in Razorpay stub mode (shared; also used by `/sell/commissions`) |
 | `src/app/(admin)/admin/commissions/page.tsx` | Waive commission (destructive, "This cannot be undone") |
+| `src/app/(admin)/admin/reviews/page.tsx` | Hide / unhide a review (destructive when hiding) |
+| `src/features/questions/components/questions-section.tsx` | Hide a question (seller) |
+| `src/features/saved-searches/components/alerts-card.tsx` | Delete a saved search alert (Profile > Alerts) |
 | `src/components/layout/dashboard-shell.tsx` | Logout (sidebar footer button) |
 | `src/components/layout/user-menu.tsx` | Log out (header account menu) |
 | `src/components/layout/more-page.tsx` | Logout (Profile page, App tab) |

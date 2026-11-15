@@ -22,6 +22,14 @@ export interface AuthMember {
   createdAt: string;
   // This account's concurrent-session cap.
   deviceLimit: number;
+  // Trust (Phase D). Optional: login / older responses may omit them until `['me']` refetches.
+  /** Verified-seller badge: the member has a KYC'd (ACTIVE) payout account. */
+  verified?: boolean;
+  /** Unpaid-purchase strikes in force (Phase E). */
+  activeStrikes?: number;
+  /** Billing details for GST invoices (Phase G). */
+  gstin?: string | null;
+  billingState?: string | null;
 }
 
 interface AuthState {

@@ -24,7 +24,19 @@ const card = (over: Partial<AuctionCardData> = {}): AuctionCardData => ({
   endTime: new Date(Date.now() + HOUR).toISOString(),
   status: 'LIVE',
   seller: { id: 's1', name: 'Sam Seller', avatarUrl: null },
+  buyNowPricePaise: null,
+  hasReserve: false,
+  reserveMet: false,
   ...over,
+});
+
+describe('AuctionCard buy now', () => {
+  it('shows a Buy now chip only when a price is set', () => {
+    const { rerender } = render(<AuctionCard auction={card({ buyNowPricePaise: 250000 })} />);
+    expect(screen.getByText('Buy now ₹2,500')).toBeInTheDocument();
+    rerender(<AuctionCard auction={card()} />);
+    expect(screen.queryByText(/Buy now/)).not.toBeInTheDocument();
+  });
 });
 
 describe('AuctionCard', () => {
@@ -63,6 +75,21 @@ describe('AuctionCard', () => {
   });
 });
 
+describe('AuctionCard sold archive', () => {
+  it('shows the sale price and date when sold', () => {
+    render(<AuctionCard auction={card({ status: 'ENDED', sold: true, bidCount: 3, currentBidPaise: 250000, endedAt: '2026-11-10T12:00:00.000Z' })} />);
+    expect(screen.getByText(/Sold for ₹2,500 · 10 Nov 2026/)).toBeInTheDocument();
+    expect(screen.queryByText('Current bid')).not.toBeInTheDocument();
+  });
+
+  it('shows a video icon only when the listing has a video', () => {
+    const { rerender } = render(<AuctionCard auction={card({ hasVideo: true })} />);
+    expect(screen.getByText('Has video')).toBeInTheDocument();
+    rerender(<AuctionCard auction={card()} />);
+    expect(screen.queryByText('Has video')).not.toBeInTheDocument();
+  });
+});
+
 describe('AuctionStatusBadge', () => {
   it.each([
     ['LIVE', 'Live'],
@@ -72,5 +99,14 @@ describe('AuctionStatusBadge', () => {
   ] as const)('%s -> %s', (status, label) => {
     render(<AuctionStatusBadge status={status} />);
     expect(screen.getByText(label)).toBeInTheDocument();
+  });
+});
+
+describe('AuctionCard promoted badge', () => {
+  it('shows a Promoted badge only for promoted auctions', () => {
+    const { rerender } = render(<AuctionCard auction={card({ promoted: true })} />);
+    expect(screen.getByText('Promoted')).toBeInTheDocument();
+    rerender(<AuctionCard auction={card({ promoted: false })} />);
+    expect(screen.queryByText('Promoted')).not.toBeInTheDocument();
   });
 });

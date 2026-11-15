@@ -18,6 +18,7 @@ const PAGES: { slug: LegalSlug; label: string }[] = [
   { slug: 'terms-conditions', label: 'Terms & Conditions' },
   { slug: 'privacy-policy', label: 'Privacy Policy' },
   { slug: 'refund-policy', label: 'Refund Policy' },
+  { slug: 'prohibited-items', label: 'Prohibited Items' },
 ];
 
 function LegalEditor({ page }: { page: LegalPage }) {

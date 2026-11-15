@@ -1,3 +1,4 @@
+import type { CheckoutMode } from '@/features/settings/settings.types';
 import type { AuctionCard } from '@/features/auctions/auctions.types';
 import type { CommissionDTO } from '@/features/commissions/commissions.types';
 import type { Role } from '@/constants/routes';
@@ -33,6 +34,14 @@ export interface AdminMember {
   unpaidCommissionPaise: number;
   auctionsWon: number;
   moneySpentPaise: number;
+  /** Verified-seller badge: KYC'd (ACTIVE) payout account; revocable by an admin. */
+  verified: boolean;
+  /** Seller payout account status; null when the member has none. */
+  payoutStatus: string | null;
+  /** Unpaid-purchase strikes still in force (not removed, not expired). */
+  activeStrikes: number;
+  /** Credit balance (referral rewards etc.) in paise. */
+  creditBalancePaise: number;
 }
 
 export type MemberStatusFilter = '' | 'active' | 'inactive';
@@ -44,7 +53,7 @@ export interface MemberFilters {
 }
 
 export type AdminAuctionTab = 'live' | 'upcoming' | 'ended' | 'cancelled' | 'all';
-export type AdminAuction = AuctionCard & { sellerEmail: string };
+export type AdminAuction = AuctionCard & { sellerEmail: string; /** Bid deposit in paise; null/absent = none. */ depositPaise?: number | null };
 
 export type AdminCommissionTab = 'due' | 'paid' | 'waived' | 'all';
 export type AdminCommission = CommissionDTO & { seller: { id: string; name: string; email: string } };
@@ -67,10 +76,23 @@ export interface AdminSettings {
   commissionRateBps: number;
   minIncrementPaise: number;
   antiSnipingMinutes: number;
-  categories: string[];
+  /** Read-only, derived from the category tree (managed at /admin/categories); the API ignores it on save. */
+  categories?: string[];
+  /** Platform maximum price in paise (100_000 .. 1_000_000_000_000). */
+  maxPricePaise: number;
+  /** Winner checkout through the platform: off / optional / required. */
+  checkoutMode: CheckoutMode;
+  /** Starting bid from which an auction needs a bid deposit (paise); 0 = off. */
+  depositThresholdPaise: number;
+  /** Deposit as a share of the starting bid, in basis points (100 .. 5000). */
+  depositRateBps: number;
+  /** Paid featured listings on? Optional so an older API response still parses. */
+  featuredEnabled?: boolean;
+  /** Price in paise per promotion length: keys `1`, `3`, `7`. */
+  featuredPrices?: Record<string, number>;
 }
 
-export type LegalSlug = 'terms-conditions' | 'privacy-policy' | 'refund-policy';
+export type LegalSlug = 'terms-conditions' | 'privacy-policy' | 'refund-policy' | 'prohibited-items';
 export interface LegalPage {
   slug: LegalSlug;
   title: string;

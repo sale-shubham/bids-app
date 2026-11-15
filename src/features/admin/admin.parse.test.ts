@@ -69,7 +69,17 @@ describe('admin.parse', () => {
       minIncrementPaise: 10000,
       antiSnipingMinutes: 2,
       categories: ['Art', 'Cars'],
+      maxPricePaise: 10_000_000_000,
+      checkoutMode: 'optional',
+      depositThresholdPaise: 0,
+      depositRateBps: 1000,
+      featuredEnabled: false,
+      featuredPrices: { '1': 0, '3': 0, '7': 0 },
     });
+    expect(parseSettings({ data: { depositThresholdPaise: 10_000_000, depositRateBps: 1500 } })).toMatchObject({ depositThresholdPaise: 10_000_000, depositRateBps: 1500 });
+    expect(parseSettings({ data: { checkoutMode: 'required' } }).checkoutMode).toBe('required');
+    expect(parseSettings({ data: { checkoutMode: 'bogus' } }).checkoutMode).toBe('optional');
+    expect(parseSettings({ data: { maxPricePaise: 5_000_000_000 } }).maxPricePaise).toBe(5_000_000_000);
     expect(parseSettings({ data: { commissionRateBps: 0, antiSnipingMinutes: 0 } })).toMatchObject({ commissionRateBps: 0, antiSnipingMinutes: 0 });
   });
 

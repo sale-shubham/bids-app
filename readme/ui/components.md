@@ -58,6 +58,7 @@ Only `Badge` and `Button` use `class-variance-authority`. Both export their `*Va
 | `FormInput` | `form-input.tsx`. RHF-friendly labelled `Input` (`forwardRef`). Wires `aria-invalid` and renders the error (destructive) or hint (muted) below. Pass the `register()` spread as props; `id` defaults to `name`, else a generated `useId()`, so the `<Label>` is always tied to the field. `type="password"` renders an Eye/EyeOff show/hide toggle. Optional `icon` / `prefix` (leading display-only text, not part of the value) adjust the left padding. Used by login, signup, forgot password, the Profile cards, `AuctionForm`, `RepublishDialog`, the contact form and admin marketplace settings | extends `InputProps` + `label?`, `error?`, `required?`, `hint?`, `icon?`, `prefix?` |
 | `OtpInput` | `otp-input.tsx`. Boxed digit-per-cell OTP entry (default 6 cells). Auto-advances on type, retreats on backspace, and spreads a paste across the cells. A multi-digit insert that arrives as a plain `input` event (a phone keyboard's clipboard suggestion, SMS one-time-code autofill) is spread the same way, which is why the cells have no `maxLength={1}`. Each cell selects its content on focus. Per-cell digits are held in local state, so clearing a middle cell leaves a gap; `onChange` only receives the digits before the first gap, so a code with a gap never reaches `length`. Cells are `h-11 w-9` below `sm`, `h-14 w-12` from `sm`. `fill` makes them `flex-1` below `sm`. Used by `OtpStep` and `ForgotPasswordFlow` | `length?` (6), `value`, `onChange`, `disabled?`, `error?`, `autoFocus?`, `fill?` |
 | `OtpStep` | `otp-step.tsx`. `OtpInput` + a resend timer/button (pair with `useResendCooldown`, `src/hooks/use-resend-cooldown.ts`) + a "Verified" state once `verified` is true. Calls `onComplete` when the code reaches `length`. Used by `VerifyEmailStep` (signup, and login's `EMAIL_NOT_VERIFIED` branch) | `length?`, `code`, `onChange`, `onComplete`, `error?`, `verifying`, `verified?`, `resendIn`, `onResend`, `resending`, `autoFocus?`, `fill?` |
+| `ContactCard` | `contact-card.tsx`. Name, mailto email and tel phone of a counterparty. Used by `AuctionResult` (legacy auctions) and the sale detail pages | `title`, `contact: { name, email, phone }` |
 | `DatePicker` | `date-picker.tsx`. `ui/Popover` + `ui/Calendar` (`mode="single"`): an outline `Button` trigger showing the date (`format(d, 'PPP')`) or a placeholder; closes on pick. Value is a plain `"YYYY-MM-DD"` string in and out, built from local `Date` fields, so there is no UTC shift on round-trip and it drops into a react-hook-form `Controller`. Used by `AuctionForm` and `RepublishDialog` | `value?`, `onChange(value)`, `label?`, `required?`, `error?`, `placeholder?`, `disabled?`, `className?` |
 | `SearchInput` | `search-input.tsx`. **App-standard debounced search box**: `ui/input` with a leading `Search` icon and a clear (`X`) button; keeps immediate local state and emits the debounced value (default 500ms; clearing emits at once). `placeholder` defaults to `''`, `aria-label` to `'Search'`. Callers put the value in their `q` filter and reset to page 1 (`docs/PAGINATION.md`). Used by `/admin/members`, `/admin/auctions` and the `/auctions` filter bar | `value`, `onChange`, `placeholder?`, `debounceMs?`, `className?`, `aria-label?` |
 | `RichTextEditor` | `rich-text-editor.tsx`. WYSIWYG editor: `react-quill-new` (`snow` theme) loaded with `next/dynamic` and `ssr: false` (Quill touches `document` at import), `Skeleton` while loading. Toolbar: headings, bold/italic/underline, lists, align, link, blockquote, clean; no image or video upload. Emits HTML; the vendor stylesheet is re-skinned onto the tokens in `globals.css`'s `.ql-*` block so it works in dark mode. Used by admin Settings → Legal pages (`LegalSettings`) and the `AuctionForm` description | `value`, `onChange(html)`, `placeholder?` |
@@ -68,7 +69,7 @@ Only `Badge` and `Button` use `class-variance-authority`. Both export their `*Va
 
 | Component | Purpose | Key props |
 |---|---|---|
-| `ResponsiveList<T>` | `responsive-list.tsx`. **Responsive table/cards list** (`docs/PAGINATION.md`). Wide (`hidden @3xl/content:block`): a `Card`-wrapped table + `ListPagination`. Narrow (`@3xl/content:hidden`): cards + `InfiniteScroll`. The switch is a **container** query on `<main>`'s content box (768px), not the window, and `useIsNarrowContent()` measures the same box, so the query that runs always belongs to the visible layout. Owns skeletons, empty states, the pagination bar and the sentinel; pages pass `desktop.renderTable(items)` + `mobile.renderCard(item)` and the two query results. Used through `AdminList` (`features/admin/components/admin-list.tsx`) on `/admin/members`, `/admin/auctions`, `/admin/commissions` and `/admin/payments` | `desktop: { items, isLoading, meta?, onPageChange, onPageSizeChange?, renderTable, skeletonRows? }`, `mobile: { items, isLoading, hasNextPage, isFetchingNextPage, fetchNextPage, renderCard, skeletonCards? }`, `empty: { icon, title, description }`, `getKey` |
+| `ResponsiveList<T>` | `responsive-list.tsx`. **Responsive table/cards list** (`docs/PAGINATION.md`). Wide (`hidden @3xl/content:block`): a `Card`-wrapped table + `ListPagination`. Narrow (`@3xl/content:hidden`): cards + `InfiniteScroll`. The switch is a **container** query on `<main>`'s content box (768px), not the window, and `useIsNarrowContent()` measures the same box, so the query that runs always belongs to the visible layout. Owns skeletons, empty states, the pagination bar and the sentinel; pages pass `desktop.renderTable(items)` + `mobile.renderCard(item)` and the two query results. Used through `AdminList` (`features/admin/components/admin-list.tsx`) on `/admin/members`, `/admin/auctions`, `/admin/commissions`, `/admin/payments` and `/admin/reviews` | `desktop: { items, isLoading, meta?, onPageChange, onPageSizeChange?, renderTable, skeletonRows? }`, `mobile: { items, isLoading, hasNextPage, isFetchingNextPage, fetchNextPage, renderCard, skeletonCards? }`, `empty: { icon, title, description }`, `getKey` |
 | `ListPagination` | `list-pagination.tsx`. Offset pagination bar: optional rows-per-page `Select` + numbered nav (Prev / windowed page cells with ellipsis past 9 pages / Next) on `ui/pagination`. Right-aligned once its container has 512px (`@lg/content:justify-end`). Computes `totalPages` from `total`/`pageSize`; clamps and skips no-op page changes. Default `pageSizeOptions` `[10, 25, 50, 75, 100]`. Rendered only inside `ResponsiveList` | `total`, `currentPage`, `pageSize`, `onPageChange`, `onPageSizeChange?`, `pageSizeOptions?`, `hideOnSinglePage?`, `className?` |
 | `InfiniteScroll` | `infinite-scroll.tsx`. `IntersectionObserver` sentinel: calls `onLoadMore()` when it scrolls into view (if `hasMore` and not `loading`), shows a centred spinner while fetching, renders nothing when exhausted. Pairs with a `useInfiniteQuery`. Used by every non-admin list (`/auctions`, seller pages, `/watchlist`, `/my-bids`, `/notifications`, `/sell/auctions`, `/sell/commissions`) and by `ResponsiveList`'s narrow half | `onLoadMore`, `hasMore`, `loading`, `rootMargin?` (`'200px'`), `className?` |
 | `EmptyState` | `empty-state.tsx`. "Nothing here" placeholder (dashed border) with a brand-tinted haloed icon, title, description, a primary action (link or button) and an optional secondary link. Wrapped in `Reveal` | `icon: LucideIcon`, `title`, `description?`, `actionLabel?`, `actionHref?`, `onAction?`, `secondaryLabel?`, `secondaryHref?` |
@@ -95,11 +96,21 @@ Only `Badge` and `Button` use `class-variance-authority`. Both export their `*Va
 | `charts.tsx` | Recharts wrappers `DonutChart`, `Sparkline`, `TrendLine` and `PALETTE`. **Not imported anywhere**: the `/admin` dashboard uses `features/admin/components/admin-charts.tsx` (`RevenueBarChart`, `SignupsLineChart`) instead | see file |
 | `ComingSoon` | `coming-soon.tsx`. "Coming in Phase N" placeholder card for an unbuilt route. **Not used by any page** | `icon`, `title`, `phase`, `description?` |
 
+### Trust components
+
+| Component | Purpose | Key props |
+|---|---|---|
+| `VerifiedBadge` | `verified-badge.tsx`. Check-shield icon (or icon + "Verified") with a tooltip; renders nothing unless verified; tooltip says the payout account is KYC'd | `verified?`, `variant?` (icon or label) |
+| `DepositCard` / `DepositPaidChip` / `SetDepositDialog` | `features/deposits/components/`. Bid-panel deposit card + chip; admin set-deposit dialog. See `flows/deposits.md` | `auction` |
+| `StrikeBanner` / `MemberStrikesDialog` | `features/strikes/components/`. Member warning banner (`activeStrikes`); admin strikes list with Remove. See `flows/strikes.md` | `member` / `onClose` |
+| `SellerOfferCard` / `OffersSection` / `OfferDetailPage` / `OfferCountdown` | `features/second-chance/components/`. Second-chance offer UI. See `flows/strikes.md` | `sale` / `id` / `expiresAt` |
+| `ReportButton` / `ReportDialog` | `features/reports/components/`. See `flows/reports.md` | `targetType`, `targetId`, `subject`, `ownerId?`, `hidden?` |
+
 ### Profile page and cards (`/profile`, `/admin/profile`)
 
 | Component | Purpose | Key props |
 |---|---|---|
-| `ProfilePage` | `profile-page.tsx`. The profile view shared by `/profile` (BIDDER / AUCTIONEER) and `/admin/profile` (SUPER_ADMIN): `MorePage` with an Account tab (`ProfileIdentityCard` + `ProfileEditCard`) and a Security tab (`ChangePasswordCard`, `MyDevicesCard`, `SignOutCard`) | — |
+| `ProfilePage` | `profile-page.tsx`. The profile view shared by `/profile` (BIDDER / AUCTIONEER) and `/admin/profile` (SUPER_ADMIN): `MorePage` with an Account tab (`ProfileIdentityCard` + `ProfileEditCard`) and a Security tab (`ChangePasswordCard`, `MyDevicesCard`, `SignOutCard`, plus `PhoneVerificationCard` and `TwoFactorCard`, see `flows/auth.md`) and, for BIDDERs only, an Alerts tab (`AlertsCard`) | — |
 | `ProfileIdentityCard` | `profile-identity-card.tsx`. Account tab, top card: `MemberAvatar` (`xl`) with **Upload / Change photo** (`useUploadImage('avatars')` → presigned PUT → `useUpdateMe()` → `PATCH /members/me`), name, role badge, email, then a `@lg/content:grid-cols-3` list of figures: an AUCTIONEER sees **Unpaid commission** (links to `/sell/commissions`, a "Due" badge when above 0); every other role sees **Auctions won** and **Total spent**; everyone sees **Member since** | — |
 | `ProfileEditCard` | `profile-edit-card.tsx`. Name, phone and address form (`profileSchema` in `features/members/members.schema.ts`, `useUpdateMe()`). Email is the login identity and is not editable. An emptied field that had a value is sent as `null` to clear it. Save is disabled until the form is dirty | — |
 | `ChangePasswordCard` | `change-password-card.tsx`. Current / new / confirm password (`changePasswordSchema`, `useChangePassword()` → `POST /auth/password/change`); an `INVALID_CURRENT_PASSWORD` or `INVALID_CREDENTIALS` error is set on the current-password field | — |
@@ -138,14 +149,19 @@ See `readme/ui/layout.md` for how these assemble.
 | Feature | Components |
 |---|---|
 | `admin` | `AdminList` (error state + `ResponsiveList`), `StatusTabs`, `PageHeader` (`admin-list.tsx`); `RevenueBarChart`, `SignupsLineChart` (`admin-charts.tsx`); `CopyButton`, `CopyableId`; `LegalSettings`, `MarketplaceSettings` |
-| `auctions` | `AuctionCard`, `AuctionStatusBadge`, `CoverImage` (`auction-card.tsx`); `AuctionGrid`, `AuctionGridSkeleton`; `AuctionList` (server first page, then infinite scroll); `AuctionFilterBar` (URL-driven); `AuctionDetailView`; `AuctionGallery`; `AuctionForm` (create/edit); `RepublishDialog`; `RecentlyViewed`; `ServerTimeSync`; `ShareButtons` |
+| `auctions` | `AuctionCard` (with a "Buy now ₹X" chip when `buyNowPricePaise` is set), `AuctionStatusBadge`, `CoverImage` (`auction-card.tsx`); `NewAuction` (`/sell/new`, relist pre-fill); `AuctionGrid`, `AuctionGridSkeleton`; `AuctionList` (server first page, then infinite scroll); `AuctionFilterBar` (URL-driven); `AuctionDetailView`; `AuctionGallery`; `AuctionForm` (create/edit); `RepublishDialog`; `RecentlyViewed`; `ServerTimeSync`; `ShareButtons` |
 | `auth` | `ForgotPasswordFlow`, `VerifyEmailStep` |
-| `bids` | `BidPanel`, `BidHistory`, `AuctionResult` (`readme/flows/bidding.md`) |
+| `bids` | `BidPanel` (max-bid form, raise max, reserve badge, Buy It Now), `BidHistory` (auto / Buy now tags), `AuctionResult` (reserve-not-met + Relist) (`readme/flows/bidding.md`) |
 | `commissions` | `UnpaidCommissionBanner` (`readme/flows/payments.md`) |
+| `sales` | `SaleStatusBadge` (own status map), `SaleList` (status tabs + infinite scroll, `buyer` / `seller`), `SaleDetailPage` / `SaleDetailView` (summary, `SaleBreakdown`, `SaleTimeline`, contact + delivery + dispute reason), `PurchaseActions` (Pay / Confirm received / `DisputeDialog`), `ShipForm`, `BuyerSaleEntry` ("Pay now" / "View purchase"; auction result + `/my-bids`), `AdminSaleActions` (`readme/flows/checkout.md`) |
+| `payouts` | `PayoutAccountPanel`, `PayoutStatusCard`, `PayoutForm` (masked account number), `PayoutRequiredGate` (wraps `/sell/new`) (`readme/flows/payouts.md`) |
 | `leaderboard` | `Podium`, `LeaderboardTable`, `TopBidders` (`leaderboard-view.tsx`) |
 | `live` | `LiveIndicator` (`readme/flows/websocket.md`) |
 | `notifications` | `NotificationBell` (header bell + latest 10 in a dropdown; hidden for guests and SUPER_ADMIN), `NotificationItem`, `useOpenNotification` |
 | `sellers` | `SellerAuctions` (Live / Upcoming / Ended tabs) |
+| `reviews` | `StarRatingInput`, `StarDisplay`, `RatingSummary` (`star-rating.tsx`); `ReviewDialog`, `RateSellerButton`; `ReviewItem`; `SellerReviews` (`readme/flows/reviews.md`) |
+| `questions` | `QuestionsSection` (list, ask form, seller answer / hide) (`readme/flows/questions.md`) |
+| `saved-searches` | `SaveSearchButton` (in `AuctionFilterBar`), `AlertsCard` (Profile > Alerts tab) (`readme/flows/saved-searches.md`) |
 | `watchlist` | `WatchButton` (heart toggle; guests go to `/login?next=`), `WatchlistView` (`readme/flows/watchlist.md`) |
 
 ## Conventions
@@ -170,3 +186,31 @@ See `readme/ui/layout.md` for how these assemble.
 - `src/components/layout/nav-items.ts` — the nav arrays, `useMoreTab()` and `guestMoreTab()`
 
 *Last updated: 2026-11-15 (public pages render in `DashboardShell` guest mode via `PublicShell` and `ShellFooter`; the old public header, footer, page wrapper, admin sub-navigation and contact feature are gone; `MEMBER_NAV` / `ADMIN_NAV` / `GUEST_NAV`; shared `ProfilePage`)*
+
+## Listing media (features/auctions)
+
+| Component | Notes |
+|---|---|
+| `VideoUploadField` | `features/auctions/components/video-upload-field.tsx`. Optional listing video picker: MP4 / WebM up to 50 MB, upload progress, `<video controls preload="metadata">` preview, remove. Props `value: string \| null`, `onChange(url \| null)` |
+| `AuctionGallery` | Now opens `yet-another-react-lightbox` (Zoom plugin) instead of `ImageLightbox`; optional `videoUrl` renders a video under the thumbnails |
+| `AuctionCard` | Video icon when `hasVideo`; "Sold for ₹X · date" line when `sold` |
+| `SimilarSold` | "Recently sold in this category" grid on the detail page; renders nothing when empty |
+| `BulkPreviewTable` | `features/bulk/components/`. CSV preview with per-row problems (client + `BULK_INVALID`) |
+
+## Categories and listing blocks (Phase F)
+- `features/categories/components/`: `CategoryPicker` (cascading selects, `tree` / `value` id / `onChange`), `AttributeFields` (`defs`, `values`, `onChange(key, value)`, `errors`), `AttributeSchemaEditor` (react-hook-form `useFieldArray` rows), `CategoryDialog` (create / edit), `AdminCategories` (page body).
+- `features/auctions/components/listing-info.tsx`: `CategoryBreadcrumb`, `EstimateLine`, `SpecsTable`, `ConditionReport` (collapsible), `DeliveryBlock`, `estimateText`.
+- `PurchaseActions` shows a delivery radio group when both options are offered.
+
+## Engagement (Phase G part 1)
+- `features/follows/components/`: `FollowButton` (`sellerId`, `sellerRole?`, `initialFollowerCount?`, `compact?`, `showCount?`), `FollowingCard` (profile Following tab).
+- `features/notification-preferences/components/`: `NotificationPreferencesCard` (profile Notifications tab).
+- `features/analytics/components/`: `SellerAnalyticsPage`, `AuctionAnalyticsSection`, `DailyChart`, `DaysSwitch` (7 / 30 / 90 `aria-pressed` group).
+- `admin-charts.tsx` now exports `TOOLTIP` / `AXIS` chart styles for reuse.
+
+## Phase G part 2
+- `features/featured/components/`: `PromoteCard` (`auctionId`, `status`; hides itself when promotions are off or the auction ended), `PromotedStrip` (`category`; up to 2 promoted auctions under a "Promoted" heading). `AuctionCard` shows a "Promoted" badge when `auction.promoted`.
+- `features/referrals/components/`: `ReferCard`, `CreditLedger` (profile Refer & earn tab).
+- `features/invoices/components/`: `InvoicesCard` (profile Invoices tab). `components/common/billing-details-card.tsx`: `BillingDetailsCard` (GSTIN + billing state, profile Account tab).
+- `features/admin/components/`: `InvoiceSettings`, `AdjustCreditsDialog` (`member`, `onClose`).
+- Test setup stubs `ResizeObserver` (Radix Switch).

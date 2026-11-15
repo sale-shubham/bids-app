@@ -41,6 +41,11 @@ export function useCategories() {
   return useQuery({ queryKey: ['auctions', 'categories'], queryFn: api.fetchCategories, staleTime: 5 * 60_000 });
 }
 
+/** Recently sold lots in the same category (<= 6); the block hides itself when empty. */
+export function useSimilarSold(id: string) {
+  return useQuery({ queryKey: ['auction-similar-sold', id], queryFn: () => api.fetchSimilarSold(id), staleTime: 5 * 60_000 });
+}
+
 const POLL_MS = 10_000;
 const CLOSE_JOB_LAG_MS = 70_000;
 

@@ -2,7 +2,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Controller, useForm, useWatch } from 'react-hook-form';
+import { Controller, useForm, useWatch, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertTriangle, ArrowLeft, ArrowRight, ImagePlus, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
@@ -14,39 +14,69 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Input } from '@/components/ui/input';
 import { apiErrorCode } from '@/lib/api-client';
 import { cn, formatINR } from '@/lib/utils';
+import { useMaxPricePaise } from '@/features/settings/use-settings';
+import { legalPagePath } from '@/constants/legal';
 import { useAuthStore } from '@/store/auth-store';
-import { auctionErrorMessage } from '../auctions.errors';
+import { AttributeFields } from '@/features/categories/components/attribute-fields';
+import { CategoryPicker } from '@/features/categories/components/category-picker';
+import { attributeSchemaFor } from '@/features/categories/categories.utils';
+import { useCategoryTree } from '@/features/categories/use-categories';
+import { attributeFieldErrors, auctionErrorMessage } from '../auctions.errors';
 import {
   DURATION_PRESETS,
   defaultFormValues,
   makeAuctionFormSchema,
+  relistFormValues,
   toWritePayload,
+  withoutNullPrices,
   type AuctionFormValues,
 } from '../auctions.schema';
-import type { AuctionDetail, AuctionWritePayload } from '../auctions.types';
-import { useCategories, useCreateAuction, useUpdateAuction } from '../use-auctions';
+import { CONDITIONS, type AuctionCondition, type AuctionDetail, type AuctionWritePayload } from '../auctions.types';
+import { useCreateAuction, useUpdateAuction } from '../use-auctions';
 import { useImageUploader } from '../use-image-uploader';
+import { VideoUploadField } from './video-upload-field';
 
 // Shared create / edit form. `auction` present = edit mode (prefilled, PATCH
 // with only the changed fields).
-export function AuctionForm({ auction }: { auction?: AuctionDetail }) {
+export function AuctionForm({ auction, relistFrom }: { auction?: AuctionDetail; relistFrom?: AuctionDetail }) {
   const router = useRouter();
   const member = useAuthStore((s) => s.member);
-  const categories = useCategories();
+  const categories = useCategoryTree();
+  const tree = React.useMemo(() => categories.data ?? [], [categories.data]);
+  const maxPricePaise = useMaxPricePaise();
   const create = useCreateAuction();
   const update = useUpdateAuction(auction?.id ?? '');
-  const defaults = React.useMemo(() => defaultFormValues(auction), [auction]);
-  const schema = React.useMemo(() => makeAuctionFormSchema(auction?.startTime), [auction?.startTime]);
+  const defaults = React.useMemo(() => (relistFrom ? relistFormValues(relistFrom) : defaultFormValues(auction)), [auction, relistFrom]);
+  // The attribute rules depend on the chosen category, so the schema is built per validation run.
+  const resolver = React.useMemo<Resolver<AuctionFormValues>>(
+    () => (values, context, options) =>
+      zodResolver(makeAuctionFormSchema(auction?.startTime, maxPricePaise, attributeSchemaFor(tree, values.categoryId)))(values, context, options),
+    [auction?.startTime, maxPricePaise, tree],
+  );
 
-  const form = useForm<AuctionFormValues>({ resolver: zodResolver(schema), defaultValues: defaults });
-  const { control, register, handleSubmit, setValue, formState } = form;
+  const form = useForm<AuctionFormValues>({ resolver, defaultValues: defaults });
+  const { control, register, handleSubmit, setValue, setError, getValues, formState } = form;
   const errors = formState.errors;
   const startNow = useWatch({ control, name: 'startNow' });
   const duration = useWatch({ control, name: 'duration' });
-  const condition = useWatch({ control, name: 'condition' });
+  const [videoBusy, setVideoBusy] = React.useState(false);
+  const categoryId = useWatch({ control, name: 'categoryId' });
+  const attributes = useWatch({ control, name: 'attributes' });
+  const pickup = useWatch({ control, name: 'pickup' });
+  const courier = useWatch({ control, name: 'courier' });
+  const attributeDefs = React.useMemo(() => attributeSchemaFor(tree, categoryId), [tree, categoryId]);
+  const attrErrors = Object.fromEntries(
+    Object.entries(errors.attributes ?? {}).map(([k, v]) => [k, (v as { message?: string } | undefined)?.message]),
+  );
+
+  const onCategory = (id: string) => {
+    const keep = new Set(attributeSchemaFor(tree, id).map((d) => d.key));
+    const next = Object.fromEntries(Object.entries(getValues('attributes')).filter(([k]) => keep.has(k)));
+    setValue('categoryId', id, { shouldDirty: true, shouldValidate: formState.isSubmitted });
+    setValue('attributes', next, { shouldDirty: true });
+  };
 
   const uploader = useImageUploader({
     initialUrls: defaults.images,
@@ -57,23 +87,23 @@ export function AuctionForm({ auction }: { auction?: AuctionDetail }) {
   const blocked = !auction && unpaid > 0;
   const pending = create.isPending || update.isPending;
 
-  const categoryOptions = React.useMemo(() => {
-    const names = (categories.data ?? []).map((c) => c.name);
-    if (auction && !names.includes(auction.category)) names.push(auction.category);
-    return names;
-  }, [categories.data, auction]);
-
   const onSubmit = (values: AuctionFormValues) => {
-    const payload = toWritePayload(values);
+    const payload = toWritePayload(values, attributeDefs);
     const onError = (e: unknown) => {
+      const fieldErrors = attributeFieldErrors(e);
+      for (const [key, message] of Object.entries(fieldErrors)) setError(`attributes.${key}`, { message });
       if (apiErrorCode(e) === 'COMMISSION_UNPAID') {
         toast.error(auctionErrorMessage(e), { action: { label: 'Pay now', onClick: () => router.push('/sell/commissions') } });
+        return;
+      }
+      if (apiErrorCode(e) === 'PAYOUT_ACCOUNT_REQUIRED') {
+        toast.error(auctionErrorMessage(e), { action: { label: 'Set up', onClick: () => router.push('/sell/payouts') } });
         return;
       }
       toast.error(auctionErrorMessage(e, 'Could not save the auction'));
     };
     if (!auction) {
-      create.mutate(payload, {
+      create.mutate(withoutNullPrices(payload), {
         onSuccess: (a) => {
           toast.success('Auction created');
           router.push(`/auctions/${a.id}`);
@@ -83,7 +113,7 @@ export function AuctionForm({ auction }: { auction?: AuctionDetail }) {
       return;
     }
     // Edit: send only what changed (an unchanged start time may already be in the past).
-    const original = toWritePayload(defaultFormValues(auction));
+    const original = toWritePayload(defaultFormValues(auction), attributeSchemaFor(tree, auction.categoryId ?? '').length ? attributeSchemaFor(tree, auction.categoryId ?? '') : attributeDefs);
     const diff: Partial<AuctionWritePayload> = {};
     const keys = Object.keys(payload) as (keyof AuctionWritePayload)[];
     for (const k of keys) {
@@ -122,6 +152,13 @@ export function AuctionForm({ auction }: { auction?: AuctionDetail }) {
 
       <section className="space-y-4">
         <h2 className="text-lg font-semibold">Item details</h2>
+        <p className="text-sm text-muted-foreground">
+          Check the{' '}
+          <Link href={legalPagePath('prohibited-items')} target="_blank" className="font-medium text-primary hover:underline">
+            prohibited items list
+          </Link>{' '}
+          before listing.
+        </p>
         <FormInput label="Title" required maxLength={120} error={errors.title?.message} {...register('title')} />
 
         <div className="space-y-1.5">
@@ -136,54 +173,55 @@ export function AuctionForm({ auction }: { auction?: AuctionDetail }) {
           {errors.description && <p className="text-xs text-destructive">{errors.description.message}</p>}
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label>
-              Category <span className="text-destructive">*</span>
-            </Label>
-            {categoryOptions.length > 0 ? (
-              <Controller
-                control={control}
-                name="category"
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger aria-invalid={!!errors.category}>
-                      <SelectValue placeholder="Choose a category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categoryOptions.map((c) => (
-                        <SelectItem key={c} value={c}>
-                          {c}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            ) : (
-              <Input placeholder="e.g. Watches" aria-invalid={!!errors.category} {...register('category')} />
-            )}
-            {errors.category && <p className="text-xs text-destructive">{errors.category.message}</p>}
-          </div>
+        <CategoryPicker
+          tree={tree}
+          value={categoryId}
+          onChange={onCategory}
+          loading={categories.isPending}
+          error={errors.categoryId?.message}
+        />
 
-          <div className="space-y-1.5">
-            <Label>
-              Condition <span className="text-destructive">*</span>
-            </Label>
-            <div className="grid grid-cols-2 gap-2">
-              {(['NEW', 'USED'] as const).map((c) => (
-                <Button
-                  key={c}
-                  type="button"
-                  variant={condition === c ? 'default' : 'outline'}
-                  aria-pressed={condition === c}
-                  onClick={() => setValue('condition', c, { shouldDirty: true })}
-                >
-                  {c === 'NEW' ? 'New' : 'Used'}
-                </Button>
-              ))}
-            </div>
-          </div>
+        <AttributeFields
+          defs={attributeDefs}
+          values={attributes}
+          errors={attrErrors}
+          onChange={(key, value) => setValue(`attributes.${key}`, value, { shouldDirty: true, shouldValidate: formState.isSubmitted })}
+        />
+
+        <div className="max-w-sm space-y-1.5">
+          <Label>
+            Condition <span className="text-destructive">*</span>
+          </Label>
+          <Controller
+            control={control}
+            name="condition"
+            render={({ field }) => (
+              <Select value={field.value} onValueChange={(v) => field.onChange(v as AuctionCondition)}>
+                <SelectTrigger aria-label="Condition" aria-invalid={!!errors.condition}>
+                  <SelectValue placeholder="Choose a condition" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CONDITIONS.map((c) => (
+                    <SelectItem key={c.value} value={c.value}>
+                      {c.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
+          {errors.condition && <p className="text-xs text-destructive">{errors.condition.message}</p>}
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>Condition report</Label>
+          <Controller
+            control={control}
+            name="conditionReport"
+            render={({ field }) => <RichTextEditor value={field.value} onChange={field.onChange} placeholder="Optional: wear, repairs, missing parts, what works and what does not" />}
+          />
+          <p className="text-xs text-muted-foreground">Optional. Buyers see it in a collapsible section on the listing.</p>
+          {errors.conditionReport && <p className="text-xs text-destructive">{errors.conditionReport.message}</p>}
         </div>
       </section>
 
@@ -248,6 +286,11 @@ export function AuctionForm({ auction }: { auction?: AuctionDetail }) {
           )}
         </div>
         {errors.images && <p className="text-xs text-destructive">{errors.images.message}</p>}
+        <Controller
+          control={control}
+          name="videoUrl"
+          render={({ field }) => <VideoUploadField value={field.value} onChange={(url) => field.onChange(url)} onUploadingChange={setVideoBusy} />}
+        />
       </section>
 
       <section className="space-y-4">
@@ -265,6 +308,83 @@ export function AuctionForm({ auction }: { auction?: AuctionDetail }) {
             {...register('minIncrement')}
           />
         </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormInput
+            label="Reserve price (₹)"
+            type="number"
+            inputMode="decimal"
+            min={1}
+            step="any"
+            hint="Hidden from bidders. Below it, the item doesn't sell."
+            error={errors.reservePrice?.message}
+            {...register('reservePrice')}
+          />
+          <FormInput
+            label="Buy It Now price (₹)"
+            type="number"
+            inputMode="decimal"
+            min={1}
+            step="any"
+            hint="Bidders can buy instantly until the first bid."
+            error={errors.buyNowPrice?.message}
+            {...register('buyNowPrice')}
+          />
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold">Estimate</h2>
+          <p className="text-sm text-muted-foreground">Optional. Gives bidders a sense of the expected value (₹ low – high).</p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormInput label="Estimate low (₹)" type="number" inputMode="decimal" min={1} step="any" error={errors.estimateLow?.message} {...register('estimateLow')} />
+          <FormInput label="Estimate high (₹)" type="number" inputMode="decimal" min={1} step="any" error={errors.estimateHigh?.message} {...register('estimateHigh')} />
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold">Delivery</h2>
+          <p className="text-sm text-muted-foreground">How the winner gets the item. Offer pickup, courier, or both.</p>
+        </div>
+        <Controller
+          control={control}
+          name="pickup"
+          render={({ field }) => (
+            <div className="flex items-center gap-3">
+              <Switch id="offer-pickup" checked={field.value} onCheckedChange={field.onChange} />
+              <Label htmlFor="offer-pickup">Pickup</Label>
+            </div>
+          )}
+        />
+        {pickup && <FormInput label="Pickup city" required maxLength={80} error={errors.pickupCity?.message} {...register('pickupCity')} />}
+        <Controller
+          control={control}
+          name="courier"
+          render={({ field }) => (
+            <div className="flex items-center gap-3">
+              <Switch id="offer-courier" checked={field.value} onCheckedChange={field.onChange} />
+              <Label htmlFor="offer-courier">Courier</Label>
+            </div>
+          )}
+        />
+        {courier && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormInput
+              label="Courier fee (₹)"
+              type="number"
+              inputMode="decimal"
+              min={0}
+              step="any"
+              hint="Leave empty for free shipping."
+              error={errors.shippingFee?.message}
+              {...register('shippingFee')}
+            />
+            <FormInput label="Ships within (days)" type="number" inputMode="numeric" min={1} max={30} step={1} hint="Optional." error={errors.shipsWithinDays?.message} {...register('shipsWithinDays')} />
+          </div>
+        )}
+        {errors.courier && <p className="text-xs text-destructive">{errors.courier.message}</p>}
       </section>
 
       <section className="space-y-4">
@@ -326,8 +446,8 @@ export function AuctionForm({ auction }: { auction?: AuctionDetail }) {
         <Button type="button" variant="outline" onClick={() => router.back()} disabled={pending}>
           Cancel
         </Button>
-        <Button type="submit" loading={pending} disabled={blocked || uploader.uploading}>
-          {uploader.uploading ? 'Uploading images…' : auction ? 'Save changes' : 'Create auction'}
+        <Button type="submit" loading={pending} disabled={blocked || uploader.uploading || videoBusy}>
+          {uploader.uploading ? 'Uploading images…' : videoBusy ? 'Uploading video…' : auction ? 'Save changes' : 'Create auction'}
         </Button>
       </div>
     </form>

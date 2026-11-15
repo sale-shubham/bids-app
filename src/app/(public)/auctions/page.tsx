@@ -5,6 +5,7 @@ import { AuctionFilterBar } from '@/features/auctions/components/auction-filters
 import { RecentlyViewed } from '@/features/auctions/components/recently-viewed';
 import { AuctionList } from '@/features/auctions/components/auction-list';
 import { getAuctionPageServer } from '@/features/auctions/auctions.server';
+import { PromotedStrip } from '@/features/featured/components/promoted-strip';
 import { parseFilters } from '@/features/auctions/auctions.filters';
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
@@ -50,6 +51,7 @@ export default async function AuctionsPage({ searchParams }: Props) {
       <React.Suspense fallback={null}>
         <AuctionFilterBar />
       </React.Suspense>
+      <PromotedStrip category={filters.category} />
       <AuctionList key={JSON.stringify(filters)} filters={filters} initialPage={initialPage} />
       <RecentlyViewed />
     </div>

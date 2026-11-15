@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { ExternalLink, Gavel, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -13,6 +14,8 @@ import { auctionErrorMessage } from '@/features/auctions/auctions.errors';
 import { AuctionStatusBadge } from '@/features/auctions/components/auction-card';
 import { useAuctionLive } from '@/features/live/use-auction-live';
 import { useAuction, useAuctionBoundaryRefetch, useDeleteAuction } from '@/features/auctions/use-auctions';
+import { PromoteCard } from '@/features/featured/components/promote-card';
+import { AuctionAnalyticsSection } from '@/features/analytics/components/auction-analytics-section';
 import { AuctionResult } from '@/features/bids/components/auction-result';
 import { BidHistory } from '@/features/bids/components/bid-history';
 import { basePricePaise } from '@/features/bids/bids.utils';
@@ -88,7 +91,27 @@ export default function SellAuctionDetailPage() {
             {auction.bidCount} {auction.bidCount === 1 ? 'bid' : 'bids'}
           </p>
         </CardContent>
+        {(auction.hasReserve || typeof auction.reservePricePaise === 'number' || typeof auction.buyNowPricePaise === 'number') && (
+          <CardContent className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t p-4 text-sm">
+            {auction.hasReserve && (
+              <p className="flex flex-wrap items-center gap-2 text-muted-foreground">
+                Reserve:{' '}
+                {typeof auction.reservePricePaise === 'number' && <span className="font-semibold text-foreground">{formatINR(auction.reservePricePaise)}</span>}
+                <Badge variant={auction.reserveMet ? 'success' : 'warning'}>{auction.reserveMet ? 'Reserve met' : 'Reserve not met'}</Badge>
+              </p>
+            )}
+            {typeof auction.buyNowPricePaise === 'number' && (
+              <p className="text-muted-foreground">
+                Buy It Now: <span className="font-semibold text-foreground">{formatINR(auction.buyNowPricePaise)}</span>
+              </p>
+            )}
+          </CardContent>
+        )}
       </Card>
+
+      <PromoteCard auctionId={auction.id} status={auction.status} />
+
+      <AuctionAnalyticsSection auctionId={auction.id} />
 
       {closed && <AuctionResult auction={auction} />}
 

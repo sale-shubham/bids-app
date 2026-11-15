@@ -43,3 +43,9 @@ export function parseWritten(body: unknown): AuctionDetail {
   const d = isObj(body) && isObj(body.data) ? body.data : {};
   return d.auction as AuctionDetail;
 }
+
+/** `GET /auctions/:id/similar-sold` -> `{ items }` (inside the `data` envelope; a bare `{ items }` is tolerated). */
+export function parseCardList(body: unknown): AuctionCard[] {
+  const d = isObj(body) && isObj(body.data) ? body.data : isObj(body) ? body : {};
+  return Array.isArray(d.items) ? (d.items as AuctionCard[]) : [];
+}

@@ -61,10 +61,43 @@ export const useAdminCommissions = (f: { status: string }, page: number, size: n
 export const useAdminPayments = (f: { status: string }, page: number, size: number) =>
   useAdminList('payments', f, page, size, api.fetchAdminPayments);
 
+export const useAdminSales = (f: { status: string; q: string }, page: number, size: number) =>
+  useAdminList('sales', f, page, size, api.fetchAdminSales);
+
+export function useReleaseSale() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.releaseSale(id),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: adminKeys.all });
+      void qc.invalidateQueries({ queryKey: ['sales'] });
+    },
+  });
+}
+
+export function useRefundSale() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, note }: { id: string; note?: string }) => api.refundSale(id, note),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: adminKeys.all });
+      void qc.invalidateQueries({ queryKey: ['sales'] });
+    },
+  });
+}
+
 export function useUpdateMember() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...body }: { id: string; isActive?: boolean; role?: Role }) => api.updateMember(id, body),
+    mutationFn: ({ id, ...body }: { id: string; isActive?: boolean; role?: Role; verified?: boolean }) => api.updateMember(id, body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.all }),
+  });
+}
+
+export function useAdjustCredits() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id: string; amountPaise: number; note: string }) => api.adjustCredits(id, body),
     onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.all }),
   });
 }
@@ -101,7 +134,7 @@ export function useSaveSettings() {
     mutationFn: (body: AdminSettings) => api.saveSettings(body),
     onSuccess: (data) => {
       qc.setQueryData(adminKeys.settings, data);
-      void qc.invalidateQueries({ queryKey: ['auctions', 'categories'] });
+      void qc.invalidateQueries({ queryKey: ['categories'] });
     },
   });
 }

@@ -1,5 +1,7 @@
 import { api } from '@/lib/api-client';
 import type { Paged } from '@/lib/paged';
+import { parseSalePage, parseSaleResponse } from '@/features/sales/sales.parse';
+import type { SaleDTO } from '@/features/sales/sales.types';
 import type { Role } from '@/constants/routes';
 import {
   parseAuctionAdminPage,
@@ -36,8 +38,12 @@ export async function fetchMembers(f: MemberFilters, page: number, pageSize: num
   return parseMemberPage(res.data);
 }
 
-export const updateMember = (id: string, body: { isActive?: boolean; role?: Role }) =>
+export const updateMember = (id: string, body: { isActive?: boolean; role?: Role; verified?: boolean }) =>
   api.patch(`/admin/members/${id}`, body).then((r) => r.data.data);
+
+/** Adds (positive) or removes (negative) credits; `note` is shown to the member in their ledger. */
+export const adjustCredits = (id: string, body: { amountPaise: number; note: string }) =>
+  api.post(`/admin/members/${encodeURIComponent(id)}/credits`, body).then((r) => r.data.data);
 
 export async function fetchAdminAuctions(
   f: { status: string; q: string },
@@ -69,6 +75,16 @@ export async function fetchAdminPayments(
   const res = await api.get('/admin/payments', { params: clean({ status: noAll(f.status), page, pageSize }) });
   return parsePaymentPage(res.data);
 }
+
+export async function fetchAdminSales(f: { status: string; q: string }, page: number, pageSize: number): Promise<Paged<SaleDTO>> {
+  const res = await api.get('/admin/sales', { params: clean({ status: noAll(f.status), q: f.q, page, pageSize }) });
+  return parseSalePage(res.data);
+}
+
+export const releaseSale = (id: string) => api.post(`/admin/sales/${encodeURIComponent(id)}/release`).then((r) => parseSaleResponse(r.data));
+
+export const refundSale = (id: string, note?: string) =>
+  api.post(`/admin/sales/${encodeURIComponent(id)}/refund`, note ? { note } : {}).then((r) => parseSaleResponse(r.data));
 
 export async function fetchSettings() {
   const res = await api.get('/admin/settings');

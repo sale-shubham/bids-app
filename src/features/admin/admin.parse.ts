@@ -1,6 +1,8 @@
 import { parsePaged, type Paged } from '@/lib/paged';
 import { parseCommissionPage } from '@/features/commissions/commissions.parse';
 import type { AuctionCard } from '@/features/auctions/auctions.types';
+import { resolveCheckoutMode } from '@/features/settings/settings.types';
+import { DEFAULT_MAX_PRICE_PAISE } from '@/features/settings/settings.utils';
 import type { Role } from '@/constants/routes';
 import type {
   AdminAuction,
@@ -65,6 +67,10 @@ function parseMember(raw: unknown): AdminMember {
     unpaidCommissionPaise: num(m.unpaidCommissionPaise),
     auctionsWon: num(m.auctionsWon),
     moneySpentPaise: num(m.moneySpentPaise),
+    verified: m.verified === true,
+    payoutStatus: strOrNull(m.payoutStatus),
+    activeStrikes: num(m.activeStrikes),
+    creditBalancePaise: num(m.creditBalancePaise),
   };
 }
 
@@ -76,7 +82,11 @@ export function parseMemberPage(body: unknown): Paged<AdminMember> {
 export function parseAuctionAdminPage(body: unknown): Paged<AdminAuction> {
   const p = parsePaged<unknown>(body);
   return {
-    items: p.items.map((a) => ({ ...(a as AuctionCard), sellerEmail: str(obj(a).sellerEmail) })),
+    items: p.items.map((a) => ({
+      ...(a as AuctionCard),
+      sellerEmail: str(obj(a).sellerEmail),
+      depositPaise: typeof obj(a).depositPaise === 'number' ? (obj(a).depositPaise as number) : null,
+    })),
     meta: p.meta,
   };
 }
@@ -124,6 +134,14 @@ export function parseSettings(body: unknown): AdminSettings {
     minIncrementPaise: num(d.minIncrementPaise, 10000),
     antiSnipingMinutes: num(d.antiSnipingMinutes, 2),
     categories: arr(d.categories).filter((c): c is string => typeof c === 'string'),
+    maxPricePaise: num(d.maxPricePaise, DEFAULT_MAX_PRICE_PAISE),
+    checkoutMode: resolveCheckoutMode(d.checkoutMode),
+    depositThresholdPaise: num(d.depositThresholdPaise, 0),
+    depositRateBps: num(d.depositRateBps, 1000),
+    featuredEnabled: d.featuredEnabled === true,
+    featuredPrices: Object.fromEntries(
+      ['1', '3', '7'].map((k) => [k, num(obj(d.featuredPrices)[k], 0)]),
+    ),
   };
 }
 

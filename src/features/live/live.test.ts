@@ -17,6 +17,10 @@ const auction = (over: Partial<AuctionDetail> = {}): AuctionDetail =>
     status: 'LIVE',
     endTime: '2026-01-02T00:00:00.000Z',
     highestBidderId: null,
+    buyNowPricePaise: 500000,
+    hasReserve: true,
+    reserveMet: false,
+    myMaxBidPaise: 150000,
     winnerId: null,
     endedAt: null,
     recentBids: [],
@@ -30,7 +34,8 @@ const placed = (over: Partial<BidPlacedEvent> = {}, bidId = 'b1'): BidPlacedEven
   bidCount: 1,
   endTime: '2026-01-02T00:05:00.000Z',
   highestBidderId: 'u2',
-  bid: { id: bidId, amountPaise: 110000, createdAt: '2026-01-01T00:00:00.000Z', bidderLabel: 'R***h' },
+  reserveMet: false,
+  bid: { id: bidId, amountPaise: 110000, createdAt: '2026-01-01T00:00:00.000Z', bidderLabel: 'R***h', kind: 'MANUAL' },
   ...over,
 });
 
@@ -63,6 +68,24 @@ describe('applyBidPlaced', () => {
     expect(a.recentBids).toHaveLength(RECENT_BIDS_MAX);
     expect(a.recentBids?.map((b) => b.id)).toEqual(['b8', 'b7', 'b6', 'b5', 'b4']);
   });
+  it('updates reserveMet from the event', () => {
+    expect(applyBidPlaced(auction(), placed({ reserveMet: true }), 'u1').reserveMet).toBe(true);
+  });
+  it('clears buyNowPricePaise once a bid exists and keeps myMaxBidPaise', () => {
+    const next = applyBidPlaced(auction(), placed(), 'u1');
+    expect(next.buyNowPricePaise).toBeNull();
+    expect(next.myMaxBidPaise).toBe(150000);
+  });
+  it('applies two consecutive events (manual bid, then an AUTO counter-bid)', () => {
+    const first = applyBidPlaced(auction(), placed({}, 'b1'), 'u1');
+    const second = applyBidPlaced(
+      first,
+      placed({ bidCount: 2, currentBidPaise: 120000, highestBidderId: 'u3', reserveMet: true, bid: { id: 'b2', amountPaise: 120000, createdAt: 'x', bidderLabel: 'S***n', kind: 'AUTO' } }, 'b2'),
+      'u1',
+    );
+    expect(second).toMatchObject({ bidCount: 2, currentBidPaise: 120000, highestBidderId: 'u3', reserveMet: true });
+    expect(second.recentBids?.map((b) => [b.id, b.kind])).toEqual([['b2', 'AUTO'], ['b1', 'MANUAL']]);
+  });
   it('flips a SCHEDULED auction to LIVE', () => {
     expect(applyBidPlaced(auction({ status: 'SCHEDULED' }), placed(), 'u1').status).toBe('LIVE');
   });
@@ -91,7 +114,7 @@ describe('applyExtended / applyEnded', () => {
 });
 
 describe('prependBidToPages', () => {
-  const bid = (id: string): BidDTO => ({ id, amountPaise: 1, createdAt: 'x', bidderLabel: 'a', isMe: false });
+  const bid = (id: string): BidDTO => ({ id, amountPaise: 1, createdAt: 'x', bidderLabel: 'a', isMe: false, kind: 'MANUAL' });
   const data = (): InfiniteData<Paged<BidDTO>, number> => ({
     pageParams: [1],
     pages: [{ items: [bid('old')], meta: { total: 1, page: 1, pageSize: 20, totalPages: 1 } }],
@@ -113,7 +136,12 @@ describe('prependBidToPages', () => {
 describe('parseLiveEvent', () => {
   it('parses bid.placed', () => {
     const ev = parseLiveEvent(placed());
-    expect(ev).toMatchObject({ type: 'bid.placed', auctionId: 'a1', highestBidderId: 'u2' });
+    expect(ev).toMatchObject({ type: 'bid.placed', auctionId: 'a1', highestBidderId: 'u2', reserveMet: false });
+  });
+  it('bid.placed carries bid.kind and reserveMet; unknown kind falls back to MANUAL', () => {
+    const ev = parseLiveEvent({ ...placed({ reserveMet: true }), bid: { ...placed().bid, kind: 'AUTO' } });
+    expect(ev).toMatchObject({ reserveMet: true, bid: { kind: 'AUTO' } });
+    expect(parseLiveEvent({ ...placed(), bid: { ...placed().bid, kind: undefined } })).toMatchObject({ bid: { kind: 'MANUAL' } });
   });
   it('bid.placed: missing highestBidderId -> null; bad bid -> null event', () => {
     expect(parseLiveEvent({ ...placed(), highestBidderId: undefined })).toMatchObject({ highestBidderId: null });

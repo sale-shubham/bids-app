@@ -51,18 +51,18 @@ test('bid panel is usable: quick amounts, custom bid, confirm, success', async (
   await expect(page.getByText(/Minimum next bid/)).toContainText('₹1,000');
   for (const label of ['+1×', '+2×', '+5×']) await expect(page.getByText(label)).toBeVisible();
 
-  const input = page.getByLabel('Your bid (₹)');
+  const input = page.getByLabel('Your maximum bid (₹)');
   await input.scrollIntoViewIfNeeded();
   await input.fill('1000');
   await page.getByRole('button', { name: 'Place bid' }).click();
 
   const dialog = page.getByRole('dialog');
-  await expect(dialog.getByText('Confirm your bid')).toBeVisible();
-  const confirm = dialog.getByRole('button', { name: 'Bid ₹1,000' });
+  await expect(dialog.getByText('Confirm your maximum bid')).toBeVisible();
+  const confirm = dialog.getByRole('button', { name: 'Set max ₹1,000' });
   await expect(confirm).toBeInViewport();
   await confirm.click();
 
-  await expect(page.getByText('Bid of ₹1,000 placed')).toBeVisible();
+  await expect(page.getByText('Maximum bid of ₹1,000 placed')).toBeVisible();
   await expect(page.getByText("You're the highest bidder")).toBeVisible();
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflow).toBeLessThanOrEqual(1);

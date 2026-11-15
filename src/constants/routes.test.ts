@@ -115,6 +115,24 @@ describe('gateFor (edge gate decision table)', () => {
       for (const p of ['/watchlist', '/profile', '/notifications']) expect(gateFor(p, role)).toBe('allow');
     }
   });
+  it('Phase C routes: purchases are BIDDER only, sales and payouts AUCTIONEER only, admin sales SUPER_ADMIN only', () => {
+    for (const p of ['/purchases', '/purchases/s1']) {
+      expect(isBidderRoute(p)).toBe(true);
+      expect(gateFor(p, 'BIDDER')).toBe('allow');
+      expect(gateFor(p, 'AUCTIONEER')).toBe('home');
+      expect(gateFor(p, 'SUPER_ADMIN')).toBe('home');
+      expect(gateFor(p, undefined)).toBe('login');
+    }
+    for (const p of ['/sell/sales', '/sell/sales/s1', '/sell/payouts', '/sell/analytics']) {
+      expect(gateFor(p, 'AUCTIONEER')).toBe('allow');
+      expect(gateFor(p, 'BIDDER')).toBe('home');
+      expect(gateFor(p, 'SUPER_ADMIN')).toBe('home');
+      expect(gateFor(p, undefined)).toBe('login');
+    }
+    expect(gateFor('/admin/sales', 'SUPER_ADMIN')).toBe('allow');
+    expect(gateFor('/admin/sales', 'BIDDER')).toBe('home');
+    expect(gateFor('/admin/sales', undefined)).toBe('login');
+  });
   it('isGatedRoute covers exactly the areas the gate cares about', () => {
     expect(isGatedRoute('/')).toBe(true);
     expect(isGatedRoute('/admin/profile')).toBe(true);
@@ -131,5 +149,14 @@ describe('destinationFor', () => {
   });
   it('SUPER_ADMIN always lands on /admin', () => {
     expect(destinationFor('SUPER_ADMIN', '/auctions/abc')).toBe('/admin');
+  });
+});
+
+describe('second-chance offer routes', () => {
+  it('/purchases/offers/* is in the bidder class', () => {
+    expect(isBidderRoute('/purchases/offers/o1')).toBe(true);
+    expect(gateFor('/purchases/offers/o1', 'BIDDER')).toBe('allow');
+    expect(gateFor('/purchases/offers/o1', 'AUCTIONEER')).toBe('home');
+    expect(gateFor('/purchases/offers/o1', undefined)).toBe('login');
   });
 });

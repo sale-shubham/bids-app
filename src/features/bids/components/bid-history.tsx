@@ -15,6 +15,8 @@ function BidRow({ bid, highest, now, fresh }: { bid: BidDTO; highest: boolean; n
       <div className="flex min-w-0 items-center gap-2">
         <span className="truncate font-medium">{bid.isMe ? 'You' : bid.bidderLabel}</span>
         {bid.isMe && <Badge variant="default">You</Badge>}
+        {bid.kind === 'AUTO' && <Badge variant="secondary">auto</Badge>}
+        {bid.kind === 'BUY_NOW' && <Badge variant="warning">Buy now</Badge>}
         {highest && <Badge variant="success">Highest</Badge>}
       </div>
       <div className="shrink-0 text-right">

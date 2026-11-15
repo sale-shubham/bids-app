@@ -10,6 +10,7 @@ export const revalidate = 3600;
 // no list endpoint; crawlers reach them through the links on auction pages.
 const STATIC_PATHS = [
   '/auctions',
+  '/sold',
   '/leaderboard',
   ...PUBLIC_LEGAL_PAGES.map((p) => `/pages/${p.slug}`),
 ];
@@ -17,8 +18,8 @@ const STATIC_PATHS = [
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const entries: MetadataRoute.Sitemap = STATIC_PATHS.map((p) => ({
     url: `${SITE_URL}${p}`,
-    changeFrequency: p === '/auctions' ? 'hourly' : p === '/leaderboard' ? 'daily' : 'monthly',
-    priority: p === '/auctions' ? 1 : p === '/leaderboard' ? 0.6 : 0.4,
+    changeFrequency: p === '/auctions' ? 'hourly' : p === '/sold' ? 'daily' : p === '/leaderboard' ? 'daily' : 'monthly',
+    priority: p === '/auctions' ? 1 : p === '/sold' ? 0.6 : p === '/leaderboard' ? 0.6 : 0.4,
   }));
 
   // Fail soft: if the API is down the static list is still a valid sitemap.

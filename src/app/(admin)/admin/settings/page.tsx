@@ -2,6 +2,7 @@
 import { Suspense } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PageHeader } from '@/features/admin/components/admin-list';
+import { InvoiceSettings } from '@/features/admin/components/invoice-settings';
 import { LegalSettings } from '@/features/admin/components/legal-settings';
 import { MarketplaceSettings } from '@/features/admin/components/marketplace-settings';
 import { useUrlState } from '@/features/admin/use-url-state';
@@ -10,17 +11,21 @@ const DEFAULTS = { tab: 'marketplace' };
 
 function SettingsView() {
   const { values, update } = useUrlState(DEFAULTS);
-  const tab = values.tab === 'legal' ? 'legal' : 'marketplace';
+  const tab = values.tab === 'legal' || values.tab === 'invoice' ? values.tab : 'marketplace';
   return (
     <div className="space-y-6">
-      <PageHeader title="Settings" description="Marketplace rules and legal pages." />
+      <PageHeader title="Settings" description="Marketplace rules, invoice details and legal pages." />
       <Tabs value={tab} onValueChange={(v) => update({ tab: v })}>
         <TabsList>
           <TabsTrigger value="marketplace">Marketplace</TabsTrigger>
+          <TabsTrigger value="invoice">Invoice details</TabsTrigger>
           <TabsTrigger value="legal">Legal pages</TabsTrigger>
         </TabsList>
         <TabsContent value="marketplace">
           <MarketplaceSettings />
+        </TabsContent>
+        <TabsContent value="invoice">
+          <InvoiceSettings />
         </TabsContent>
         <TabsContent value="legal">
           <LegalSettings />

@@ -13,6 +13,7 @@ import { AdminList, PageHeader, StatusTabs } from '@/features/admin/components/a
 import { useAdminAuctions, useCancelAdminAuction } from '@/features/admin/use-admin';
 import { useUrlState } from '@/features/admin/use-url-state';
 import type { AdminAuction } from '@/features/admin/admin.types';
+import { SetDepositDialog } from '@/features/deposits/components/set-deposit-dialog';
 import { AuctionStatusBadge, CoverImage } from '@/features/auctions/components/auction-card';
 import { apiErrorMessage } from '@/lib/api-client';
 import { formatDate, formatINR } from '@/lib/utils';
@@ -39,6 +40,7 @@ function AuctionsView() {
   const list = useAdminAuctions({ status, q: values.q }, page, pageSize);
   const cancel = useCancelAdminAuction();
   const [target, setTarget] = React.useState<AdminAuction | null>(null);
+  const [depositTarget, setDepositTarget] = React.useState<AdminAuction | null>(null);
 
   const confirm = () => {
     if (!target) return;
@@ -51,12 +53,23 @@ function AuctionsView() {
     });
   };
 
-  const cancelBtn = (a: AdminAuction) =>
-    canCancel(a) ? (
-      <Button size="sm" variant="outline" className="text-destructive" onClick={() => setTarget(a)}>
-        Cancel
+  const depositBtn = (a: AdminAuction) =>
+    a.status === 'LIVE' || a.status === 'SCHEDULED' ? (
+      <Button size="sm" variant="outline" onClick={() => setDepositTarget(a)}>
+        Set deposit
       </Button>
     ) : null;
+
+  const actionButtons = (a: AdminAuction) => (
+    <div className="flex flex-wrap items-center gap-2">
+      {depositBtn(a)}
+      {canCancel(a) && (
+        <Button size="sm" variant="outline" className="text-destructive" onClick={() => setTarget(a)}>
+          Cancel
+        </Button>
+      )}
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -83,6 +96,7 @@ function AuctionsView() {
                 <TableHead>Seller</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Current bid</TableHead>
+                <TableHead className="text-right">Deposit</TableHead>
                 <TableHead className="text-right">Bids</TableHead>
                 <TableHead>Ends / ended</TableHead>
                 <TableHead>Actions</TableHead>
@@ -106,9 +120,10 @@ function AuctionsView() {
                     <AuctionStatusBadge status={a.status} />
                   </TableCell>
                   <TableCell className="text-right tnum">{price(a)}</TableCell>
+                  <TableCell className="text-right tnum">{a.depositPaise ? formatINR(a.depositPaise) : '-'}</TableCell>
                   <TableCell className="text-right tnum">{a.bidCount}</TableCell>
                   <TableCell className="whitespace-nowrap">{formatDate(a.endTime)}</TableCell>
-                  <TableCell>{cancelBtn(a)}</TableCell>
+                  <TableCell>{actionButtons(a)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -131,11 +146,14 @@ function AuctionsView() {
               <p className="text-sm tnum">
                 {price(a)} · {a.bidCount} {a.bidCount === 1 ? 'bid' : 'bids'}
               </p>
-              {cancelBtn(a)}
+              {typeof a.depositPaise === 'number' && a.depositPaise > 0 && <p className="text-sm text-muted-foreground">Deposit {formatINR(a.depositPaise)}</p>}
+              {actionButtons(a)}
             </CardContent>
           </Card>
         )}
       />
+
+      <SetDepositDialog auction={depositTarget} onClose={() => setDepositTarget(null)} />
 
       <ConfirmDialog
         open={!!target}
