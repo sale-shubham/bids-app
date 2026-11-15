@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/common/empty-state';
 import { InfiniteScroll } from '@/components/common/infinite-scroll';
 import { apiErrorMessage } from '@/lib/api-client';
 import { formatDate, formatINR } from '@/lib/utils';
+import { invoiceErrorMessage } from '../invoices.errors';
 import { invoiceTypeLabel } from '../invoices.types';
 import { useDownloadInvoice, useMyInvoices } from '../use-invoices';
 
@@ -19,7 +20,7 @@ export function InvoicesCard() {
   const items = list.data?.pages.flatMap((p) => p.items) ?? [];
 
   const onDownload = (id: string) =>
-    download.mutate(id, { onError: (e) => toast.error(apiErrorMessage(e, 'Could not download the invoice')) });
+    download.mutate(id, { onError: (e) => toast.error(invoiceErrorMessage(e)) });
 
   return (
     <Card>

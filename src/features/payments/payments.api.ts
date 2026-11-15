@@ -6,12 +6,15 @@ export interface VerifyPaymentResult {
   referenceType: PaymentReferenceType;
   commission?: unknown;
   sale?: unknown;
+  deposit?: unknown;
+  /** FEATURE: `{ id, auctionId, days, amountPaise, status, paidWith, paidAt, featuredUntil }`. */
+  purchase?: unknown;
 }
 
 // POST /payments/verify — confirms the signature Razorpay Checkout's handler
 // returned (or the stub values in test mode). The order itself is created by
 // POST /commissions/:id/checkout or POST /sales/:id/checkout. The response says
-// which kind of payment it settled: `{ referenceType: 'COMMISSION' | 'SALE' | 'DEPOSIT' | 'FEATURE', commission?, sale? }`.
+// which kind of payment it settled: `{ referenceType: 'COMMISSION' | 'SALE' | 'DEPOSIT' | 'FEATURE', commission? | sale? | deposit? | purchase? }`.
 // `timeoutMs` bounds the request (the shared client has no timeout) so a hung verify cannot
 // leave the caller waiting forever.
 export async function verifyPayment(

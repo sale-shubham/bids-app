@@ -9,13 +9,12 @@ import { Button } from '@/components/ui/button';
 import { loginSchema, type LoginFormValues } from '@/features/auth/auth.schema';
 import { authErrorMessage } from '@/features/auth/auth.errors';
 import { useLogin } from '@/features/auth/use-auth';
-import { LoginTwoFactorStep } from '@/features/auth/components/login-two-factor-step';
 import { VerifyEmailStep } from '@/features/auth/components/verify-email-step';
 import { apiErrorCode, apiErrorDetails } from '@/lib/api-client';
 
 const DEFAULT_RESEND_SEC = 60;
 
-// Email + password login; an account with 2FA continues to a code step (LoginTwoFactorStep). EMAIL_NOT_VERIFIED switches to the OTP step (the API
+// Email + password login. EMAIL_NOT_VERIFIED switches to the OTP step (the API
 // has just emailed a fresh code); ACCOUNT_SUSPENDED is handled by the axios
 // interceptor, which sends the user to /suspended.
 export default function LoginPage() {
@@ -23,13 +22,8 @@ export default function LoginPage() {
   const form = useForm<LoginFormValues>({ resolver: zodResolver(loginSchema) });
   const [verify, setVerify] = React.useState<{ email: string; resendAfterSec: number } | null>(null);
 
-  const [challengeToken, setChallengeToken] = React.useState<string | null>(null);
-
   const onSubmit = (values: LoginFormValues) =>
     login.mutate(values, {
-      onSuccess: (result) => {
-        if ('twoFactorRequired' in result) setChallengeToken(result.challengeToken);
-      },
       onError: (e) => {
         const code = apiErrorCode(e);
         if (code === 'EMAIL_NOT_VERIFIED') {
@@ -42,20 +36,6 @@ export default function LoginPage() {
         toast.error(authErrorMessage(e, 'Could not log in'));
       },
     });
-
-  if (challengeToken) {
-    return (
-      <LoginTwoFactorStep
-        challengeToken={challengeToken}
-        onBack={(message) => {
-          setChallengeToken(null);
-          login.reset();
-          form.resetField('password');
-          if (message) toast.error(message);
-        }}
-      />
-    );
-  }
 
   if (verify) {
     return <VerifyEmailStep {...verify} onBack={() => setVerify(null)} />;

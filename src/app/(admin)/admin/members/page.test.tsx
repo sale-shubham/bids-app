@@ -31,8 +31,6 @@ const member: AdminMember = {
   auctionsWon: 0,
   moneySpentPaise: 0,
   verified: true,
-  phoneVerifiedAt: '2026-10-02T00:00:00Z',
-  twoFactorEnabled: true,
   payoutStatus: 'ACTIVE',
   activeStrikes: 0,
   creditBalancePaise: 0,
@@ -56,8 +54,8 @@ beforeEach(() => {
 describe('AdminMembersPage verification', () => {
   it('shows trust badges', async () => {
     setup();
-    expect(await screen.findByText('Phone verified')).toBeInTheDocument();
-    expect(screen.getByText('2FA on')).toBeInTheDocument();
+    expect((await screen.findAllByText('Verified')).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/Phone|2FA/)).not.toBeInTheDocument();
     expect(screen.getByText('Payout: active')).toBeInTheDocument();
   });
 
@@ -71,7 +69,7 @@ describe('AdminMembersPage verification', () => {
     await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Verification revoked'));
   });
 
-  it('restores verification for an unverified member with a verified phone', async () => {
+  it('restores verification for an unverified auctioneer with an ACTIVE payout account', async () => {
     vi.mocked(adminApi.fetchMembers).mockResolvedValue(page({ ...member, verified: false }));
     setup();
     await userEvent.click(await screen.findByRole('button', { name: /Restore verification/ }));

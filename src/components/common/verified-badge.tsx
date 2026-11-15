@@ -10,7 +10,7 @@ interface VerifiedBadgeProps {
   className?: string;
 }
 
-// Verified-seller mark (phone verified + good standing). Renders nothing unless `verified`.
+// Verified-seller mark (KYC'd payout account, not revoked by an admin). Renders nothing unless `verified`.
 export function VerifiedBadge({ verified, variant = 'icon', className }: VerifiedBadgeProps) {
   if (!verified) return null;
   return (
@@ -21,7 +21,7 @@ export function VerifiedBadge({ verified, variant = 'icon', className }: Verifie
           {variant === 'label' && <span className="text-xs font-medium">Verified</span>}
         </span>
       </TooltipTrigger>
-      <TooltipContent>Verified seller: phone number confirmed</TooltipContent>
+      <TooltipContent>Verified seller: payout account KYC completed</TooltipContent>
     </Tooltip>
   );
 }

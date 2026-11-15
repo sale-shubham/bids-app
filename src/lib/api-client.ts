@@ -120,8 +120,7 @@ function forceSuspended() {
 
 // Auth endpoints that must never trigger a refresh. Other /auth/* calls
 // (sessions, password/change, logout-all) are authenticated and DO refresh.
-// 2fa/verify is the unauthenticated second login step: its 401 (TWO_FACTOR_CHALLENGE_INVALID) is an answer.
-const NO_REFRESH_URL = /\/auth\/(login|signup|refresh|2fa\/verify|password\/(forgot|reset))/;
+const NO_REFRESH_URL = /\/auth\/(login|signup|refresh|password\/(forgot|reset))/;
 
 api.interceptors.response.use(
   (res) => res,
@@ -134,14 +133,6 @@ api.interceptors.response.use(
     if (code === "ACCOUNT_SUSPENDED") {
       forceSuspended();
       return Promise.reject(error);
-    }
-
-    // The server requires admin 2FA and this admin has not set it up: surface the
-    // persistent banner (TwoFactorSetupBanner) instead of a page-level error.
-    if (code === "TWO_FACTOR_SETUP_REQUIRED") {
-      const { member, setMember } = useAuthStore.getState();
-      if (member && !member.twoFactorSetupRequired)
-        setMember({ ...member, twoFactorSetupRequired: true });
     }
 
     // Credential-style 401s (wrong password) are answers, not an expired
@@ -191,8 +182,6 @@ export function apiErrorMessage(
   fallback = "Something went wrong",
 ): string {
   if (axios.isAxiosError(err)) {
-    if (apiErrorCode(err) === "TWO_FACTOR_SETUP_REQUIRED")
-      return "Set up two-factor authentication to use the admin area.";
     if (!err.response) return "Can't reach the server. Check your connection and try again.";
     return (err.response.data as ApiErrorBody | undefined)?.error?.message ?? err.message ?? fallback;
   }

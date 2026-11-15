@@ -1,6 +1,5 @@
 'use client';
 import { AuthGuard } from '@/components/common/auth-guard';
-import { TwoFactorSetupBanner } from '@/components/common/two-factor-setup-banner';
 import { DashboardShell } from '@/components/layout/dashboard-shell';
 import { useMoreTab, useNav } from '@/components/layout/nav-items';
 
@@ -11,7 +10,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <AuthGuard allow={['SUPER_ADMIN']}>
       <DashboardShell nav={nav} moreTab={moreTab}>
-        <TwoFactorSetupBanner />
         {children}
       </DashboardShell>
     </AuthGuard>

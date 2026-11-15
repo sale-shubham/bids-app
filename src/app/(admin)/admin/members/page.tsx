@@ -43,7 +43,7 @@ function Verified({ at }: { at: string | null }) {
   );
 }
 
-// Trust signals: verified-seller badge, phone, 2FA and payout account status.
+// Trust signals: verified-seller badge (KYC'd payout account), strikes and payout account status.
 function TrustBadges({ m }: { m: AdminMember }) {
   return (
     <div className="flex flex-wrap items-center gap-1.5">
@@ -52,8 +52,6 @@ function TrustBadges({ m }: { m: AdminMember }) {
           <ShieldCheck className="h-3 w-3" aria-hidden /> Verified
         </Badge>
       )}
-      <Badge variant={m.phoneVerifiedAt ? 'success' : 'secondary'}>{m.phoneVerifiedAt ? 'Phone verified' : 'Phone unverified'}</Badge>
-      <Badge variant={m.twoFactorEnabled ? 'success' : 'secondary'}>{m.twoFactorEnabled ? '2FA on' : '2FA off'}</Badge>
       {m.activeStrikes > 0 && <Badge variant="warning">{m.activeStrikes} {m.activeStrikes === 1 ? 'strike' : 'strikes'}</Badge>}
       {m.payoutStatus && <Badge variant="outline">Payout: {m.payoutStatus.replace(/_/g, ' ').toLowerCase()}</Badge>}
     </div>
@@ -142,7 +140,7 @@ function MembersView() {
         <Button size="sm" variant="outline" onClick={() => setCreditsTarget(m)}>
           <Coins className="h-4 w-4" /> Adjust credits
         </Button>
-        {(m.verified || m.phoneVerifiedAt) && (
+        {(m.verified || (m.role === 'AUCTIONEER' && m.payoutStatus === 'ACTIVE')) && (
           <Button size="sm" variant="outline" onClick={() => setVerifyTarget(m)}>
             <ShieldCheck className="h-4 w-4" /> {m.verified ? 'Revoke verification' : 'Restore verification'}
           </Button>

@@ -100,8 +100,7 @@ Only `Badge` and `Button` use `class-variance-authority`. Both export their `*Va
 
 | Component | Purpose | Key props |
 |---|---|---|
-| `VerifiedBadge` | `verified-badge.tsx`. Check-shield icon (or icon + "Verified") with a tooltip; renders nothing unless verified | `verified?`, `variant?` (icon or label) |
-| `TwoFactorSetupBanner` | `two-factor-setup-banner.tsx`. Persistent admin banner linking to `/admin/profile?tab=security` | none |
+| `VerifiedBadge` | `verified-badge.tsx`. Check-shield icon (or icon + "Verified") with a tooltip; renders nothing unless verified; tooltip says the payout account is KYC'd | `verified?`, `variant?` (icon or label) |
 | `DepositCard` / `DepositPaidChip` / `SetDepositDialog` | `features/deposits/components/`. Bid-panel deposit card + chip; admin set-deposit dialog. See `flows/deposits.md` | `auction` |
 | `StrikeBanner` / `MemberStrikesDialog` | `features/strikes/components/`. Member warning banner (`activeStrikes`); admin strikes list with Remove. See `flows/strikes.md` | `member` / `onClose` |
 | `SellerOfferCard` / `OffersSection` / `OfferDetailPage` / `OfferCountdown` | `features/second-chance/components/`. Second-chance offer UI. See `flows/strikes.md` | `sale` / `id` / `expiresAt` |
@@ -205,7 +204,7 @@ See `readme/ui/layout.md` for how these assemble.
 
 ## Engagement (Phase G part 1)
 - `features/follows/components/`: `FollowButton` (`sellerId`, `sellerRole?`, `initialFollowerCount?`, `compact?`, `showCount?`), `FollowingCard` (profile Following tab).
-- `features/notification-preferences/components/`: `NotificationPreferencesCard`, `WhatsappCard` (profile Notifications tab).
+- `features/notification-preferences/components/`: `NotificationPreferencesCard` (profile Notifications tab).
 - `features/analytics/components/`: `SellerAnalyticsPage`, `AuctionAnalyticsSection`, `DailyChart`, `DaysSwitch` (7 / 30 / 90 `aria-pressed` group).
 - `admin-charts.tsx` now exports `TOOLTIP` / `AXIS` chart styles for reuse.
 

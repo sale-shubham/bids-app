@@ -23,14 +23,3 @@ export async function updateMe(input: UpdateMeInput): Promise<Partial<AuthMember
   return data?.member ?? data ?? {};
 }
 
-// Phone verification: the code is texted to the 10-digit number; `sentTo` is masked.
-export async function sendPhoneOtp(phone: string): Promise<{ sentTo: string }> {
-  const res = await api.post('/members/me/phone/otp', { phone });
-  return res.data.data;
-}
-
-export async function verifyPhone(input: { phone: string; code: string }): Promise<Partial<AuthMember>> {
-  const res = await api.post('/members/me/phone/verify', input);
-  const data = res.data.data;
-  return data?.member ?? data ?? {};
-}

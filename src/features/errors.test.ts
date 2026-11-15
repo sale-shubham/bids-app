@@ -17,9 +17,9 @@ import { isStaleOfferError, offerErrorMessage } from './second-chance/second-cha
 import { strikeErrorMessage } from './strikes/strikes.errors';
 import { isStaleRiskError, riskErrorMessage } from './risk/risk.errors';
 import { featuredErrorMessage } from './featured/featured.errors';
+import { invoiceErrorMessage } from './invoices/invoices.errors';
 import { memberErrorMessage } from './members/members.errors';
 import { followErrorMessage } from './follows/follows.errors';
-import { preferenceErrorMessage } from './notification-preferences/notification-preferences.errors';
 import { savedSearchErrorMessage } from './saved-searches/saved-searches.errors';
 
 function apiError(code?: string, message = 'Server says no', details?: unknown, status = 400) {
@@ -173,16 +173,8 @@ describe('Phase C error maps', () => {
 });
 
 describe('Phase D error maps', () => {
-  it('auth: two-factor codes', () => {
-    expect(authErrorMessage(apiError('TWO_FACTOR_INVALID_CODE'))).toMatch(/not valid/);
-    expect(authErrorMessage(apiError('TWO_FACTOR_CHALLENGE_INVALID'))).toMatch(/enter your password again/);
-    expect(authErrorMessage(apiError('TWO_FACTOR_ALREADY_ENABLED'))).toMatch(/already turned on/);
-    expect(authErrorMessage(apiError('TWO_FACTOR_NOT_ENABLED'))).toMatch(/not turned on/);
-    expect(authErrorMessage(apiError('TWO_FACTOR_UNAVAILABLE'))).toMatch(/not available/);
-    expect(authErrorMessage(apiError('TWO_FACTOR_SETUP_REQUIRED'))).toMatch(/Set up two-factor/);
-  });
-  it('apiErrorMessage: TWO_FACTOR_SETUP_REQUIRED is mapped for admin pages', () => {
-    expect(apiErrorMessage(apiError('TWO_FACTOR_SETUP_REQUIRED', 'Server text', undefined, 403))).toMatch(/Set up two-factor/);
+  it('auth: unknown codes fall back to the server message', () => {
+    expect(authErrorMessage(apiError('TWO_FACTOR_INVALID_CODE', 'Server text'))).toBe('Server text');
   });
   it('reports', () => {
     expect(reportErrorMessage(apiError('REPORT_TARGET_NOT_FOUND'))).toMatch(/no longer available/);
@@ -266,9 +258,6 @@ describe('engagement error codes', () => {
     expect(followErrorMessage(apiError('SELLER_NOT_FOUND'))).toMatch(/no longer exists/);
     expect(followErrorMessage(apiError('OTHER', 'Server says no'))).toBe('Server says no');
   });
-  it('PHONE_NOT_VERIFIED points to the Security tab', () => {
-    expect(preferenceErrorMessage(apiError('PHONE_NOT_VERIFIED', 'x', undefined, 409))).toMatch(/Security/);
-  });
 });
 
 describe('Phase G error codes', () => {
@@ -284,6 +273,9 @@ describe('Phase G error codes', () => {
   });
   it('commissions map INSUFFICIENT_CREDITS', () => {
     expect(commissionErrorMessage(apiError('INSUFFICIENT_CREDITS'))).toMatch(/credit balance/);
+  });
+  it('invoices map INVOICE_NOT_FOUND', () => {
+    expect(invoiceErrorMessage(apiError('INVOICE_NOT_FOUND', 'x', undefined, 404))).toMatch(/could not be found/);
   });
   it('members map INVALID_GSTIN', () => {
     expect(memberErrorMessage(apiError('INVALID_GSTIN'))).toMatch(/GSTIN is not valid/);

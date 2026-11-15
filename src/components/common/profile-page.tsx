@@ -6,13 +6,10 @@ import { ProfileIdentityCard } from '@/components/common/profile-identity-card';
 import { BillingDetailsCard } from '@/components/common/billing-details-card';
 import { ProfileEditCard } from '@/components/common/profile-edit-card';
 import { ChangePasswordCard } from '@/components/common/change-password-card';
-import { PhoneVerificationCard } from '@/components/common/phone-verification-card';
-import { TwoFactorCard } from '@/components/common/two-factor-card';
 import { MyDevicesCard } from '@/components/common/my-devices-card';
 import { SignOutCard } from '@/components/common/sign-out-card';
 import { FollowingCard } from '@/features/follows/components/following-card';
 import { NotificationPreferencesCard } from '@/features/notification-preferences/components/notification-preferences-card';
-import { WhatsappCard } from '@/features/notification-preferences/components/whatsapp-card';
 import { InvoicesCard } from '@/features/invoices/components/invoices-card';
 import { CreditLedger } from '@/features/referrals/components/credit-ledger';
 import { ReferCard } from '@/features/referrals/components/refer-card';
@@ -20,7 +17,7 @@ import { AlertsCard } from '@/features/saved-searches/components/alerts-card';
 import { useAuthStore } from '@/store/auth-store';
 
 // Profile for every signed-in role: identity + avatar + edit form, security
-// (phone verification, two-factor auth, password, devices, sign out) and the shared App tab from <MorePage>. Mounted
+// (password, devices, sign out) and the shared App tab from <MorePage>. Mounted
 // at /profile (BIDDER / AUCTIONEER) and /admin/profile (SUPER_ADMIN).
 export function ProfilePage() {
   const nav = useNav();
@@ -47,8 +44,6 @@ export function ProfilePage() {
       icon: KeyRound,
       content: (
         <div className="space-y-6">
-          <PhoneVerificationCard />
-          <TwoFactorCard />
           <ChangePasswordCard />
           <MyDevicesCard limit={deviceLimit} />
           <SignOutCard />
@@ -59,12 +54,7 @@ export function ProfilePage() {
       value: 'notifications',
       label: 'Notifications',
       icon: Bell,
-      content: (
-        <div className="space-y-6">
-          <WhatsappCard />
-          <NotificationPreferencesCard />
-        </div>
-      ),
+      content: <NotificationPreferencesCard />,
     },
     ...(isAdmin ? [] : [{ value: 'following', label: 'Following', icon: Heart, content: <FollowingCard /> }]),
     ...(isAdmin
