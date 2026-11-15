@@ -13,7 +13,7 @@ Code: `src/features/live/`, `src/store/live-store.ts`, `src/providers/index.tsx`
 ## Events
 | Event | Effect |
 |---|---|
-| `bid.placed` (room) | `['auction', id]`: price, bidCount, endTime, highestBidderId, status LIVE, new bid first in `recentBids` (max 5, `isMe` from highestBidderId); bid prepended to page 1 of `['auction-bids', id]` if cached (deduped by id); stale events (lower bidCount) ignored; `['auctions']` invalidated, debounced 5 s |
+| `bid.placed` (room) | `['auction', id]`: price, bidCount, endTime, highestBidderId, `reserveMet`, `buyNowPricePaise` cleared once `bidCount > 0` (`myMaxBidPaise` kept), status LIVE, new bid first in `recentBids` (max 5, `isMe` from highestBidderId); bid prepended to page 1 of `['auction-bids', id]` if cached (deduped by id); stale events (lower bidCount) ignored; the event carries `bid.kind` (`MANUAL` / `AUTO` / `BUY_NOW`) and one request can emit two consecutive events (a bid plus an AUTO counter-bid), each applied in order; `['auctions']` invalidated, debounced 5 s |
 | `auction.extended` (room) | endTime updated, toast "Time extended" |
 | `auction.ended` (room) | status ENDED, then `['auction', id]` invalidated (winner and contact come from the server) |
 | `bid.outbid` (member) | toast "You've been outbid on <title>" with "Bid again", invalidates `['my-bids']` |

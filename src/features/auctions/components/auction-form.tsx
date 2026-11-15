@@ -24,7 +24,9 @@ import {
   DURATION_PRESETS,
   defaultFormValues,
   makeAuctionFormSchema,
+  relistFormValues,
   toWritePayload,
+  withoutNullPrices,
   type AuctionFormValues,
 } from '../auctions.schema';
 import type { AuctionDetail, AuctionWritePayload } from '../auctions.types';
@@ -33,14 +35,14 @@ import { useImageUploader } from '../use-image-uploader';
 
 // Shared create / edit form. `auction` present = edit mode (prefilled, PATCH
 // with only the changed fields).
-export function AuctionForm({ auction }: { auction?: AuctionDetail }) {
+export function AuctionForm({ auction, relistFrom }: { auction?: AuctionDetail; relistFrom?: AuctionDetail }) {
   const router = useRouter();
   const member = useAuthStore((s) => s.member);
   const categories = useCategories();
   const maxPricePaise = useMaxPricePaise();
   const create = useCreateAuction();
   const update = useUpdateAuction(auction?.id ?? '');
-  const defaults = React.useMemo(() => defaultFormValues(auction), [auction]);
+  const defaults = React.useMemo(() => (relistFrom ? relistFormValues(relistFrom) : defaultFormValues(auction)), [auction, relistFrom]);
   const schema = React.useMemo(() => makeAuctionFormSchema(auction?.startTime, maxPricePaise), [auction?.startTime, maxPricePaise]);
 
   const form = useForm<AuctionFormValues>({ resolver: zodResolver(schema), defaultValues: defaults });
@@ -75,7 +77,7 @@ export function AuctionForm({ auction }: { auction?: AuctionDetail }) {
       toast.error(auctionErrorMessage(e, 'Could not save the auction'));
     };
     if (!auction) {
-      create.mutate(payload, {
+      create.mutate(withoutNullPrices(payload), {
         onSuccess: (a) => {
           toast.success('Auction created');
           router.push(`/auctions/${a.id}`);
@@ -265,6 +267,28 @@ export function AuctionForm({ auction }: { auction?: AuctionDetail }) {
             hint="Optional. Leave empty for the default."
             error={errors.minIncrement?.message}
             {...register('minIncrement')}
+          />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormInput
+            label="Reserve price (₹)"
+            type="number"
+            inputMode="decimal"
+            min={1}
+            step="any"
+            hint="Hidden from bidders. Below it, the item doesn't sell."
+            error={errors.reservePrice?.message}
+            {...register('reservePrice')}
+          />
+          <FormInput
+            label="Buy It Now price (₹)"
+            type="number"
+            inputMode="decimal"
+            min={1}
+            step="any"
+            hint="Bidders can buy instantly until the first bid."
+            error={errors.buyNowPrice?.message}
+            {...register('buyNowPrice')}
           />
         </div>
       </section>

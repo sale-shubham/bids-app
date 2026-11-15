@@ -34,6 +34,14 @@ const money = (min: number, max: number, label: string) =>
     .refine((v) => !Number.isFinite(Number(v)) || Number(v) * 100 >= min, `${label} must be at least ₹${min / 100}`)
     .refine((v) => !Number.isFinite(Number(v)) || Math.round(Number(v) * 100) <= max, tooHigh(label, max));
 
+/** Optional rupee amount: empty is fine, otherwise a positive number within the platform maximum. */
+const optionalMoney = (label: string, max: number) =>
+  z
+    .string()
+    .trim()
+    .refine((v) => v === '' || (Number.isFinite(Number(v)) && Number(v) > 0), `${label} must be a positive amount`)
+    .refine((v) => v === '' || !Number.isFinite(Number(v)) || Math.round(Number(v) * 100) <= max, tooHigh(label, max));
+
 /** Combine "YYYY-MM-DD" + "HH:mm" (local time) into a Date; null when incomplete. */
 export function combineDateTime(date: string, time: string): Date | null {
   if (!date || !time) return null;
@@ -49,6 +57,10 @@ export interface AuctionFormValues {
   images: string[];
   startingBid: string;
   minIncrement: string;
+  /** Optional hidden reserve (rupees); empty = none. */
+  reservePrice: string;
+  /** Optional Buy It Now price (rupees); empty = none. */
+  buyNowPrice: string;
   startNow: boolean;
   startDate: string;
   startTime: string;
@@ -89,6 +101,8 @@ export function makeAuctionFormSchema(originalStart?: string, maxPricePaise: num
         .trim()
         .refine((v) => v === '' || (Number.isFinite(Number(v)) && Number(v) * 100 >= 100), 'Minimum increment is ₹1')
         .refine((v) => v === '' || !Number.isFinite(Number(v)) || Math.round(Number(v) * 100) <= maxPricePaise, tooHigh('Minimum increment', maxPricePaise)),
+      reservePrice: optionalMoney('Reserve price', maxPricePaise),
+      buyNowPrice: optionalMoney('Buy It Now price', maxPricePaise),
       startNow: z.boolean(),
       startDate: z.string(),
       startTime: z.string(),
@@ -97,6 +111,19 @@ export function makeAuctionFormSchema(originalStart?: string, maxPricePaise: num
       endTime: z.string(),
     })
     .superRefine((v, ctx) => {
+      // Reserve / Buy It Now rules (mirror the API). Skipped while an input is not a number yet.
+      const num = (s: string) => (s.trim() !== '' && Number.isFinite(Number(s)) ? Math.round(Number(s) * 100) : null);
+      const starting = num(v.startingBid);
+      const reserve = num(v.reservePrice);
+      const buyNow = num(v.buyNowPrice);
+      if (starting !== null && reserve !== null && reserve < starting) {
+        ctx.addIssue({ code: 'custom', path: ['reservePrice'], message: 'Reserve price must be at least the starting bid' });
+      }
+      if (starting !== null && buyNow !== null && buyNow <= starting) {
+        ctx.addIssue({ code: 'custom', path: ['buyNowPrice'], message: 'Buy It Now price must be above the starting bid' });
+      } else if (reserve !== null && buyNow !== null && buyNow < reserve) {
+        ctx.addIssue({ code: 'custom', path: ['buyNowPrice'], message: 'Buy It Now price must be at least the reserve price' });
+      }
       if (!v.startNow && !combineDateTime(v.startDate, v.startTime)) {
         ctx.addIssue({ code: 'custom', path: ['startDate'], message: 'Choose a start date and time' });
         return;
@@ -127,8 +154,21 @@ export function toWritePayload(v: AuctionFormValues): AuctionWritePayload {
     images: v.images,
     startingBidPaise: rupeesToPaise(v.startingBid),
     ...(v.minIncrement.trim() ? { minIncrementPaise: rupeesToPaise(v.minIncrement) } : {}),
+    // null = none / cleared (the API clears on update; `withoutNullPrices` drops them for create).
+    reservePricePaise: v.reservePrice.trim() ? rupeesToPaise(v.reservePrice) : null,
+    buyNowPricePaise: v.buyNowPrice.trim() ? rupeesToPaise(v.buyNowPrice) : null,
     startTime: (start ?? new Date()).toISOString(),
     endTime: (end ?? new Date()).toISOString(),
+  };
+}
+
+/** Create payload: leave out reserve / Buy It Now when they were not set. */
+export function withoutNullPrices(p: AuctionWritePayload): AuctionWritePayload {
+  const { reservePricePaise, buyNowPricePaise, ...rest } = p;
+  return {
+    ...rest,
+    ...(reservePricePaise != null ? { reservePricePaise } : {}),
+    ...(buyNowPricePaise != null ? { buyNowPricePaise } : {}),
   };
 }
 
@@ -146,6 +186,8 @@ export function defaultFormValues(a?: AuctionDetail): AuctionFormValues {
       images: [],
       startingBid: '',
       minIncrement: '',
+      reservePrice: '',
+      buyNowPrice: '',
       startNow: true,
       startDate: '',
       startTime: '',
@@ -164,12 +206,32 @@ export function defaultFormValues(a?: AuctionDetail): AuctionFormValues {
     images: a.images,
     startingBid: paiseToRupees(a.startingBidPaise),
     minIncrement: paiseToRupees(a.minIncrementPaise),
+    reservePrice: typeof a.reservePricePaise === 'number' ? paiseToRupees(a.reservePricePaise) : '',
+    buyNowPrice: typeof a.buyNowPricePaise === 'number' ? paiseToRupees(a.buyNowPricePaise) : '',
     startNow: false,
     startDate: toDateInput(start),
     startTime: toTimeInput(start),
     duration: 'custom',
     endDate: toDateInput(end),
     endTime: toTimeInput(end),
+  };
+}
+
+/** Relist pre-fill: the item and pricing of an earlier auction, but fresh dates (start now, 7 days). */
+export function relistFormValues(a: AuctionDetail): AuctionFormValues {
+  const base = defaultFormValues();
+  const old = defaultFormValues(a);
+  return {
+    ...base,
+    title: old.title,
+    description: old.description,
+    category: old.category,
+    condition: old.condition,
+    images: old.images,
+    startingBid: old.startingBid,
+    minIncrement: old.minIncrement,
+    reservePrice: old.reservePrice,
+    buyNowPrice: old.buyNowPrice,
   };
 }
 

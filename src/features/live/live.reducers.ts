@@ -24,6 +24,8 @@ export function applyBidPlaced(a: AuctionDetail, ev: BidPlacedEvent, meId: strin
     endTime: ev.endTime,
     highestBidderId: ev.highestBidderId,
     status: 'LIVE',
+    reserveMet: ev.reserveMet,
+    buyNowPricePaise: ev.bidCount > 0 ? null : a.buyNowPricePaise,
     recentBids: [bid, ...rest].slice(0, RECENT_BIDS_MAX),
   };
 }

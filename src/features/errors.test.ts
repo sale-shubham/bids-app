@@ -4,7 +4,7 @@ import { apiErrorCode, apiErrorDetails, apiErrorMessage } from '@/lib/api-client
 import { formatINR } from '@/lib/utils';
 import { authErrorMessage } from './auth/auth.errors';
 import { auctionErrorMessage } from './auctions/auctions.errors';
-import { bidErrorMessage, minBidFromError } from './bids/bids.errors';
+import { bidErrorMessage, buyNowErrorMessage, minBidFromError } from './bids/bids.errors';
 import { commissionErrorMessage } from './commissions/commissions.errors';
 
 function apiError(code?: string, message = 'Server says no', details?: unknown, status = 400) {
@@ -86,6 +86,20 @@ describe('error-code message maps', () => {
     const noMin = apiError('BID_TOO_LOW', 'x', { minBidPaise: 'abc' });
     expect(minBidFromError(noMin)).toBeUndefined();
     expect(bidErrorMessage(noMin)).toBe('Your bid is too low. Check the minimum bid and try again.');
+  });
+  it('bids: MAX_TOO_LOW with and without the current max', () => {
+    expect(bidErrorMessage(apiError('MAX_TOO_LOW', 'x', { currentMaxPaise: 150000 }))).toBe(`Your new maximum must be higher than your current ${formatINR(150000)}.`);
+    expect(bidErrorMessage(apiError('MAX_TOO_LOW'))).toBe('Your new maximum must be higher than your current maximum.');
+  });
+  it('buy now: BUY_NOW_UNAVAILABLE and fallbacks', () => {
+    expect(buyNowErrorMessage(apiError('BUY_NOW_UNAVAILABLE'))).toBe('Buy It Now is no longer available for this auction.');
+    expect(bidErrorMessage(apiError('BUY_NOW_UNAVAILABLE'))).toMatch(/no longer available/);
+    expect(buyNowErrorMessage(apiError('WEIRD', 'Server text'))).toBe('Server text');
+    expect(buyNowErrorMessage(null)).toBe('Could not complete the purchase');
+  });
+  it('auctions: INVALID_RESERVE / INVALID_BUY_NOW', () => {
+    expect(auctionErrorMessage(apiError('INVALID_RESERVE'))).toMatch(/reserve price/i);
+    expect(auctionErrorMessage(apiError('INVALID_BUY_NOW'))).toMatch(/Buy It Now price/);
   });
   it('bids: unknown -> server message, network -> friendly', () => {
     expect(bidErrorMessage(apiError('WEIRD', 'Server text'))).toBe('Server text');

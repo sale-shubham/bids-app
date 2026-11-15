@@ -138,9 +138,9 @@ See `readme/ui/layout.md` for how these assemble.
 | Feature | Components |
 |---|---|
 | `admin` | `AdminList` (error state + `ResponsiveList`), `StatusTabs`, `PageHeader` (`admin-list.tsx`); `RevenueBarChart`, `SignupsLineChart` (`admin-charts.tsx`); `CopyButton`, `CopyableId`; `LegalSettings`, `MarketplaceSettings` |
-| `auctions` | `AuctionCard`, `AuctionStatusBadge`, `CoverImage` (`auction-card.tsx`); `AuctionGrid`, `AuctionGridSkeleton`; `AuctionList` (server first page, then infinite scroll); `AuctionFilterBar` (URL-driven); `AuctionDetailView`; `AuctionGallery`; `AuctionForm` (create/edit); `RepublishDialog`; `RecentlyViewed`; `ServerTimeSync`; `ShareButtons` |
+| `auctions` | `AuctionCard` (with a "Buy now ₹X" chip when `buyNowPricePaise` is set), `AuctionStatusBadge`, `CoverImage` (`auction-card.tsx`); `NewAuction` (`/sell/new`, relist pre-fill); `AuctionGrid`, `AuctionGridSkeleton`; `AuctionList` (server first page, then infinite scroll); `AuctionFilterBar` (URL-driven); `AuctionDetailView`; `AuctionGallery`; `AuctionForm` (create/edit); `RepublishDialog`; `RecentlyViewed`; `ServerTimeSync`; `ShareButtons` |
 | `auth` | `ForgotPasswordFlow`, `VerifyEmailStep` |
-| `bids` | `BidPanel`, `BidHistory`, `AuctionResult` (`readme/flows/bidding.md`) |
+| `bids` | `BidPanel` (max-bid form, raise max, reserve badge, Buy It Now), `BidHistory` (auto / Buy now tags), `AuctionResult` (reserve-not-met + Relist) (`readme/flows/bidding.md`) |
 | `commissions` | `UnpaidCommissionBanner` (`readme/flows/payments.md`) |
 | `leaderboard` | `Podium`, `LeaderboardTable`, `TopBidders` (`leaderboard-view.tsx`) |
 | `live` | `LiveIndicator` (`readme/flows/websocket.md`) |

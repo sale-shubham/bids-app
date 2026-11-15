@@ -24,7 +24,19 @@ const card = (over: Partial<AuctionCardData> = {}): AuctionCardData => ({
   endTime: new Date(Date.now() + HOUR).toISOString(),
   status: 'LIVE',
   seller: { id: 's1', name: 'Sam Seller', avatarUrl: null },
+  buyNowPricePaise: null,
+  hasReserve: false,
+  reserveMet: false,
   ...over,
+});
+
+describe('AuctionCard buy now', () => {
+  it('shows a Buy now chip only when a price is set', () => {
+    const { rerender } = render(<AuctionCard auction={card({ buyNowPricePaise: 250000 })} />);
+    expect(screen.getByText('Buy now ₹2,500')).toBeInTheDocument();
+    rerender(<AuctionCard auction={card()} />);
+    expect(screen.queryByText(/Buy now/)).not.toBeInTheDocument();
+  });
 });
 
 describe('AuctionCard', () => {

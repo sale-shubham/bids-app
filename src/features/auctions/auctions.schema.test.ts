@@ -4,12 +4,14 @@ import {
   defaultFormValues,
   makeAuctionFormSchema,
   paiseToRupees,
+  relistFormValues,
   republishSchema,
   resolveWindow,
   rupeesToPaise,
   toDateInput,
   toTimeInput,
   toWritePayload,
+  withoutNullPrices,
   type AuctionFormValues,
 } from './auctions.schema';
 
@@ -31,6 +33,8 @@ const form = (over: Partial<AuctionFormValues> = {}): AuctionFormValues => ({
   images: ['https://cdn.example.com/a.jpg'],
   startingBid: '1500',
   minIncrement: '',
+  reservePrice: '',
+  buyNowPrice: '',
   startNow: true,
   startDate: '',
   startTime: '',
@@ -96,6 +100,42 @@ describe('makeAuctionFormSchema', () => {
     expect(issues(mk(30 * 60_000))).toContain('endDate: Auction must run for at least 1 hour');
     expect(issues(mk(31 * DAY))).toContain('endDate: Auction can run for at most 30 days');
     expect(issues(mk(2 * DAY))).toEqual([]);
+  });
+});
+
+describe('reserve / Buy It Now rules', () => {
+  it('both are optional', () => {
+    expect(issues(form())).toEqual([]);
+  });
+  it('reserve must be at least the starting bid', () => {
+    expect(issues(form({ reservePrice: '1000' }))).toContain('reservePrice: Reserve price must be at least the starting bid');
+    expect(issues(form({ reservePrice: '1500' }))).toEqual([]);
+  });
+  it('Buy It Now must be above the starting bid and at least the reserve', () => {
+    expect(issues(form({ buyNowPrice: '1500' }))).toContain('buyNowPrice: Buy It Now price must be above the starting bid');
+    expect(issues(form({ buyNowPrice: '1501' }))).toEqual([]);
+    expect(issues(form({ reservePrice: '3000', buyNowPrice: '2500' }))).toContain('buyNowPrice: Buy It Now price must be at least the reserve price');
+    expect(issues(form({ reservePrice: '3000', buyNowPrice: '3000' }))).toEqual([]);
+  });
+  it('both are capped at the platform maximum', () => {
+    expect(issues(form({ reservePrice: '2000000' }), undefined, 100_000_000)).toContain('reservePrice: Reserve price can be at most ₹10,00,000');
+    expect(issues(form({ buyNowPrice: '2000000' }), undefined, 100_000_000)).toContain('buyNowPrice: Buy It Now price can be at most ₹10,00,000');
+  });
+  it('payload: rupees to paise, null when empty; withoutNullPrices drops nulls for create', () => {
+    const p = toWritePayload(form({ reservePrice: '2000.50', buyNowPrice: '3000' }));
+    expect(p).toMatchObject({ reservePricePaise: 200050, buyNowPricePaise: 300000 });
+    const empty = toWritePayload(form());
+    expect(empty).toMatchObject({ reservePricePaise: null, buyNowPricePaise: null });
+    const created = withoutNullPrices(empty);
+    expect('reservePricePaise' in created).toBe(false);
+    expect('buyNowPricePaise' in created).toBe(false);
+    expect(withoutNullPrices(p).reservePricePaise).toBe(200050);
+  });
+  it('edit pre-fill reads the prices; relist pre-fill keeps pricing but not the dates', () => {
+    const a = { title: 'T', description: 'D', category: 'C', condition: 'NEW', images: ['i'], startingBidPaise: 150000, minIncrementPaise: 10000, reservePricePaise: 200000, buyNowPricePaise: 400000, startTime: NOW.toISOString(), endTime: NOW.toISOString() } as never;
+    expect(defaultFormValues(a)).toMatchObject({ reservePrice: '2000', buyNowPrice: '4000' });
+    expect(relistFormValues(a)).toMatchObject({ title: 'T', startingBid: '1500', reservePrice: '2000', buyNowPrice: '4000', startNow: true, duration: '7', startDate: '' });
+    expect(defaultFormValues({ ...(a as object), reservePricePaise: null } as never).reservePrice).toBe('');
   });
 });
 

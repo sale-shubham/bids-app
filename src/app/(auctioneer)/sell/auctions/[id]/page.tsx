@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { ExternalLink, Gavel, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -88,6 +89,22 @@ export default function SellAuctionDetailPage() {
             {auction.bidCount} {auction.bidCount === 1 ? 'bid' : 'bids'}
           </p>
         </CardContent>
+        {(auction.hasReserve || typeof auction.reservePricePaise === 'number' || typeof auction.buyNowPricePaise === 'number') && (
+          <CardContent className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t p-4 text-sm">
+            {auction.hasReserve && (
+              <p className="flex flex-wrap items-center gap-2 text-muted-foreground">
+                Reserve:{' '}
+                {typeof auction.reservePricePaise === 'number' && <span className="font-semibold text-foreground">{formatINR(auction.reservePricePaise)}</span>}
+                <Badge variant={auction.reserveMet ? 'success' : 'warning'}>{auction.reserveMet ? 'Reserve met' : 'Reserve not met'}</Badge>
+              </p>
+            )}
+            {typeof auction.buyNowPricePaise === 'number' && (
+              <p className="text-muted-foreground">
+                Buy It Now: <span className="font-semibold text-foreground">{formatINR(auction.buyNowPricePaise)}</span>
+              </p>
+            )}
+          </CardContent>
+        )}
       </Card>
 
       {closed && <AuctionResult auction={auction} />}

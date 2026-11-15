@@ -56,7 +56,14 @@ function MyBidCard({ row }: { row: MyBidRow }) {
         </Link>
         <p className="text-sm text-muted-foreground">
           Your highest bid <span className="font-semibold text-foreground">{formatINR(row.myHighestBidPaise)}</span> · Current{' '}
-          {formatINR(a.bidCount > 0 ? a.currentBidPaise : a.startingBidPaise)} · {row.myBidCount} of your {row.myBidCount === 1 ? 'bid' : 'bids'}
+          {formatINR(a.bidCount > 0 ? a.currentBidPaise : a.startingBidPaise)}
+          {typeof row.myMaxBidPaise === 'number' && (
+            <>
+              {' '}
+              · your max <span className="font-semibold text-foreground">{formatINR(row.myMaxBidPaise)}</span>
+            </>
+          )}{' '}
+          · {row.myBidCount} of your {row.myBidCount === 1 ? 'bid' : 'bids'}
         </p>
         <Countdown startTime={a.startTime} endTime={a.endTime} status={a.status} />
       </div>
