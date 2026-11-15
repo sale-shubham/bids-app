@@ -1,4 +1,5 @@
 import { apiErrorCode, apiErrorMessage } from '@/lib/api-client';
+import { priceTooHighMessage } from '@/features/settings/settings.utils';
 
 // Friendly copy for error codes on the auctions routes.
 const MESSAGES: Record<string, string> = {
@@ -12,5 +13,6 @@ const MESSAGES: Record<string, string> = {
 
 export function auctionErrorMessage(err: unknown, fallback?: string) {
   const code = apiErrorCode(err);
+  if (code === 'PRICE_TOO_HIGH') return priceTooHighMessage(err);
   return (code && MESSAGES[code]) || apiErrorMessage(err, fallback);
 }

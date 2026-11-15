@@ -1,4 +1,5 @@
 import { apiErrorCode, apiErrorDetails, apiErrorMessage } from '@/lib/api-client';
+import { priceTooHighMessage } from '@/features/settings/settings.utils';
 import { formatINR } from '@/lib/utils';
 
 // Friendly copy for POST /auctions/:id/bids failures.
@@ -28,6 +29,7 @@ export function bidErrorMessage(err: unknown) {
       ? `Someone bid before you. The minimum bid is now ${formatINR(min)}.`
       : 'Your bid is too low. Check the minimum bid and try again.';
   }
+  if (code === 'PRICE_TOO_HIGH') return priceTooHighMessage(err);
   if (code && MESSAGES[code]) return MESSAGES[code];
   return apiErrorMessage(err, 'Could not place your bid');
 }

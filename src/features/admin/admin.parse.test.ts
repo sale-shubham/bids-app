@@ -69,7 +69,9 @@ describe('admin.parse', () => {
       minIncrementPaise: 10000,
       antiSnipingMinutes: 2,
       categories: ['Art', 'Cars'],
+      maxPricePaise: 10_000_000_000,
     });
+    expect(parseSettings({ data: { maxPricePaise: 5_000_000_000 } }).maxPricePaise).toBe(5_000_000_000);
     expect(parseSettings({ data: { commissionRateBps: 0, antiSnipingMinutes: 0 } })).toMatchObject({ commissionRateBps: 0, antiSnipingMinutes: 0 });
   });
 

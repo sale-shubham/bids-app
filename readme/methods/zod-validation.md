@@ -15,7 +15,7 @@ The project uses **native RHF integration**: pass `zodResolver(schema)` to `useF
 ## Schema conventions
 
 - **File:** `src/features/<feature>/<feature>.schema.ts` (`members.schema.ts` for the members feature).
-- **Schema export:** `<name>Schema` (e.g. `loginSchema`, `signupSchema`). A schema that depends on runtime input is a factory: `makeAuctionFormSchema(originalStart?)`.
+- **Schema export:** `<name>Schema` (e.g. `loginSchema`, `signupSchema`). A schema that depends on runtime input is a factory: `makeAuctionFormSchema(originalStart?, maxPricePaise?)`.
 - **Type exports:** `export type <Name>FormValues = z.infer<typeof <name>Schema>`, used as the `useForm<...>` generic and the `onSubmit` argument. The auction form is the exception: its values are the hand-written `AuctionFormValues` interface, because the schema comes from a factory.
 - **Mirror the backend:** schemas copy bids-api's validation (comments in `auth.schema.ts`, `auctions.schema.ts`, `admin.schema.ts` say so), so the client rejects bad input before it hits the API.
 - **Normalize in the schema** with `.trim()` and `.toLowerCase()` (emails). The transformed value is what reaches `onSubmit`.
@@ -82,7 +82,7 @@ Notes on this schema:
 
 ## Reference: `auctions.schema.ts`
 
-- `makeAuctionFormSchema(originalStart?)` builds the create / edit schema. Field rules: title 5-120 characters; description 20-10,000 characters with at least 10 characters of text once HTML tags are stripped (it comes from the rich-text editor); category required; condition `NEW` / `USED`; 1-8 images; starting bid ₹1 to ₹2,00,00,000; minimum increment blank or at least ₹1.
+- `makeAuctionFormSchema(originalStart?, maxPricePaise = DEFAULT_MAX_PRICE_PAISE)` builds the create / edit schema. Field rules: title 5-120 characters; description 20-10,000 characters with at least 10 characters of text once HTML tags are stripped (it comes from the rich-text editor); category required; condition `NEW` / `USED`; 1-8 images; starting bid ₹1 to the platform maximum (`maxPricePaise` from public settings, default ₹10 crore); minimum increment blank, or ₹1 up to the same maximum. `marketplaceSchema` (admin) adds `maxPriceRupees` (₹1,000 to ₹1,000 crore, rupees in the form, paise on the wire).
 - A `superRefine` checks the time window: a scheduled start must be chosen and not in the past (2-minute grace; when editing, an unchanged `originalStart` is allowed even if it has passed), a custom end must be chosen, and the auction must run between 1 hour and 30 days. Preset durations (`'1' | '3' | '7'` days) are added to the start by `resolveWindow()`.
 - `toWritePayload(values)` converts rupee strings to paise, omits `minIncrementPaise` when blank (the server default applies) and turns the window into ISO `startTime` / `endTime`. `defaultFormValues(auction?)` gives an empty form, or prefills from an existing auction with `duration: 'custom'`.
 - `republishSchema` validates the republish dialog's four date / time fields with the same past-start and 1 hour to 30 days rules.

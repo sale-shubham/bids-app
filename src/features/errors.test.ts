@@ -73,6 +73,12 @@ describe('error-code message maps', () => {
     expect(bidErrorMessage(apiError('AUCTION_ENDED'))).toMatch(/bids are closed/);
     expect(bidErrorMessage(apiError('RATE_LIMITED'))).toMatch(/too fast/);
   });
+  it('PRICE_TOO_HIGH names the platform maximum (auctions and bids)', () => {
+    const e = apiError('PRICE_TOO_HIGH', 'x', { maxPaise: 10_000_000_000 });
+    expect(auctionErrorMessage(e)).toBe(`The price can be at most ${formatINR(10_000_000_000)}.`);
+    expect(bidErrorMessage(e)).toBe(`The price can be at most ${formatINR(10_000_000_000)}.`);
+    expect(bidErrorMessage(apiError('PRICE_TOO_HIGH'))).toMatch(/platform maximum/);
+  });
   it('bids: BID_TOO_LOW with and without the minimum', () => {
     const withMin = apiError('BID_TOO_LOW', 'x', { minBidPaise: 125000 });
     expect(minBidFromError(withMin)).toBe(125000);

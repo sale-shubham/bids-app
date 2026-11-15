@@ -21,15 +21,15 @@ describe('legalPagesFormSchema', () => {
 });
 
 describe('marketplaceSchema (admin settings)', () => {
-  const ok = { commissionPercent: '5.00', minIncrementRupees: '100', antiSnipingMinutes: '2', categories: ['Art', 'Cars'] };
+  const ok = { commissionPercent: '5.00', minIncrementRupees: '100', antiSnipingMinutes: '2', maxPriceRupees: '100000000', categories: ['Art', 'Cars'] };
   it('accepts valid settings and converts to API units', () => {
     const r = marketplaceSchema.safeParse(ok);
     expect(r.success).toBe(true);
-    expect(formToSettings(r.data!)).toEqual({ commissionRateBps: 500, minIncrementPaise: 10000, antiSnipingMinutes: 2, categories: ['Art', 'Cars'] });
+    expect(formToSettings(r.data!)).toEqual({ commissionRateBps: 500, minIncrementPaise: 10000, antiSnipingMinutes: 2, categories: ['Art', 'Cars'], maxPricePaise: 10_000_000_000 });
   });
   it('round-trips settings through the form', () => {
-    const s = { commissionRateBps: 750, minIncrementPaise: 12550, antiSnipingMinutes: 5, categories: ['A1'] };
-    expect(settingsToForm(s)).toEqual({ commissionPercent: '7.50', minIncrementRupees: '125.5', antiSnipingMinutes: '5', categories: ['A1'] });
+    const s = { commissionRateBps: 750, minIncrementPaise: 12550, antiSnipingMinutes: 5, categories: ['A1'], maxPricePaise: 250_000_000_000 };
+    expect(settingsToForm(s)).toEqual({ commissionPercent: '7.50', minIncrementRupees: '125.5', antiSnipingMinutes: '5', maxPriceRupees: '2500000000', categories: ['A1'] });
     expect(bpsToPercent(500)).toBe('5.00');
     expect(percentToBps('7.5')).toBe(750);
   });
@@ -40,6 +40,14 @@ describe('marketplaceSchema (admin settings)', () => {
     expect(msgs(marketplaceSchema.safeParse({ ...ok, antiSnipingMinutes: '1.5' }))).toContain('Whole minutes only');
     expect(msgs(marketplaceSchema.safeParse({ ...ok, antiSnipingMinutes: '31' }))).toContain('Must be between 0 and 30 minutes');
     expect(msgs(marketplaceSchema.safeParse({ ...ok, commissionPercent: '' }))).toContain('Commission is required');
+  });
+  it('maximum price: INR 1,000 .. 1,000 crore, whole paise', () => {
+    expect(marketplaceSchema.safeParse({ ...ok, maxPriceRupees: '1000' }).success).toBe(true);
+    expect(marketplaceSchema.safeParse({ ...ok, maxPriceRupees: '10000000000' }).success).toBe(true);
+    expect(msgs(marketplaceSchema.safeParse({ ...ok, maxPriceRupees: '999' }))).toContain('Must be at least ₹1,000');
+    expect(msgs(marketplaceSchema.safeParse({ ...ok, maxPriceRupees: '10000000001' }))).toContain('Must be at most ₹10,00,00,00,000');
+    expect(msgs(marketplaceSchema.safeParse({ ...ok, maxPriceRupees: '' }))).toContain('Maximum price is required');
+    expect(formToSettings(marketplaceSchema.parse({ ...ok, maxPriceRupees: '10000000000' })).maxPricePaise).toBe(1_000_000_000_000);
   });
   it('categories: at least one, unique case-insensitively', () => {
     expect(msgs(marketplaceSchema.safeParse({ ...ok, categories: [] }))).toContain('Add at least one category');

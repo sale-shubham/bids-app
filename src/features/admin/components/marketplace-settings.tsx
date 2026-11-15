@@ -108,7 +108,7 @@ function MarketplaceForm({ settings }: { settings: AdminSettings }) {
         <CardHeader>
           <CardTitle className="text-base">Auction rules</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-4 @lg/content:grid-cols-3">
+        <CardContent className="grid gap-4 @lg/content:grid-cols-2 @3xl/content:grid-cols-4">
           <FormInput
             label="Commission rate (%)"
             inputMode="decimal"
@@ -129,6 +129,13 @@ function MarketplaceForm({ settings }: { settings: AdminSettings }) {
             hint="A late bid extends the end by this long. 0 disables."
             error={errors.antiSnipingMinutes?.message}
             {...register('antiSnipingMinutes')}
+          />
+          <FormInput
+            label="Maximum price (₹)"
+            inputMode="decimal"
+            hint="Cap on starting bids, increments and bids. ₹1,000 to ₹1,000 crore."
+            error={errors.maxPriceRupees?.message}
+            {...register('maxPriceRupees')}
           />
         </CardContent>
       </Card>
