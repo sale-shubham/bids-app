@@ -123,7 +123,7 @@ describe('gateFor (edge gate decision table)', () => {
       expect(gateFor(p, 'SUPER_ADMIN')).toBe('home');
       expect(gateFor(p, undefined)).toBe('login');
     }
-    for (const p of ['/sell/sales', '/sell/sales/s1', '/sell/payouts']) {
+    for (const p of ['/sell/sales', '/sell/sales/s1', '/sell/payouts', '/sell/analytics']) {
       expect(gateFor(p, 'AUCTIONEER')).toBe('allow');
       expect(gateFor(p, 'BIDDER')).toBe('home');
       expect(gateFor(p, 'SUPER_ADMIN')).toBe('home');

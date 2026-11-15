@@ -15,7 +15,7 @@ src/
     (member)/                        BIDDER / AUCTIONEER: /watchlist, /profile, /notifications
     (bidder)/my-bids                 BIDDER only; tabs Winning / Outbid / Won / Lost
     (bidder)/purchases, purchases/[id]  BIDDER only; checkout list + detail (pay, confirm received, report a problem)
-    (auctioneer)/                    AUCTIONEER only; /sell/* (auctions list, new, edit, bulk = CSV bulk upload, auctions/[id] = bids + result, commissions = pay via Razorpay, sales + sales/[id] = ship + payout amounts, payouts = payout account onboarding)
+    (auctioneer)/                    AUCTIONEER only; /sell/* (auctions list, new, edit, bulk = CSV bulk upload, auctions/[id] = bids + result, commissions = pay via Razorpay, sales + sales/[id] = ship + payout amounts, payouts = payout account onboarding, analytics = seller analytics)
     (admin)/                         SUPER_ADMIN only: /admin (dashboard + charts), /admin/members, auctions, commissions, payments, sales (release / refund), reviews, reports, risk (shill-bid queue), settings (incl. checkout mode + bid deposits), profile
     sitemap.ts, robots.ts            SEO (app public pages + /auctions/sitemap, fail-soft); public/og-image.png = default OG image
   components/
@@ -49,6 +49,12 @@ src/
     risk/                            risk.api/parse/types/utils/errors, use-risk (admin queue)
     reports/                         reports.api/types/constants/schema/errors, use-reports, components/{report-dialog,report-button}
     questions/                       questions.api/types/schema/errors, use-questions, components/questions-section
+    follows/                         follows.api/errors, use-follows, components/{follow-button,following-card}
+    notification-preferences/        .api/.errors, use-notification-preferences, components/{notification-preferences-card,whatsapp-card}
+    analytics/                       analytics.api, use-analytics (view beacon), components/{seller-analytics-page,auction-analytics-section,analytics-charts,days-switch}
+    follows/                         follows.api/errors, use-follows, components/{follow-button,following-card}
+    notification-preferences/        .api/.errors, use-notification-preferences, components/{notification-preferences-card,whatsapp-card}
+    analytics/                       analytics.api, use-analytics (view beacon), components/{seller-analytics-page,auction-analytics-section,analytics-charts,days-switch}
     saved-searches/                  saved-searches.api/types/schema/errors/utils, use-saved-searches, components/{save-search-button,alerts-card}
     leaderboard/                     leaderboard.server, components/leaderboard-view (podium, table)
     sellers/                         sellers.server, components/seller-auctions
@@ -65,7 +71,7 @@ src/
 public/                              sw.js, version.json, icons/, splash/, brand/logo-source.png, logo, favicons, og-image, avatar-default
 scripts/                             gen-version, generate-icons, generate-apple-splash, generate-notification-icons
 e2e/                                 Playwright suite (see e2e/README.md)
-docs/, readme/                       guides: methods/, ui/, theming/, flows/ (admin, auctions, auth, bidding, deployment, payments, push-notifications, pwa, seo, watchlist, websocket, reviews, questions, saved-searches, reports, deposits, strikes, risk)
+docs/, readme/                       guides: methods/, ui/, theming/, flows/ (admin, auctions, auth, bidding, deployment, payments, push-notifications, pwa, seo, watchlist, websocket, reviews, questions, saved-searches, reports, deposits, strikes, risk, follows, notification-preferences, analytics)
 ```
 
 ### Phase F additions (categories)

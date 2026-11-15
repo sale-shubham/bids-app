@@ -1,5 +1,5 @@
 'use client';
-import { BellRing, KeyRound, UserRound } from 'lucide-react';
+import { Bell, BellRing, Heart, KeyRound, UserRound } from 'lucide-react';
 import { MorePage, type ProfileTab } from '@/components/layout/more-page';
 import { useNav } from '@/components/layout/nav-items';
 import { ProfileIdentityCard } from '@/components/common/profile-identity-card';
@@ -9,6 +9,9 @@ import { PhoneVerificationCard } from '@/components/common/phone-verification-ca
 import { TwoFactorCard } from '@/components/common/two-factor-card';
 import { MyDevicesCard } from '@/components/common/my-devices-card';
 import { SignOutCard } from '@/components/common/sign-out-card';
+import { FollowingCard } from '@/features/follows/components/following-card';
+import { NotificationPreferencesCard } from '@/features/notification-preferences/components/notification-preferences-card';
+import { WhatsappCard } from '@/features/notification-preferences/components/whatsapp-card';
 import { AlertsCard } from '@/features/saved-searches/components/alerts-card';
 import { useAuthStore } from '@/store/auth-store';
 
@@ -18,6 +21,7 @@ import { useAuthStore } from '@/store/auth-store';
 export function ProfilePage() {
   const nav = useNav();
   const isBidder = useAuthStore((s) => s.member?.role === 'BIDDER');
+  const isAdmin = useAuthStore((s) => s.member?.role === 'SUPER_ADMIN');
   const deviceLimit = useAuthStore((s) => s.member?.deviceLimit ?? 1);
 
   const tabs: ProfileTab[] = [
@@ -46,6 +50,18 @@ export function ProfilePage() {
         </div>
       ),
     },
+    {
+      value: 'notifications',
+      label: 'Notifications',
+      icon: Bell,
+      content: (
+        <div className="space-y-6">
+          <WhatsappCard />
+          <NotificationPreferencesCard />
+        </div>
+      ),
+    },
+    ...(isAdmin ? [] : [{ value: 'following', label: 'Following', icon: Heart, content: <FollowingCard /> }]),
     ...(isBidder ? [{ value: 'alerts', label: 'Alerts', icon: BellRing, content: <AlertsCard /> }] : []),
   ];
 

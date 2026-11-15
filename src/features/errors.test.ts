@@ -16,6 +16,8 @@ import { depositErrorMessage, depositRequiredMessage, isStaleDepositError } from
 import { isStaleOfferError, offerErrorMessage } from './second-chance/second-chance.errors';
 import { strikeErrorMessage } from './strikes/strikes.errors';
 import { isStaleRiskError, riskErrorMessage } from './risk/risk.errors';
+import { followErrorMessage } from './follows/follows.errors';
+import { preferenceErrorMessage } from './notification-preferences/notification-preferences.errors';
 import { savedSearchErrorMessage } from './saved-searches/saved-searches.errors';
 
 function apiError(code?: string, message = 'Server says no', details?: unknown, status = 400) {
@@ -253,5 +255,16 @@ describe('listing quality error codes', () => {
     expect(categoryErrorMessage(apiError('CATEGORY_CYCLE'))).toMatch(/under itself/);
     expect(categoryErrorMessage(apiError('CATEGORY_SLUG_TAKEN'))).toMatch(/slug/i);
     expect(categoryErrorMessage(apiError('CATEGORY_IN_USE'))).toMatch(/cannot be deleted/);
+  });
+});
+
+describe('engagement error codes', () => {
+  it('follow codes', () => {
+    expect(followErrorMessage(apiError('INVALID_FOLLOW'))).toMatch(/yourself/);
+    expect(followErrorMessage(apiError('SELLER_NOT_FOUND'))).toMatch(/no longer exists/);
+    expect(followErrorMessage(apiError('OTHER', 'Server says no'))).toBe('Server says no');
+  });
+  it('PHONE_NOT_VERIFIED points to the Security tab', () => {
+    expect(preferenceErrorMessage(apiError('PHONE_NOT_VERIFIED', 'x', undefined, 409))).toMatch(/Security/);
   });
 });

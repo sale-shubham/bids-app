@@ -202,3 +202,9 @@ See `readme/ui/layout.md` for how these assemble.
 - `features/categories/components/`: `CategoryPicker` (cascading selects, `tree` / `value` id / `onChange`), `AttributeFields` (`defs`, `values`, `onChange(key, value)`, `errors`), `AttributeSchemaEditor` (react-hook-form `useFieldArray` rows), `CategoryDialog` (create / edit), `AdminCategories` (page body).
 - `features/auctions/components/listing-info.tsx`: `CategoryBreadcrumb`, `EstimateLine`, `SpecsTable`, `ConditionReport` (collapsible), `DeliveryBlock`, `estimateText`.
 - `PurchaseActions` shows a delivery radio group when both options are offered.
+
+## Engagement (Phase G part 1)
+- `features/follows/components/`: `FollowButton` (`sellerId`, `sellerRole?`, `initialFollowerCount?`, `compact?`, `showCount?`), `FollowingCard` (profile Following tab).
+- `features/notification-preferences/components/`: `NotificationPreferencesCard`, `WhatsappCard` (profile Notifications tab).
+- `features/analytics/components/`: `SellerAnalyticsPage`, `AuctionAnalyticsSection`, `DailyChart`, `DaysSwitch` (7 / 30 / 90 `aria-pressed` group).
+- `admin-charts.tsx` now exports `TOOLTIP` / `AXIS` chart styles for reuse.

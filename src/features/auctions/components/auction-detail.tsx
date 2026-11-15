@@ -29,6 +29,8 @@ import { SimilarSold } from './similar-sold';
 import { ReportButton } from '@/features/reports/components/report-button';
 import { RatingSummary } from '@/features/reviews/components/star-rating';
 import { QuestionsSection } from '@/features/questions/components/questions-section';
+import { FollowButton } from '@/features/follows/components/follow-button';
+import { useTrackAuctionView } from '@/features/analytics/use-analytics';
 import { WatchButton } from '@/features/watchlist/components/watch-button';
 
 export function AuctionDetailView({ initial, serverTime }: { initial: AuctionDetail; serverTime: string | null }) {
@@ -37,6 +39,7 @@ export function AuctionDetailView({ initial, serverTime }: { initial: AuctionDet
   const auction = data ?? initial;
   useAuctionBoundaryRefetch(auction, refetch);
   useAuctionLive(initial.id);
+  useTrackAuctionView(initial.id, initial.seller.id);
   const member = useAuthStore((s) => s.member);
   const syncServerTime = useLiveStore((s) => s.syncServerTime);
   const del = useDeleteAuction();
@@ -107,10 +110,8 @@ export function AuctionDetailView({ initial, serverTime }: { initial: AuctionDet
         <EstimateLine low={auction.estimateLowPaise} high={auction.estimateHighPaise} />
         {auction.shippingOptions && <DeliveryBlock options={auction.shippingOptions} />}
 
-        <Link
-          href={`/sellers/${auction.seller.id}`}
-          className="flex items-center gap-3 rounded-xl border p-3 transition hover:border-primary/40 hover:bg-accent/40"
-        >
+        <div className="flex items-center gap-2 rounded-xl border p-3 transition hover:border-primary/40 hover:bg-accent/40">
+        <Link href={`/sellers/${auction.seller.id}`} className="flex min-w-0 flex-1 items-center gap-3">
           <MemberAvatar id={auction.seller.id} name={auction.seller.name} email="" avatarUrl={auction.seller.avatarUrl} size="md" />
           <div>
             <p className="text-xs text-muted-foreground">Seller</p>
@@ -121,6 +122,8 @@ export function AuctionDetailView({ initial, serverTime }: { initial: AuctionDet
             <RatingSummary avg={auction.seller.ratingAvg} count={auction.seller.ratingCount} />
           </div>
         </Link>
+        <FollowButton sellerId={auction.seller.id} compact />
+        </div>
 
         <ShareButtons title={auction.title} path={`/auctions/${auction.id}`} />
         <div>

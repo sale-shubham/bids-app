@@ -2,11 +2,11 @@
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { formatINR } from '@/lib/utils';
 
-const TOOLTIP = {
+export const TOOLTIP = {
   contentStyle: { borderRadius: 8, border: '1px solid hsl(var(--border))', background: 'hsl(var(--popover))', fontSize: 12 },
   labelStyle: { color: 'hsl(var(--muted-foreground))' },
 };
-const AXIS = { fontSize: 12, fill: 'hsl(var(--muted-foreground))' };
+export const AXIS = { fontSize: 12, fill: 'hsl(var(--muted-foreground))' };
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 /** 'YYYY-MM' -> "Mar 26". */
