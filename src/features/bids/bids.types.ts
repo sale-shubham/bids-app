@@ -1,4 +1,5 @@
 import type { AuctionCard, AuctionDetail } from '@/features/auctions/auctions.types';
+import type { SaleStatus } from '@/features/sales/sales.types';
 
 export type BidKind = 'MANUAL' | 'AUTO' | 'BUY_NOW';
 
@@ -48,4 +49,7 @@ export interface MyBidRow {
   state: MyBidState;
   /** Won and not rated yet. */
   canReview?: boolean;
+  /** The checkout sale of a won auction (null for legacy auctions without one). */
+  saleId?: string | null;
+  saleStatus?: SaleStatus | null;
 }

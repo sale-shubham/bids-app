@@ -29,6 +29,9 @@ Props: `open`, `onOpenChange`, `title`, `description?`, `confirmLabel?` (default
 | Waive a commission (admin) | Yes |
 | Log out (this device, or all devices) | Yes |
 | Remove a signed-in device | Yes |
+| Confirm a purchase was received (buyer; "This releases the payment to the seller.") | Yes |
+| Report a problem on a purchase (buyer; reason 10 to 1000 characters in `children`) | Yes |
+| Release / refund a sale (admin; refund has an optional note) | Yes |
 | Pay a commission | Razorpay Checkout is the confirmation step; in stub mode (`keyId` = `"stub"`) a `ConfirmDialog` asks before simulating the payment |
 
 **Does NOT require confirm:** read-only actions, reversible toggles (watchlist heart, notification switch, theme), marking notifications read, navigation.
@@ -119,9 +122,12 @@ onClick={() => setToDelete(auction)}
 | `src/app/(auctioneer)/sell/auctions/page.tsx` | Delete auction (row action on My auctions) |
 | `src/app/(auctioneer)/sell/auctions/[id]/page.tsx` | Delete auction (seller's auction page) |
 | `src/features/auctions/components/auction-detail.tsx` | Delete auction (owner only, from the public detail page) |
-| `src/app/(auctioneer)/sell/commissions/page.tsx` | Simulate a commission payment in Razorpay stub mode ("Test mode") |
+| `src/app/(auctioneer)/sell/commissions/page.tsx` | Simulate a commission payment in Razorpay stub mode ("Test mode", via `useStubPaymentConfirm`) |
 | `src/app/(admin)/admin/auctions/page.tsx` | Cancel auction (admin, destructive) |
 | `src/app/(admin)/admin/members/page.tsx` | Activate / deactivate member (destructive when deactivating); change role (destructive when granting `SUPER_ADMIN`, with the role `Select` as `children`) |
+| `src/features/sales/components/purchase-actions.tsx` | Confirm received; Report a problem (destructive, reason `Textarea` as `children`); Razorpay stub "Test mode" via `useStubPaymentConfirm` |
+| `src/features/sales/components/admin-sale-actions.tsx` | Release payment; Refund buyer (destructive, optional note as `children`) |
+| `src/features/payments/use-stub-payment-confirm.tsx` | Simulate a payment in Razorpay stub mode (shared; also used by `/sell/commissions`) |
 | `src/app/(admin)/admin/commissions/page.tsx` | Waive commission (destructive, "This cannot be undone") |
 | `src/app/(admin)/admin/reviews/page.tsx` | Hide / unhide a review (destructive when hiding) |
 | `src/features/questions/components/questions-section.tsx` | Hide a question (seller) |

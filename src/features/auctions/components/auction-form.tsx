@@ -74,6 +74,10 @@ export function AuctionForm({ auction, relistFrom }: { auction?: AuctionDetail; 
         toast.error(auctionErrorMessage(e), { action: { label: 'Pay now', onClick: () => router.push('/sell/commissions') } });
         return;
       }
+      if (apiErrorCode(e) === 'PAYOUT_ACCOUNT_REQUIRED') {
+        toast.error(auctionErrorMessage(e), { action: { label: 'Set up', onClick: () => router.push('/sell/payouts') } });
+        return;
+      }
       toast.error(auctionErrorMessage(e, 'Could not save the auction'));
     };
     if (!auction) {

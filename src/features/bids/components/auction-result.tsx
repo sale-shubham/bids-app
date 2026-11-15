@@ -1,39 +1,21 @@
 'use client';
 import Link from 'next/link';
-import { Mail, Phone, RotateCcw, Trophy, User } from 'lucide-react';
+import { RotateCcw, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ContactCard } from '@/components/common/contact-card';
 import { useAuthStore } from '@/store/auth-store';
 import { formatINR } from '@/lib/utils';
 import type { AuctionDetail } from '@/features/auctions/auctions.types';
-import type { AuctionContact } from '../bids.types';
 import { RateSellerButton } from '@/features/reviews/components/rate-seller-button';
 import { StarDisplay } from '@/features/reviews/components/star-rating';
-
-function ContactCard({ title, contact }: { title: string; contact: AuctionContact }) {
-  return (
-    <div className="space-y-2 rounded-lg border bg-background p-3 text-sm">
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{title}</p>
-      <p className="inline-flex items-center gap-2 font-medium">
-        <User className="h-4 w-4 text-muted-foreground" aria-hidden /> {contact.name}
-      </p>
-      <p>
-        <a href={`mailto:${contact.email}`} className="inline-flex items-center gap-2 text-primary hover:underline">
-          <Mail className="h-4 w-4" aria-hidden /> {contact.email}
-        </a>
-      </p>
-      <p>
-        <a href={`tel:${contact.phone}`} className="inline-flex items-center gap-2 text-primary hover:underline">
-          <Phone className="h-4 w-4" aria-hidden /> {contact.phone}
-        </a>
-      </p>
-    </div>
-  );
-}
+import { SaleStatusBadge } from '@/features/sales/components/sale-status-badge';
+import { BuyerSaleEntry } from '@/features/sales/components/buyer-sale-entry';
 
 /** Outcome of an ended auction: sold / no bids, plus the winner's or seller's view of it. */
 export function AuctionResult({ auction }: { auction: AuctionDetail }) {
   const member = useAuthStore((s) => s.member);
   const contact = auction.contact ?? null;
+  const sale = auction.sale ?? null;
 
   if (auction.status === 'CANCELLED') {
     return <p className="rounded-lg border border-dashed p-3 text-center text-sm text-muted-foreground">This auction was cancelled.</p>;
@@ -67,7 +49,9 @@ export function AuctionResult({ auction }: { auction: AuctionDetail }) {
           <p className="inline-flex items-center gap-2 text-base font-semibold text-success">
             <Trophy className="h-5 w-5" aria-hidden /> You won!
           </p>
-          {contact?.role === 'SELLER' ? (
+          {sale ? (
+            <BuyerSaleEntry saleId={sale.id} status={sale.status} payBy={sale.payBy} />
+          ) : contact?.role === 'SELLER' ? (
             <>
               <p className="text-sm text-muted-foreground">Contact the seller to arrange payment and delivery.</p>
               <ContactCard title="Seller contact" contact={contact} />
@@ -96,7 +80,16 @@ export function AuctionResult({ auction }: { auction: AuctionDetail }) {
         </div>
       )}
 
-      {sold && isSeller && (
+      {sold && isSeller && sale && (
+        <div className="flex flex-wrap items-center gap-2">
+          <SaleStatusBadge status={sale.status} />
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/sell/sales/${sale.id}`}>View sale</Link>
+          </Button>
+        </div>
+      )}
+
+      {sold && isSeller && !sale && (
         <>
           {contact?.role === 'WINNER' ? (
             <ContactCard title="Winner contact" contact={contact} />

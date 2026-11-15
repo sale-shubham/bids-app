@@ -2,18 +2,25 @@
 import * as React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertTriangle, ArrowDown, ArrowUp, Plus, X } from 'lucide-react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FormInput } from '@/components/common/form-input';
 import { apiErrorMessage } from '@/lib/api-client';
 import { categoryNameSchema, formToSettings, marketplaceSchema, settingsToForm, type MarketplaceValues } from '../admin.schema';
 import type { AdminSettings } from '../admin.types';
 import { useAdminSettings, useSaveSettings } from '../use-admin';
+
+export const CHECKOUT_MODE_OPTIONS = [
+  { value: 'off', label: 'Off', help: 'Winners and sellers arrange payment themselves. No checkout button is shown.' },
+  { value: 'optional', label: 'Optional', help: 'Winners can pay through the platform when the seller has an active payout account.' },
+  { value: 'required', label: 'Required', help: 'Sellers must have an active payout account before they can create auctions.' },
+] as const;
 
 function CategoriesEditor({ value, onChange, error }: { value: string[]; onChange: (v: string[]) => void; error?: string }) {
   const [draft, setDraft] = React.useState('');
@@ -90,6 +97,7 @@ function MarketplaceForm({ settings }: { settings: AdminSettings }) {
     reset,
     formState: { errors, isDirty },
   } = useForm<MarketplaceValues>({ resolver: zodResolver(marketplaceSchema), defaultValues: settingsToForm(settings) });
+  const checkoutMode = useWatch({ control, name: 'checkoutMode' });
 
   const onSubmit = (v: MarketplaceValues) =>
     save.mutate(formToSettings(v), {
@@ -137,6 +145,37 @@ function MarketplaceForm({ settings }: { settings: AdminSettings }) {
             error={errors.maxPriceRupees?.message}
             {...register('maxPriceRupees')}
           />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Checkout</CardTitle>
+        </CardHeader>
+        <CardContent className="max-w-md space-y-1.5">
+          <Label htmlFor="checkout-mode">Checkout mode</Label>
+          <Controller
+            control={control}
+            name="checkoutMode"
+            render={({ field }) => (
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger id="checkout-mode" aria-invalid={!!errors.checkoutMode}>
+                  <SelectValue placeholder="Choose a mode" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CHECKOUT_MODE_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>
+                      {o.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
+          <p className="text-xs text-muted-foreground">
+            {CHECKOUT_MODE_OPTIONS.find((o) => o.value === checkoutMode)?.help}
+          </p>
+          {errors.checkoutMode && <p className="text-xs text-destructive">{errors.checkoutMode.message}</p>}
         </CardContent>
       </Card>
 

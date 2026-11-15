@@ -7,12 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { EmptyState } from '@/components/common/empty-state';
 import { InfiniteScroll } from '@/components/common/infinite-scroll';
 import { StatusBadge } from '@/components/common/status-badge';
 import { CoverImage } from '@/features/auctions/components/auction-card';
 import { useCommissions, useCommissionSummary } from '@/features/commissions/use-commissions';
+import { useStubPaymentConfirm } from '@/features/payments/use-stub-payment-confirm';
 import { usePayCommission } from '@/features/commissions/use-pay-commission';
 import type { CommissionDTO, CommissionTab } from '@/features/commissions/commissions.types';
 import { formatDate, formatINR } from '@/lib/utils';
@@ -92,21 +92,7 @@ export default function SellCommissionsPage() {
   const summary = useCommissionSummary();
   const items = list.data?.pages.flatMap((p) => p.items) ?? [];
 
-  const [stubOpen, setStubOpen] = React.useState(false);
-  const stubResolve = React.useRef<((ok: boolean) => void) | null>(null);
-  const confirmStub = React.useCallback(
-    () =>
-      new Promise<boolean>((resolve) => {
-        stubResolve.current = resolve;
-        setStubOpen(true);
-      }),
-    [],
-  );
-  const answerStub = (ok: boolean) => {
-    setStubOpen(false);
-    stubResolve.current?.(ok);
-    stubResolve.current = null;
-  };
+  const { confirmStub, stubDialog } = useStubPaymentConfirm();
   const { pay, payingId } = usePayCommission(confirmStub);
 
   const s = summary.data;
@@ -190,16 +176,7 @@ export default function SellCommissionsPage() {
         </div>
       )}
 
-      <ConfirmDialog
-        open={stubOpen}
-        onOpenChange={(o) => {
-          if (!o) answerStub(false);
-        }}
-        title="Test mode"
-        description="Test mode — simulate a successful payment?"
-        confirmLabel="Simulate payment"
-        onConfirm={() => answerStub(true)}
-      />
+      {stubDialog}
     </div>
   );
 }

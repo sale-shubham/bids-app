@@ -61,6 +61,31 @@ export const useAdminCommissions = (f: { status: string }, page: number, size: n
 export const useAdminPayments = (f: { status: string }, page: number, size: number) =>
   useAdminList('payments', f, page, size, api.fetchAdminPayments);
 
+export const useAdminSales = (f: { status: string; q: string }, page: number, size: number) =>
+  useAdminList('sales', f, page, size, api.fetchAdminSales);
+
+export function useReleaseSale() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.releaseSale(id),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: adminKeys.all });
+      void qc.invalidateQueries({ queryKey: ['sales'] });
+    },
+  });
+}
+
+export function useRefundSale() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, note }: { id: string; note?: string }) => api.refundSale(id, note),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: adminKeys.all });
+      void qc.invalidateQueries({ queryKey: ['sales'] });
+    },
+  });
+}
+
 export function useUpdateMember() {
   const qc = useQueryClient();
   return useMutation({

@@ -19,14 +19,14 @@ export const PUBLIC_PREFIXES = ['/auctions', '/leaderboard', '/sellers', '/pages
 // pattern: the admin lives only under /admin plus the public pages).
 export const MEMBER_PREFIXES = ['/watchlist', '/profile', '/notifications'];
 
-// Bidder area (BIDDER only).
-export const BIDDER_PREFIXES = ['/my-bids'];
+// Bidder area (BIDDER only): /my-bids, /purchases and /purchases/[id].
+export const BIDDER_PREFIXES = ['/my-bids', '/purchases'];
 
-// Auctioneer area (AUCTIONEER only).
+// Auctioneer area (AUCTIONEER only): everything under /sell, including /sell/sales, /sell/sales/[id] and /sell/payouts.
 export const AUCTIONEER_PREFIX = '/sell';
 
 // Admin area: SUPER_ADMIN only (/admin, /admin/members, /admin/auctions, /admin/commissions,
-// /admin/payments, /admin/reviews, /admin/settings, /admin/profile).
+// /admin/payments, /admin/sales, /admin/reviews, /admin/settings, /admin/profile).
 export const ADMIN_PREFIX = '/admin';
 
 // Exact-match, or prefix followed by `/`.

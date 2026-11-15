@@ -1,6 +1,7 @@
 import { parsePaged, type Paged } from '@/lib/paged';
 import { parseCommissionPage } from '@/features/commissions/commissions.parse';
 import type { AuctionCard } from '@/features/auctions/auctions.types';
+import { resolveCheckoutMode } from '@/features/settings/settings.types';
 import { DEFAULT_MAX_PRICE_PAISE } from '@/features/settings/settings.utils';
 import type { Role } from '@/constants/routes';
 import type {
@@ -126,6 +127,7 @@ export function parseSettings(body: unknown): AdminSettings {
     antiSnipingMinutes: num(d.antiSnipingMinutes, 2),
     categories: arr(d.categories).filter((c): c is string => typeof c === 'string'),
     maxPricePaise: num(d.maxPricePaise, DEFAULT_MAX_PRICE_PAISE),
+    checkoutMode: resolveCheckoutMode(d.checkoutMode),
   };
 }
 

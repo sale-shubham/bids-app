@@ -41,6 +41,7 @@ export const marketplaceSchema = z.object({
     .min(1, 'Add at least one category')
     .max(30, 'At most 30 categories')
     .refine((c) => new Set(c.map((x) => x.trim().toLowerCase())).size === c.length, 'Categories must be unique'),
+  checkoutMode: z.enum(['off', 'optional', 'required'], { message: 'Choose a checkout mode' }),
 });
 
 export type MarketplaceValues = z.infer<typeof marketplaceSchema>;
@@ -52,6 +53,7 @@ export function settingsToForm(s: AdminSettings): MarketplaceValues {
     antiSnipingMinutes: String(s.antiSnipingMinutes),
     maxPriceRupees: paiseToRupeesStr(s.maxPricePaise),
     categories: s.categories,
+    checkoutMode: s.checkoutMode,
   };
 }
 
@@ -62,5 +64,6 @@ export function formToSettings(v: MarketplaceValues): AdminSettings {
     antiSnipingMinutes: Number(v.antiSnipingMinutes),
     maxPricePaise: rupeesToPaiseNum(v.maxPriceRupees),
     categories: v.categories.map((c) => c.trim()),
+    checkoutMode: v.checkoutMode,
   };
 }

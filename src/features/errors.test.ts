@@ -6,6 +6,8 @@ import { authErrorMessage } from './auth/auth.errors';
 import { auctionErrorMessage } from './auctions/auctions.errors';
 import { bidErrorMessage, buyNowErrorMessage, minBidFromError } from './bids/bids.errors';
 import { commissionErrorMessage } from './commissions/commissions.errors';
+import { payoutErrorMessage } from './payouts/payouts.errors';
+import { isStaleSaleError, saleErrorMessage, salePaymentErrorMessage } from './sales/sales.errors';
 import { questionErrorMessage } from './questions/questions.errors';
 import { reviewErrorMessage } from './reviews/reviews.errors';
 import { savedSearchErrorMessage } from './saved-searches/saved-searches.errors';
@@ -128,5 +130,34 @@ describe('error-code message maps', () => {
     expect(bidErrorMessage(apiError('WEIRD', 'Server text'))).toBe('Server text');
     expect(bidErrorMessage(new AxiosError('Network Error'))).toMatch(/Can't reach the server/);
     expect(bidErrorMessage(null)).toBe('Could not place your bid');
+  });
+});
+
+describe('Phase C error maps', () => {
+  it('sales: every new code has friendly copy, unknown falls back to the server message', () => {
+    expect(saleErrorMessage(apiError('SALE_NOT_FOUND'))).toMatch(/no longer exists/);
+    expect(saleErrorMessage(apiError('SALE_NOT_PAYABLE'))).toMatch(/can no longer be paid/);
+    expect(saleErrorMessage(apiError('PAYOUT_ACCOUNT_INACTIVE'))).toMatch(/cannot receive payments/);
+    expect(saleErrorMessage(apiError('SALE_INVALID_STATE'))).toMatch(/has changed/);
+    expect(saleErrorMessage(apiError('WEIRD', 'Server text'))).toBe('Server text');
+    expect(saleErrorMessage(null, 'custom')).toBe('custom');
+  });
+  it('sale payment errors fall through to the shared payment codes', () => {
+    expect(salePaymentErrorMessage(apiError('SALE_NOT_PAYABLE'))).toMatch(/can no longer be paid/);
+    expect(salePaymentErrorMessage(apiError('INVALID_SIGNATURE'))).toMatch(/could not verify the payment/);
+  });
+  it('stale-sale codes trigger a refetch', () => {
+    expect(isStaleSaleError(apiError('SALE_INVALID_STATE'))).toBe(true);
+    expect(isStaleSaleError(apiError('SALE_NOT_PAYABLE'))).toBe(true);
+    expect(isStaleSaleError(apiError('WEIRD'))).toBe(false);
+  });
+  it('payouts: PAYOUT_ACCOUNT_EXISTS / REQUIRED / INACTIVE', () => {
+    expect(payoutErrorMessage(apiError('PAYOUT_ACCOUNT_EXISTS'))).toMatch(/already have a payout account/);
+    expect(payoutErrorMessage(apiError('PAYOUT_ACCOUNT_REQUIRED'))).toMatch(/Set up your payout account/);
+    expect(payoutErrorMessage(apiError('PAYOUT_ACCOUNT_INACTIVE'))).toMatch(/not active/);
+    expect(payoutErrorMessage(null)).toBe('Could not save your payout details');
+  });
+  it('auctions: PAYOUT_ACCOUNT_REQUIRED', () => {
+    expect(auctionErrorMessage(apiError('PAYOUT_ACCOUNT_REQUIRED'))).toMatch(/payout account/);
   });
 });

@@ -70,7 +70,10 @@ describe('admin.parse', () => {
       antiSnipingMinutes: 2,
       categories: ['Art', 'Cars'],
       maxPricePaise: 10_000_000_000,
+      checkoutMode: 'optional',
     });
+    expect(parseSettings({ data: { checkoutMode: 'required' } }).checkoutMode).toBe('required');
+    expect(parseSettings({ data: { checkoutMode: 'bogus' } }).checkoutMode).toBe('optional');
     expect(parseSettings({ data: { maxPricePaise: 5_000_000_000 } }).maxPricePaise).toBe(5_000_000_000);
     expect(parseSettings({ data: { commissionRateBps: 0, antiSnipingMinutes: 0 } })).toMatchObject({ commissionRateBps: 0, antiSnipingMinutes: 0 });
   });

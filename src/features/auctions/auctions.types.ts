@@ -1,4 +1,5 @@
 import type { AuctionContact, BidDTO } from '@/features/bids/bids.types';
+import type { AuctionSaleSummary } from '@/features/sales/sales.types';
 import type { ReviewDTO } from '@/features/reviews/reviews.types';
 
 export type AuctionStatus = 'SCHEDULED' | 'LIVE' | 'ENDED' | 'CANCELLED';
@@ -64,6 +65,8 @@ export interface AuctionDetail extends AuctionCard {
   review?: ReviewDTO | null;
   /** The viewer won this auction and has not rated the seller yet. */
   canReview?: boolean;
+  /** The checkout sale created when this auction sold (buyer / seller / admin only); null for legacy auctions. */
+  sale?: AuctionSaleSummary | null;
 }
 
 export interface PageMeta {
