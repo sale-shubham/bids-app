@@ -15,7 +15,7 @@ src/
     (bidder)/my-bids                 BIDDER only; tabs Winning / Outbid / Won / Lost
     (bidder)/purchases, purchases/[id]  BIDDER only; checkout list + detail (pay, confirm received, report a problem)
     (auctioneer)/                    AUCTIONEER only; /sell/* (auctions list, new, edit, auctions/[id] = bids + result, commissions = pay via Razorpay, sales + sales/[id] = ship + payout amounts, payouts = payout account onboarding)
-    (admin)/                         SUPER_ADMIN only: /admin (dashboard + charts), /admin/members, auctions, commissions, payments, sales (release / refund), reviews, reports, settings (incl. checkout mode), profile
+    (admin)/                         SUPER_ADMIN only: /admin (dashboard + charts), /admin/members, auctions, commissions, payments, sales (release / refund), reviews, reports, risk (shill-bid queue), settings (incl. checkout mode + bid deposits), profile
     sitemap.ts, robots.ts            SEO (app public pages + /auctions/sitemap, fail-soft); public/og-image.png = default OG image
   components/
     ui/                              shadcn/Radix primitives
@@ -41,6 +41,10 @@ src/
     push/                            push.api, use-push (Web Push subscribe / unsubscribe)
     watchlist/                       api, use-watchlist (['watchlist-ids'], ['watchlist'], optimistic toggle), components/{watch-button,watchlist-view}
     reviews/                         reviews.api/types/schema/errors, use-reviews, components/{star-rating,review-dialog,rate-seller-button,review-item,seller-reviews}
+    deposits/                        deposits.api/errors, use-deposit (pay), use-deposit-admin, components/{deposit-card,set-deposit-dialog}
+    strikes/                         strikes.api/parse/types/errors, use-strikes, components/{strike-banner,member-strikes-dialog}
+    second-chance/                   second-chance.api/parse/types/errors, use-second-chance, components/{offer-bits,seller-offer-card,offers-section,offer-detail-page}
+    risk/                            risk.api/parse/types/utils/errors, use-risk (admin queue)
     reports/                         reports.api/types/constants/schema/errors, use-reports, components/{report-dialog,report-button}
     questions/                       questions.api/types/schema/errors, use-questions, components/questions-section
     saved-searches/                  saved-searches.api/types/schema/errors/utils, use-saved-searches, components/{save-search-button,alerts-card}
@@ -59,5 +63,5 @@ src/
 public/                              sw.js, version.json, icons/, splash/, brand/logo-source.png, logo, favicons, og-image, avatar-default
 scripts/                             gen-version, generate-icons, generate-apple-splash, generate-notification-icons
 e2e/                                 Playwright suite (see e2e/README.md)
-docs/, readme/                       guides: methods/, ui/, theming/, flows/ (admin, auctions, auth, bidding, deployment, payments, push-notifications, pwa, seo, watchlist, websocket, reviews, questions, saved-searches, reports)
+docs/, readme/                       guides: methods/, ui/, theming/, flows/ (admin, auctions, auth, bidding, deployment, payments, push-notifications, pwa, seo, watchlist, websocket, reviews, questions, saved-searches, reports, deposits, strikes, risk)
 ```

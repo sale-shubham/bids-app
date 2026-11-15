@@ -15,6 +15,8 @@ import { apiErrorCode } from '@/lib/api-client';
 import { cn, formatINR } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth-store';
 import type { AuctionDetail } from '@/features/auctions/auctions.types';
+import { DepositCard, DepositPaidChip, needsDeposit } from '@/features/deposits/components/deposit-card';
+import { isStaleDepositError } from '@/features/deposits/deposits.errors';
 import { bidErrorMessage, buyNowErrorMessage } from '../bids.errors';
 import { basePricePaise, ceilRupees, minNextBidPaise, rupeesToPaise } from '../bids.utils';
 import { useMaxPricePaise } from '@/features/settings/use-settings';
@@ -56,6 +58,7 @@ export function BidPanel({ auction }: { auction: AuctionDetail }) {
         Bidding opens when the auction starts. <Countdown startTime={auction.startTime} endTime={auction.endTime} status={auction.status} className="ml-1" />
       </Note>
     );
+  else if (needsDeposit(auction)) action = <DepositCard auction={auction} />;
   else if (isHighest)
     action = (
       <div className="space-y-3">
@@ -103,6 +106,7 @@ export function BidPanel({ auction }: { auction: AuctionDetail }) {
             {!closed && !isHighest && <Badge variant="warning">Outbid</Badge>}
           </p>
         )}
+        {member && !closed && <DepositPaidChip auction={auction} />}
         {action}
       </CardContent>
     </Card>
@@ -154,7 +158,7 @@ function BidControls({ auction, minNext, raiseFrom }: { auction: AuctionDetail; 
       onError: (e) => {
         toast.error(bidErrorMessage(e));
         const code = apiErrorCode(e);
-        if (code === 'BID_TOO_LOW' || code === 'MAX_TOO_LOW' || code === 'AUCTION_ENDED' || code === 'ALREADY_HIGHEST' || code === 'AUCTION_NOT_STARTED') refetchAuction();
+        if (code === 'BID_TOO_LOW' || code === 'MAX_TOO_LOW' || code === 'AUCTION_ENDED' || code === 'ALREADY_HIGHEST' || code === 'AUCTION_NOT_STARTED' || isStaleDepositError(e)) refetchAuction();
         setPending(null);
       },
     });
@@ -239,7 +243,7 @@ function BuyNow({ auction, buyNowPaise }: { auction: AuctionDetail; buyNowPaise:
       onError: (e) => {
         toast.error(buyNowErrorMessage(e));
         const code = apiErrorCode(e);
-        if (code === 'BUY_NOW_UNAVAILABLE' || code === 'AUCTION_ENDED') void qc.invalidateQueries({ queryKey: ['auction', auction.id] });
+        if (code === 'BUY_NOW_UNAVAILABLE' || code === 'AUCTION_ENDED' || isStaleDepositError(e)) void qc.invalidateQueries({ queryKey: ['auction', auction.id] });
         setOpen(false);
       },
     });

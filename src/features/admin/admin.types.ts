@@ -40,6 +40,8 @@ export interface AdminMember {
   twoFactorEnabled: boolean;
   /** Seller payout account status; null when the member has none. */
   payoutStatus: string | null;
+  /** Unpaid-purchase strikes still in force (not removed, not expired). */
+  activeStrikes: number;
 }
 
 export type MemberStatusFilter = '' | 'active' | 'inactive';
@@ -51,7 +53,7 @@ export interface MemberFilters {
 }
 
 export type AdminAuctionTab = 'live' | 'upcoming' | 'ended' | 'cancelled' | 'all';
-export type AdminAuction = AuctionCard & { sellerEmail: string };
+export type AdminAuction = AuctionCard & { sellerEmail: string; /** Bid deposit in paise; null/absent = none. */ depositPaise?: number | null };
 
 export type AdminCommissionTab = 'due' | 'paid' | 'waived' | 'all';
 export type AdminCommission = CommissionDTO & { seller: { id: string; name: string; email: string } };
@@ -79,6 +81,10 @@ export interface AdminSettings {
   maxPricePaise: number;
   /** Winner checkout through the platform: off / optional / required. */
   checkoutMode: CheckoutMode;
+  /** Starting bid from which an auction needs a bid deposit (paise); 0 = off. */
+  depositThresholdPaise: number;
+  /** Deposit as a share of the starting bid, in basis points (100 .. 5000). */
+  depositRateBps: number;
 }
 
 export type LegalSlug = 'terms-conditions' | 'privacy-policy' | 'refund-policy' | 'prohibited-items';

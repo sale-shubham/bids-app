@@ -150,6 +150,28 @@ function MarketplaceForm({ settings }: { settings: AdminSettings }) {
 
       <Card>
         <CardHeader>
+          <CardTitle className="text-base">Bid deposits</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 @lg/content:grid-cols-2">
+          <FormInput
+            label="Deposit threshold (₹, 0 = off)"
+            inputMode="decimal"
+            hint="Auctions starting at or above this price need a refundable deposit to bid. 0 turns deposits off."
+            error={errors.depositThresholdRupees?.message}
+            {...register('depositThresholdRupees')}
+          />
+          <FormInput
+            label="Deposit rate (%)"
+            inputMode="decimal"
+            hint="Share of the starting bid held as the deposit. 1 to 50, up to 2 decimals."
+            error={errors.depositRatePercent?.message}
+            {...register('depositRatePercent')}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle className="text-base">Checkout</CardTitle>
         </CardHeader>
         <CardContent className="max-w-md space-y-1.5">

@@ -11,6 +11,10 @@ import { isStaleSaleError, saleErrorMessage, salePaymentErrorMessage } from './s
 import { questionErrorMessage } from './questions/questions.errors';
 import { reviewErrorMessage } from './reviews/reviews.errors';
 import { reportErrorMessage } from './reports/reports.errors';
+import { depositErrorMessage, depositRequiredMessage, isStaleDepositError } from './deposits/deposits.errors';
+import { isStaleOfferError, offerErrorMessage } from './second-chance/second-chance.errors';
+import { strikeErrorMessage } from './strikes/strikes.errors';
+import { isStaleRiskError, riskErrorMessage } from './risk/risk.errors';
 import { savedSearchErrorMessage } from './saved-searches/saved-searches.errors';
 
 function apiError(code?: string, message = 'Server says no', details?: unknown, status = 400) {
@@ -182,5 +186,46 @@ describe('Phase D error maps', () => {
     expect(reportErrorMessage(apiError('REPORT_ALREADY_RESOLVED'))).toMatch(/already resolved/);
     expect(reportErrorMessage(apiError('TOO_MANY_REQUESTS'))).toMatch(/too many reports/);
     expect(reportErrorMessage(apiError('OTHER', 'Server text'))).toBe('Server text');
+  });
+});
+
+describe('Phase E error maps', () => {
+  it('deposits: DEPOSIT_REQUIRED names the amount; held / not-required are mapped', () => {
+    const e = apiError('DEPOSIT_REQUIRED', 'x', { depositPaise: 1_000_000 }, 403);
+    expect(depositRequiredMessage(e)).toBe(`Pay the ${formatINR(1_000_000)} refundable deposit to bid on this auction.`);
+    expect(bidErrorMessage(e)).toBe(depositRequiredMessage(e));
+    expect(buyNowErrorMessage(e)).toBe(depositRequiredMessage(e));
+    expect(depositRequiredMessage(apiError('DEPOSIT_REQUIRED'))).toMatch(/refundable deposit/);
+    for (const fn of [bidErrorMessage, buyNowErrorMessage, depositErrorMessage]) {
+      expect(fn(apiError('DEPOSIT_ALREADY_HELD'))).toMatch(/already paid/);
+      expect(fn(apiError('DEPOSIT_NOT_REQUIRED'))).toMatch(/No deposit is required/);
+    }
+  });
+  it('deposit payment errors fall through to the shared payment codes', () => {
+    expect(depositErrorMessage(apiError('INVALID_SIGNATURE'))).toMatch(/could not verify the payment/);
+    expect(depositErrorMessage(apiError('OTHER', 'Server text'))).toBe('Server text');
+  });
+  it('stale deposit codes trigger a refetch', () => {
+    for (const c of ['DEPOSIT_REQUIRED', 'DEPOSIT_ALREADY_HELD', 'DEPOSIT_NOT_REQUIRED']) expect(isStaleDepositError(apiError(c))).toBe(true);
+    expect(isStaleDepositError(apiError('WEIRD'))).toBe(false);
+  });
+  it('second chance: every code has friendly copy', () => {
+    expect(offerErrorMessage(apiError('OFFER_EXISTS'))).toMatch(/already made/);
+    expect(offerErrorMessage(apiError('NO_RUNNER_UP'))).toMatch(/no other bidder/);
+    expect(offerErrorMessage(apiError('OFFER_NOT_FOUND'))).toMatch(/no longer exists/);
+    expect(offerErrorMessage(apiError('OFFER_NOT_PENDING'))).toMatch(/already answered/);
+    expect(offerErrorMessage(apiError('OFFER_EXPIRED'))).toMatch(/expired/);
+    expect(offerErrorMessage(apiError('PAYOUT_ACCOUNT_INACTIVE'))).toMatch(/cannot receive payments/);
+    expect(offerErrorMessage(apiError('OTHER', 'Server text'))).toBe('Server text');
+    expect(isStaleOfferError(apiError('OFFER_EXPIRED'))).toBe(true);
+    expect(isStaleOfferError(apiError('NO_RUNNER_UP'))).toBe(false);
+  });
+  it('strikes and risk', () => {
+    expect(strikeErrorMessage(apiError('STRIKE_NOT_FOUND'))).toMatch(/no longer exists/);
+    expect(strikeErrorMessage(apiError('STRIKE_ALREADY_REMOVED'))).toMatch(/already removed/);
+    expect(riskErrorMessage(apiError('RISK_SIGNAL_NOT_FOUND'))).toMatch(/no longer exists/);
+    expect(riskErrorMessage(apiError('RISK_ALREADY_REVIEWED'))).toMatch(/already reviewed/);
+    expect(isStaleRiskError(apiError('RISK_ALREADY_REVIEWED'))).toBe(true);
+    expect(isStaleRiskError(apiError('WEIRD'))).toBe(false);
   });
 });

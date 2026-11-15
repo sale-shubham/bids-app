@@ -15,6 +15,7 @@ import { CoverImage } from '@/features/auctions/components/auction-card';
 import type { MyBidRow, MyBidState, MyBidsTab } from '@/features/bids/bids.types';
 import { useMyBids } from '@/features/bids/use-bids';
 import { RateSellerButton } from '@/features/reviews/components/rate-seller-button';
+import { StrikeBanner } from '@/features/strikes/components/strike-banner';
 import { BuyerSaleEntry } from '@/features/sales/components/buyer-sale-entry';
 
 const TABS: { value: MyBidsTab; label: string }[] = [
@@ -98,6 +99,8 @@ export default function MyBidsPage() {
         <h1 className="text-2xl font-bold tracking-tight">My bids</h1>
         <p className="text-muted-foreground">Auctions you are winning, outbid on, won or lost.</p>
       </div>
+
+      <StrikeBanner />
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as MyBidsTab)}>
         <TabsList>

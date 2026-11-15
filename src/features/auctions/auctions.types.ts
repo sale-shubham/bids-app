@@ -69,6 +69,16 @@ export interface AuctionDetail extends AuctionCard {
   canReview?: boolean;
   /** The checkout sale created when this auction sold (buyer / seller / admin only); null for legacy auctions. */
   sale?: AuctionSaleSummary | null;
+  /** Bid deposit set on this auction (paise); null = none. */
+  depositPaise?: number | null;
+  /** The viewer's deposit requirement: `requiredPaise` 0 = no deposit needed. Signed-in viewers only. */
+  deposit?: AuctionDeposit | null;
+}
+
+export type DepositStatus = 'PENDING' | 'HELD' | 'REFUNDED' | 'FORFEITED';
+export interface AuctionDeposit {
+  requiredPaise: number;
+  status: DepositStatus | null;
 }
 
 export interface PageMeta {

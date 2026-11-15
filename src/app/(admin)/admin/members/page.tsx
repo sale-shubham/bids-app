@@ -17,6 +17,7 @@ import { useUrlState } from '@/features/admin/use-url-state';
 import type { AdminMember, MemberRoleFilter, MemberStatusFilter } from '@/features/admin/admin.types';
 import { apiErrorCode, apiErrorMessage } from '@/lib/api-client';
 import { formatDate, formatINR } from '@/lib/utils';
+import { MemberStrikesDialog } from '@/features/strikes/components/member-strikes-dialog';
 import { useAuthStore, type Role } from '@/store/auth-store';
 
 const DEFAULTS = { q: '', role: '', status: '' };
@@ -52,6 +53,7 @@ function TrustBadges({ m }: { m: AdminMember }) {
       )}
       <Badge variant={m.phoneVerifiedAt ? 'success' : 'secondary'}>{m.phoneVerifiedAt ? 'Phone verified' : 'Phone unverified'}</Badge>
       <Badge variant={m.twoFactorEnabled ? 'success' : 'secondary'}>{m.twoFactorEnabled ? '2FA on' : '2FA off'}</Badge>
+      {m.activeStrikes > 0 && <Badge variant="warning">{m.activeStrikes} {m.activeStrikes === 1 ? 'strike' : 'strikes'}</Badge>}
       {m.payoutStatus && <Badge variant="outline">Payout: {m.payoutStatus.replace(/_/g, ' ').toLowerCase()}</Badge>}
     </div>
   );
@@ -66,6 +68,7 @@ function MembersView() {
 
   const [statusTarget, setStatusTarget] = React.useState<AdminMember | null>(null);
   const [verifyTarget, setVerifyTarget] = React.useState<AdminMember | null>(null);
+  const [strikesTarget, setStrikesTarget] = React.useState<AdminMember | null>(null);
   const [roleTarget, setRoleTarget] = React.useState<AdminMember | null>(null);
   const [newRole, setNewRole] = React.useState<Role>('BIDDER');
 
@@ -130,6 +133,9 @@ function MembersView() {
         </Button>
         <Button size="sm" variant="outline" disabled={isSelf} onClick={() => openRole(m)} title={isSelf ? 'You cannot modify your own account' : undefined}>
           <UserCog className="h-4 w-4" /> Role
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => setStrikesTarget(m)}>
+          <ShieldAlert className="h-4 w-4" /> Strikes{m.activeStrikes > 0 ? ` (${m.activeStrikes})` : ''}
         </Button>
         {(m.verified || m.phoneVerifiedAt) && (
           <Button size="sm" variant="outline" onClick={() => setVerifyTarget(m)}>
@@ -264,6 +270,8 @@ function MembersView() {
           </Card>
         )}
       />
+
+      <MemberStrikesDialog member={strikesTarget} onClose={() => setStrikesTarget(null)} />
 
       <ConfirmDialog
         open={!!statusTarget}

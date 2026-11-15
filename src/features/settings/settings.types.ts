@@ -15,4 +15,8 @@ export interface PublicSettings {
   maxPricePaise?: number;
   /** Missing on older API versions: treated as `optional`. */
   checkoutMode: CheckoutMode;
+  /** Starting bid from which an auction needs a refundable bid deposit (paise); 0 = deposits off. Absent on older API versions. */
+  depositThresholdPaise?: number;
+  /** Deposit as a share of the starting bid, in basis points. */
+  depositRateBps?: number;
 }
