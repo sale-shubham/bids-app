@@ -1,7 +1,7 @@
 'use client';
 import * as React from 'react';
 import { Suspense } from 'react';
-import { BadgeCheck, ShieldAlert, UserCog, Users } from 'lucide-react';
+import { BadgeCheck, ShieldAlert, ShieldCheck, UserCog, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -41,6 +41,22 @@ function Verified({ at }: { at: string | null }) {
   );
 }
 
+// Trust signals: verified-seller badge, phone, 2FA and payout account status.
+function TrustBadges({ m }: { m: AdminMember }) {
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {m.verified && (
+        <Badge variant="success" className="gap-1">
+          <ShieldCheck className="h-3 w-3" aria-hidden /> Verified
+        </Badge>
+      )}
+      <Badge variant={m.phoneVerifiedAt ? 'success' : 'secondary'}>{m.phoneVerifiedAt ? 'Phone verified' : 'Phone unverified'}</Badge>
+      <Badge variant={m.twoFactorEnabled ? 'success' : 'secondary'}>{m.twoFactorEnabled ? '2FA on' : '2FA off'}</Badge>
+      {m.payoutStatus && <Badge variant="outline">Payout: {m.payoutStatus.replace(/_/g, ' ').toLowerCase()}</Badge>}
+    </div>
+  );
+}
+
 function MembersView() {
   const { values, page, pageSize, update } = useUrlState(DEFAULTS);
   const filters = { q: values.q, role: values.role as MemberRoleFilter, status: values.status as MemberStatusFilter };
@@ -49,6 +65,7 @@ function MembersView() {
   const selfId = useAuthStore((s) => s.member?.id);
 
   const [statusTarget, setStatusTarget] = React.useState<AdminMember | null>(null);
+  const [verifyTarget, setVerifyTarget] = React.useState<AdminMember | null>(null);
   const [roleTarget, setRoleTarget] = React.useState<AdminMember | null>(null);
   const [newRole, setNewRole] = React.useState<Role>('BIDDER');
 
@@ -64,6 +81,21 @@ function MembersView() {
         onSuccess: () => {
           toast.success(next ? 'Member activated' : 'Member deactivated');
           setStatusTarget(null);
+        },
+        onError: fail,
+      },
+    );
+  };
+
+  const confirmVerification = () => {
+    if (!verifyTarget) return;
+    const next = !verifyTarget.verified;
+    mutate.mutate(
+      { id: verifyTarget.id, verified: next },
+      {
+        onSuccess: () => {
+          toast.success(next ? 'Verification restored' : 'Verification revoked');
+          setVerifyTarget(null);
         },
         onError: fail,
       },
@@ -99,6 +131,11 @@ function MembersView() {
         <Button size="sm" variant="outline" disabled={isSelf} onClick={() => openRole(m)} title={isSelf ? 'You cannot modify your own account' : undefined}>
           <UserCog className="h-4 w-4" /> Role
         </Button>
+        {(m.verified || m.phoneVerifiedAt) && (
+          <Button size="sm" variant="outline" onClick={() => setVerifyTarget(m)}>
+            <ShieldCheck className="h-4 w-4" /> {m.verified ? 'Revoke verification' : 'Restore verification'}
+          </Button>
+        )}
       </div>
     );
   };
@@ -152,6 +189,7 @@ function MembersView() {
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Verified</TableHead>
+                <TableHead>Trust</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Joined</TableHead>
                 <TableHead className="text-right">Unpaid comm.</TableHead>
@@ -172,6 +210,9 @@ function MembersView() {
                   </TableCell>
                   <TableCell>
                     <Verified at={m.emailVerifiedAt} />
+                  </TableCell>
+                  <TableCell className="min-w-44">
+                    <TrustBadges m={m} />
                   </TableCell>
                   <TableCell>
                     <StatusBadge status={m.isActive ? 'ACTIVE' : 'INACTIVE'} />
@@ -203,6 +244,7 @@ function MembersView() {
                 <Verified at={m.emailVerifiedAt} />
                 <span className="text-muted-foreground">Joined {formatDate(m.createdAt)}</span>
               </div>
+              <TrustBadges m={m} />
               <dl className="grid grid-cols-3 gap-2 text-sm">
                 <div>
                   <dt className="text-xs text-muted-foreground">Unpaid</dt>
@@ -236,6 +278,21 @@ function MembersView() {
         variant={statusTarget?.isActive ? 'destructive' : 'default'}
         loading={mutate.isPending}
         onConfirm={confirmStatus}
+      />
+
+      <ConfirmDialog
+        open={!!verifyTarget}
+        onOpenChange={(o) => !o && setVerifyTarget(null)}
+        title={verifyTarget?.verified ? 'Revoke verification?' : 'Restore verification?'}
+        description={
+          verifyTarget?.verified
+            ? `${verifyTarget.email} will lose the Verified seller badge.`
+            : `${verifyTarget?.email ?? 'This member'} will get the Verified seller badge back.`
+        }
+        confirmLabel={verifyTarget?.verified ? 'Revoke' : 'Restore'}
+        variant={verifyTarget?.verified ? 'destructive' : 'default'}
+        loading={mutate.isPending}
+        onConfirm={confirmVerification}
       />
 
       <ConfirmDialog

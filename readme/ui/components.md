@@ -96,11 +96,19 @@ Only `Badge` and `Button` use `class-variance-authority`. Both export their `*Va
 | `charts.tsx` | Recharts wrappers `DonutChart`, `Sparkline`, `TrendLine` and `PALETTE`. **Not imported anywhere**: the `/admin` dashboard uses `features/admin/components/admin-charts.tsx` (`RevenueBarChart`, `SignupsLineChart`) instead | see file |
 | `ComingSoon` | `coming-soon.tsx`. "Coming in Phase N" placeholder card for an unbuilt route. **Not used by any page** | `icon`, `title`, `phase`, `description?` |
 
+### Trust components
+
+| Component | Purpose | Key props |
+|---|---|---|
+| `VerifiedBadge` | `verified-badge.tsx`. Check-shield icon (or icon + "Verified") with a tooltip; renders nothing unless verified | `verified?`, `variant?` (icon or label) |
+| `TwoFactorSetupBanner` | `two-factor-setup-banner.tsx`. Persistent admin banner linking to `/admin/profile?tab=security` | none |
+| `ReportButton` / `ReportDialog` | `features/reports/components/`. See `flows/reports.md` | `targetType`, `targetId`, `subject`, `ownerId?`, `hidden?` |
+
 ### Profile page and cards (`/profile`, `/admin/profile`)
 
 | Component | Purpose | Key props |
 |---|---|---|
-| `ProfilePage` | `profile-page.tsx`. The profile view shared by `/profile` (BIDDER / AUCTIONEER) and `/admin/profile` (SUPER_ADMIN): `MorePage` with an Account tab (`ProfileIdentityCard` + `ProfileEditCard`) and a Security tab (`ChangePasswordCard`, `MyDevicesCard`, `SignOutCard`) and, for BIDDERs only, an Alerts tab (`AlertsCard`) | — |
+| `ProfilePage` | `profile-page.tsx`. The profile view shared by `/profile` (BIDDER / AUCTIONEER) and `/admin/profile` (SUPER_ADMIN): `MorePage` with an Account tab (`ProfileIdentityCard` + `ProfileEditCard`) and a Security tab (`ChangePasswordCard`, `MyDevicesCard`, `SignOutCard`, plus `PhoneVerificationCard` and `TwoFactorCard`, see `flows/auth.md`) and, for BIDDERs only, an Alerts tab (`AlertsCard`) | — |
 | `ProfileIdentityCard` | `profile-identity-card.tsx`. Account tab, top card: `MemberAvatar` (`xl`) with **Upload / Change photo** (`useUploadImage('avatars')` → presigned PUT → `useUpdateMe()` → `PATCH /members/me`), name, role badge, email, then a `@lg/content:grid-cols-3` list of figures: an AUCTIONEER sees **Unpaid commission** (links to `/sell/commissions`, a "Due" badge when above 0); every other role sees **Auctions won** and **Total spent**; everyone sees **Member since** | — |
 | `ProfileEditCard` | `profile-edit-card.tsx`. Name, phone and address form (`profileSchema` in `features/members/members.schema.ts`, `useUpdateMe()`). Email is the login identity and is not editable. An emptied field that had a value is sent as `null` to clear it. Save is disabled until the form is dirty | — |
 | `ChangePasswordCard` | `change-password-card.tsx`. Current / new / confirm password (`changePasswordSchema`, `useChangePassword()` → `POST /auth/password/change`); an `INVALID_CURRENT_PASSWORD` or `INVALID_CREDENTIALS` error is set on the current-password field | — |

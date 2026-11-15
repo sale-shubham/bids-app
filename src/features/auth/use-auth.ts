@@ -29,9 +29,45 @@ function useSignedIn() {
   };
 }
 
+// A 2FA account resolves with `{ twoFactorRequired, challengeToken }` and no session:
+// the caller shows the second step. Otherwise this signs in and navigates.
 export function useLogin() {
   const signedIn = useSignedIn();
-  return useMutation({ mutationFn: authApi.login, onSuccess: signedIn });
+  return useMutation({
+    mutationFn: authApi.login,
+    onSuccess: (result) => {
+      if ('member' in result) signedIn(result.member);
+    },
+  });
+}
+
+// Login step 2 (/auth/2fa/verify): on success continues exactly like a normal login.
+export function useTwoFactorVerify() {
+  const signedIn = useSignedIn();
+  return useMutation({ mutationFn: authApi.twoFactorVerify, onSuccess: signedIn });
+}
+
+export function useTwoFactorSetup() {
+  return useMutation({ mutationFn: authApi.twoFactorSetup });
+}
+
+function useRefreshMe() {
+  const qc = useQueryClient();
+  return () => qc.invalidateQueries({ queryKey: ['me'] });
+}
+
+export function useTwoFactorEnable() {
+  const refresh = useRefreshMe();
+  return useMutation({ mutationFn: authApi.twoFactorEnable, onSuccess: () => void refresh() });
+}
+
+export function useTwoFactorDisable() {
+  const refresh = useRefreshMe();
+  return useMutation({ mutationFn: authApi.twoFactorDisable, onSuccess: () => void refresh() });
+}
+
+export function useRegenerateRecoveryCodes() {
+  return useMutation({ mutationFn: authApi.regenerateRecoveryCodes });
 }
 
 export function useSignup() {

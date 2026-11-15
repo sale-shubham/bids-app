@@ -38,7 +38,7 @@ export async function fetchMembers(f: MemberFilters, page: number, pageSize: num
   return parseMemberPage(res.data);
 }
 
-export const updateMember = (id: string, body: { isActive?: boolean; role?: Role }) =>
+export const updateMember = (id: string, body: { isActive?: boolean; role?: Role; verified?: boolean }) =>
   api.patch(`/admin/members/${id}`, body).then((r) => r.data.data);
 
 export async function fetchAdminAuctions(

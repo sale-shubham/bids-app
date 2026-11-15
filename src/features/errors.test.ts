@@ -10,6 +10,7 @@ import { payoutErrorMessage } from './payouts/payouts.errors';
 import { isStaleSaleError, saleErrorMessage, salePaymentErrorMessage } from './sales/sales.errors';
 import { questionErrorMessage } from './questions/questions.errors';
 import { reviewErrorMessage } from './reviews/reviews.errors';
+import { reportErrorMessage } from './reports/reports.errors';
 import { savedSearchErrorMessage } from './saved-searches/saved-searches.errors';
 
 function apiError(code?: string, message = 'Server says no', details?: unknown, status = 400) {
@@ -159,5 +160,27 @@ describe('Phase C error maps', () => {
   });
   it('auctions: PAYOUT_ACCOUNT_REQUIRED', () => {
     expect(auctionErrorMessage(apiError('PAYOUT_ACCOUNT_REQUIRED'))).toMatch(/payout account/);
+  });
+});
+
+describe('Phase D error maps', () => {
+  it('auth: two-factor codes', () => {
+    expect(authErrorMessage(apiError('TWO_FACTOR_INVALID_CODE'))).toMatch(/not valid/);
+    expect(authErrorMessage(apiError('TWO_FACTOR_CHALLENGE_INVALID'))).toMatch(/enter your password again/);
+    expect(authErrorMessage(apiError('TWO_FACTOR_ALREADY_ENABLED'))).toMatch(/already turned on/);
+    expect(authErrorMessage(apiError('TWO_FACTOR_NOT_ENABLED'))).toMatch(/not turned on/);
+    expect(authErrorMessage(apiError('TWO_FACTOR_UNAVAILABLE'))).toMatch(/not available/);
+    expect(authErrorMessage(apiError('TWO_FACTOR_SETUP_REQUIRED'))).toMatch(/Set up two-factor/);
+  });
+  it('apiErrorMessage: TWO_FACTOR_SETUP_REQUIRED is mapped for admin pages', () => {
+    expect(apiErrorMessage(apiError('TWO_FACTOR_SETUP_REQUIRED', 'Server text', undefined, 403))).toMatch(/Set up two-factor/);
+  });
+  it('reports', () => {
+    expect(reportErrorMessage(apiError('REPORT_TARGET_NOT_FOUND'))).toMatch(/no longer available/);
+    expect(reportErrorMessage(apiError('INVALID_REPORT'))).toMatch(/cannot report/);
+    expect(reportErrorMessage(apiError('ALREADY_REPORTED'))).toMatch(/already reported/);
+    expect(reportErrorMessage(apiError('REPORT_ALREADY_RESOLVED'))).toMatch(/already resolved/);
+    expect(reportErrorMessage(apiError('TOO_MANY_REQUESTS'))).toMatch(/too many reports/);
+    expect(reportErrorMessage(apiError('OTHER', 'Server text'))).toBe('Server text');
   });
 });

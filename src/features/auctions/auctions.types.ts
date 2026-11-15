@@ -17,6 +17,8 @@ export interface AuctionSeller {
   /** Average seller rating; absent on snapshots saved before ratings existed. */
   ratingAvg?: number | null;
   ratingCount?: number;
+  /** Verified seller (phone verified + good standing). Absent on older snapshots. */
+  verified?: boolean;
 }
 
 export interface AuctionCard {
@@ -116,4 +118,6 @@ export interface AuctionFilters {
   sort: AuctionSort;
   /** Restrict to one seller (seller profile page). */
   sellerId?: string;
+  /** Only auctions from verified sellers (`verified=true`). */
+  verified?: boolean;
 }

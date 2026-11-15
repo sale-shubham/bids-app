@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { Countdown } from '@/components/common/countdown';
+import { VerifiedBadge } from '@/components/common/verified-badge';
 import { MemberAvatar } from '@/components/common/member-avatar';
 import { RichText } from '@/components/common/rich-text';
 import { useAuthStore } from '@/store/auth-store';
@@ -23,6 +24,7 @@ import { useAuction, useAuctionBoundaryRefetch, useDeleteAuction } from '../use-
 import { AuctionGallery } from './auction-gallery';
 import { AuctionStatusBadge } from './auction-card';
 import { ShareButtons } from './share-buttons';
+import { ReportButton } from '@/features/reports/components/report-button';
 import { RatingSummary } from '@/features/reviews/components/star-rating';
 import { QuestionsSection } from '@/features/questions/components/questions-section';
 import { WatchButton } from '@/features/watchlist/components/watch-button';
@@ -107,12 +109,18 @@ export function AuctionDetailView({ initial, serverTime }: { initial: AuctionDet
           <MemberAvatar id={auction.seller.id} name={auction.seller.name} email="" avatarUrl={auction.seller.avatarUrl} size="md" />
           <div>
             <p className="text-xs text-muted-foreground">Seller</p>
-            <p className="font-medium">{auction.seller.name}</p>
+            <p className="flex items-center gap-1.5 font-medium">
+              {auction.seller.name}
+              <VerifiedBadge verified={auction.seller.verified} variant="label" />
+            </p>
             <RatingSummary avg={auction.seller.ratingAvg} count={auction.seller.ratingCount} />
           </div>
         </Link>
 
         <ShareButtons title={auction.title} path={`/auctions/${auction.id}`} />
+        <div>
+          <ReportButton targetType="AUCTION" targetId={auction.id} subject="this auction" ownerId={auction.seller.id} />
+        </div>
 
         {isOwner && (
           <div className="flex flex-wrap gap-2 border-t pt-4">

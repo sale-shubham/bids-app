@@ -56,6 +56,7 @@ export function parseFilters(raw: RawParams): AuctionFilters {
     minPrice: rupees(get(raw, 'minPrice')),
     maxPrice: rupees(get(raw, 'maxPrice')),
     sort: SORT_OPTIONS.some((s) => s.value === sort) ? (sort as AuctionSort) : DEFAULT_FILTERS.sort,
+    ...(get(raw, 'verified') === 'true' ? { verified: true } : {}),
   };
 }
 
@@ -69,6 +70,7 @@ export function filtersToSearchParams(f: AuctionFilters): URLSearchParams {
   if (f.minPrice !== undefined) p.set('minPrice', String(f.minPrice));
   if (f.maxPrice !== undefined) p.set('maxPrice', String(f.maxPrice));
   if (f.sort !== DEFAULT_FILTERS.sort) p.set('sort', f.sort);
+  if (f.verified) p.set('verified', 'true');
   return p;
 }
 
@@ -88,6 +90,7 @@ export function auctionListParams(
   if (f.q) out.q = f.q;
   if (f.category) out.category = f.category;
   if (f.condition) out.condition = f.condition;
+  if (f.verified) out.verified = 'true';
   if (f.minPrice !== undefined) out.minPrice = f.minPrice * 100;
   if (f.maxPrice !== undefined) out.maxPrice = f.maxPrice * 100;
   return { ...out, ...pageParams(param) };

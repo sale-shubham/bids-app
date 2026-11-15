@@ -73,3 +73,17 @@ describe('API param builders', () => {
     expect(nextAuctionPage(mk({ nextCursor: null }))).toBeUndefined();
   });
 });
+
+describe('verified sellers filter', () => {
+  it('parses verified=true only', () => {
+    expect(parseFilters(new URLSearchParams('verified=true')).verified).toBe(true);
+    expect(parseFilters(new URLSearchParams('verified=1')).verified).toBeUndefined();
+    expect(parseFilters(new URLSearchParams()).verified).toBeUndefined();
+  });
+  it('maps to the URL and API params, omitted by default', () => {
+    expect(filtersToSearchParams({ ...DEFAULT_FILTERS, verified: true }).toString()).toBe('verified=true');
+    expect(filtersToSearchParams({ ...DEFAULT_FILTERS, verified: false }).toString()).toBe('');
+    expect(auctionListParams({ ...DEFAULT_FILTERS, verified: true })).toMatchObject({ verified: 'true' });
+    expect(auctionListParams(DEFAULT_FILTERS)).not.toHaveProperty('verified');
+  });
+});

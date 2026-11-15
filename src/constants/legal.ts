@@ -4,6 +4,7 @@
 export const LEGAL_PAGES = [
   { slug: 'privacy-policy', name: 'Privacy Policy' },
   { slug: 'terms-conditions', name: 'Terms and Conditions' },
+  { slug: 'prohibited-items', name: 'Prohibited Items' },
 ] as const;
 
 export type LegalPageSlug = (typeof LEGAL_PAGES)[number]['slug'];
@@ -22,6 +23,7 @@ export const PUBLIC_LEGAL_PAGES = [
   { slug: 'terms-conditions', name: 'Terms and Conditions' },
   { slug: 'privacy-policy', name: 'Privacy Policy' },
   { slug: 'refund-policy', name: 'Refund Policy' },
+  { slug: 'prohibited-items', name: 'Prohibited Items' },
 ] as const;
 
 export const PUBLIC_LEGAL_SLUGS: string[] = PUBLIC_LEGAL_PAGES.map((p) => p.slug);

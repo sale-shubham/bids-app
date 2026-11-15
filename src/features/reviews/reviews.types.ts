@@ -9,6 +9,8 @@ export interface ReviewDTO {
   createdAt: string;
   /** Masked reviewer label, e.g. "R***h". */
   reviewerLabel: string;
+  /** The signed-in viewer wrote this review (assumed from the API; absent = not known). */
+  isMine?: boolean;
 }
 
 /** Admin view of a review (`GET /admin/reviews`). */

@@ -34,6 +34,12 @@ export interface AdminMember {
   unpaidCommissionPaise: number;
   auctionsWon: number;
   moneySpentPaise: number;
+  /** Verified-seller badge (revocable by an admin). */
+  verified: boolean;
+  phoneVerifiedAt: string | null;
+  twoFactorEnabled: boolean;
+  /** Seller payout account status; null when the member has none. */
+  payoutStatus: string | null;
 }
 
 export type MemberStatusFilter = '' | 'active' | 'inactive';
@@ -75,7 +81,7 @@ export interface AdminSettings {
   checkoutMode: CheckoutMode;
 }
 
-export type LegalSlug = 'terms-conditions' | 'privacy-policy' | 'refund-policy';
+export type LegalSlug = 'terms-conditions' | 'privacy-policy' | 'refund-policy' | 'prohibited-items';
 export interface LegalPage {
   slug: LegalSlug;
   title: string;
