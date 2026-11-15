@@ -3,7 +3,7 @@
 NobleBid is an installable PWA (Android, desktop Chrome/Edge, iOS Home Screen).
 
 ## Assets (generated from the logo)
-- Source: `public/brand/logo-source.png` (colourful brain mark, transparent, 192x192 - swap in a larger master for crisper large icons).
+- Source: `public/brand/logo-source.png` (colourful brain mark, transparent, 192x192 - swap in a larger master for crisper large icons; the original logo files are in the old app at `D:\Shubham\projects\noble_bids-main\attached_assets\logo-*.png`, see `../bids-api/docs/DECISIONS.md`).
 - `node scripts/generate-icons.cjs` -> `public/icons/icon-{72..512}.png` (white tile), `icon-{192,512}x*-maskable.png` (mark inside the 80% safe zone), Apple touch icons, `public/favicon*.{ico,png}`, `public/logo.png` (transparent; headers and the API's `LOGO_URL` for emails).
 - `node scripts/generate-notification-icons.cjs` -> `badge-96x96.png` (white silhouette from the logo's alpha, Android status bar) and `notification-192x192.png` (round).
 - `node scripts/generate-apple-splash.mjs` -> `public/splash/*` (device list in `src/constants/apple-splash-devices.json`, links emitted by `src/app/layout.tsx`). Splash background is white, matching the manifest `background_color`.

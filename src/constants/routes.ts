@@ -6,28 +6,23 @@
 
 export type Role = 'BIDDER' | 'AUCTIONEER' | 'SUPER_ADMIN';
 
-// Guest-only: a logged-in user is redirected away from these (exact match).
-export const AUTH_ROUTES = ['/login', '/signup', '/forgot-password', '/reset-password'];
+// Guest-only: a logged-in user is redirected away from these (exact match). `/`
+// is the app's root (a bare redirect to /login; the marketing site lives in the
+// separate bids-website repo), so a signed-in user hitting it lands on their home.
+export const AUTH_ROUTES = ['/login', '/signup', '/forgot-password', '/reset-password', '/'];
 
-// Public: reachable logged-in or logged-out, never redirected.
-export const PUBLIC_PREFIXES = [
-  '/auctions',
-  '/leaderboard',
-  '/sellers',
-  '/how-it-works',
-  '/about',
-  '/contact',
-  '/pages',
-  '/suspended',
-];
+// Public: reachable logged-in or logged-out, never redirected. They render in
+// the same app shell as the signed-in area (guest mode when logged out).
+export const PUBLIC_PREFIXES = ['/auctions', '/leaderboard', '/sellers', '/pages', '/suspended'];
 
-// Member: any signed-in role.
+// Member area: BIDDER / AUCTIONEER only. SUPER_ADMIN is bounced to /admin (P2X
+// pattern: the admin lives only under /admin plus the public pages).
 export const MEMBER_PREFIXES = ['/watchlist', '/profile', '/notifications'];
 
-// Bidder area (SUPER_ADMIN may also enter).
+// Bidder area (BIDDER only).
 export const BIDDER_PREFIXES = ['/my-bids'];
 
-// Auctioneer area (SUPER_ADMIN may also enter).
+// Auctioneer area (AUCTIONEER only).
 export const AUCTIONEER_PREFIX = '/sell';
 
 // Admin area: SUPER_ADMIN only.
@@ -58,4 +53,31 @@ export const isAdminRoute = (path: string) => startsWithAny(path, [ADMIN_PREFIX]
 export const isAuctioneerRoute = (path: string) => startsWithAny(path, [AUCTIONEER_PREFIX]);
 export const isBidderRoute = (path: string) => startsWithAny(path, BIDDER_PREFIXES);
 export const isMemberRoute = (path: string) => startsWithAny(path, MEMBER_PREFIXES);
-export const isPublicRoute = (path: string) => path === '/' || startsWithAny(path, PUBLIC_PREFIXES);
+export const isPublicRoute = (path: string) => startsWithAny(path, PUBLIC_PREFIXES);
+
+/** Routes the edge gate has an opinion about (everything else passes straight through). */
+export const isGatedRoute = (path: string) =>
+  isAuthRoute(path) || isAdminRoute(path) || isAuctioneerRoute(path) || isBidderRoute(path) || isMemberRoute(path);
+
+export type Gate = 'allow' | 'login' | 'home';
+
+/**
+ * Pure decision for the edge gate (`src/proxy.ts`): `allow` = serve the page,
+ * `login` = bounce a guest to /login?next=, `home` = send the signed-in user to
+ * their role home (or, on an auth route, to `?next=` for member roles).
+ */
+export function gateFor(path: string, role: Role | undefined): Gate {
+  if (isAuthRoute(path)) return role ? 'home' : 'allow';
+  if (!isGatedRoute(path)) return 'allow';
+  if (!role) return 'login';
+  if (isAdminRoute(path)) return role === 'SUPER_ADMIN' ? 'allow' : 'home';
+  if (role === 'SUPER_ADMIN') return 'home'; // admins only use /admin/* + the public pages
+  if (isAuctioneerRoute(path)) return role === 'AUCTIONEER' ? 'allow' : 'home';
+  if (isBidderRoute(path)) return role === 'BIDDER' ? 'allow' : 'home';
+  return 'allow'; // member area, BIDDER or AUCTIONEER
+}
+
+/** Where a visitor sends the user after login: `?next=` for member roles only, else their home. */
+export function destinationFor(role: Role, next: string | null | undefined) {
+  return (role === 'SUPER_ADMIN' ? null : safeNextPath(next)) ?? homeFor(role);
+}

@@ -1,5 +1,5 @@
 import { serverFetch } from '@/lib/server-api';
-import { parseAuctionDetail, parseAuctionPage, parseCategories, parseHome } from './auctions.parse';
+import { parseAuctionDetail, parseAuctionPage, parseCategories } from './auctions.parse';
 import { auctionListParams } from './auctions.filters';
 import type { AuctionFilters, AuctionPage } from './auctions.types';
 
@@ -8,10 +8,6 @@ import type { AuctionFilters, AuctionPage } from './auctions.types';
 
 export async function getAuctionDetailServer(id: string) {
   return parseAuctionDetail(await serverFetch(`/auctions/${encodeURIComponent(id)}`));
-}
-
-export async function getHomeServer() {
-  return parseHome(await serverFetch('/auctions/home', { revalidate: 30 }));
 }
 
 export async function getCategoriesServer() {

@@ -7,18 +7,32 @@ test.use({ storageState: storageStatePath('bidderA') });
 
 const bottomNav = (page: import('@playwright/test').Page) => page.locator('nav.fixed');
 
-// The bottom nav belongs to the signed-in dashboard shell (member pages), not the public /auctions shell.
+// The bottom nav is part of the shell everywhere: the member pages and the public pages (guest mode).
 test('bottom nav shows the bidder tabs and navigates', async ({ page }) => {
   await page.goto('/watchlist');
   const nav = bottomNav(page);
   await expect(nav).toBeVisible();
-  for (const name of ['Home', 'Auctions', 'Watchlist', 'Profile']) {
+  for (const name of ['Auctions', 'Watchlist', 'My bids', 'Profile']) {
     await expect(nav.getByRole('link', { name })).toBeVisible();
   }
   await nav.getByRole('link', { name: 'Watchlist' }).click();
   await expect(page).toHaveURL(/\/watchlist$/);
   await nav.getByRole('link', { name: 'Profile' }).click();
   await expect(page).toHaveURL(/\/profile$/);
+});
+
+test.describe('guest', () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+
+  test('guest bottom nav on a public page: Auctions, Leaderboard, Log in', async ({ page }) => {
+    await page.goto('/auctions');
+    const nav = bottomNav(page);
+    await expect(nav).toBeVisible();
+    for (const name of ['Auctions', 'Leaderboard', 'Log in']) {
+      await expect(nav.getByRole('link', { name })).toBeVisible();
+    }
+    await expect(nav.getByRole('link', { name: 'Log in' })).toHaveAttribute('href', '/login?next=%2Fauctions');
+  });
 });
 
 test('phone layout: bottom nav is shown and the page does not scroll sideways', async ({ page }) => {

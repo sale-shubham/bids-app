@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { Trophy } from 'lucide-react';
-import { PublicPage } from '@/components/layout/public-page';
 import { EmptyState } from '@/components/common/empty-state';
 import { cn } from '@/lib/utils';
 import { getLeaderboardServer, type LeaderboardBy } from '@/features/leaderboard/leaderboard.server';
@@ -28,7 +27,7 @@ export default async function LeaderboardPage({ searchParams }: Props) {
   const entries = await getLeaderboardServer(by, 20);
 
   return (
-    <PublicPage className="max-w-4xl space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Leaderboard</h1>
         <p className="text-muted-foreground">NobleBid&apos;s most active bidders.</p>
@@ -60,6 +59,6 @@ export default async function LeaderboardPage({ searchParams }: Props) {
           <LeaderboardTable entries={entries} by={by} />
         </>
       )}
-    </PublicPage>
+    </div>
   );
 }
