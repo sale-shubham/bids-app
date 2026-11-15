@@ -10,6 +10,7 @@ export interface SellerProfile {
   activeAuctions: number;
   ratingAvg: number | null;
   ratingCount: number;
+  verified?: boolean;
 }
 
 /** Calls notFound() when the member does not exist. */

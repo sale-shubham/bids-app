@@ -5,6 +5,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { ReportButton } from '@/features/reports/components/report-button';
 import { reviewErrorMessage } from '../reviews.errors';
 import { replySchema } from '../reviews.schema';
 import type { ReviewDTO } from '../reviews.types';
@@ -97,6 +98,9 @@ export function ReviewItem({ review, canReply, showAuction = true }: ReviewItemP
           </Button>
         )
       ) : null}
+      <div>
+        <ReportButton targetType="REVIEW" targetId={review.id} subject="this review" hidden={review.isMine} />
+      </div>
     </li>
   );
 }

@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { useAuthStore } from '@/store/auth-store';
+import { ReportButton } from '@/features/reports/components/report-button';
 import { questionErrorMessage } from '../questions.errors';
 import { answerSchema, questionSchema, type QuestionFormValues } from '../questions.schema';
 import type { QuestionDTO } from '../questions.types';
@@ -102,11 +103,14 @@ function QuestionItem({ q, auctionId, isSeller, onHide }: QuestionItemProps) {
           {isSeller && <AnswerForm auctionId={auctionId} questionId={q.id} />}
         </>
       )}
-      {isSeller && (
-        <Button type="button" variant="ghost" size="sm" className="text-destructive" onClick={() => onHide(q)}>
-          Hide
-        </Button>
-      )}
+      <div className="flex flex-wrap items-center gap-2">
+        {isSeller && (
+          <Button type="button" variant="ghost" size="sm" className="text-destructive" onClick={() => onHide(q)}>
+            Hide
+          </Button>
+        )}
+        <ReportButton targetType="QUESTION" targetId={q.id} subject="this question" hidden={q.isMine} />
+      </div>
     </li>
   );
 }

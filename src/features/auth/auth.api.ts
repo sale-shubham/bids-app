@@ -32,10 +32,47 @@ export async function signupResend(input: { email: string }): Promise<{ resendAf
   return res.data.data;
 }
 
+// Password step result: a session (cookies set) or, when the account has 2FA, a
+// challenge to complete at /auth/2fa/verify (no cookies yet).
+export type LoginResult = { member: AuthMember } | { twoFactorRequired: true; challengeToken: string };
+
 // 403 EMAIL_NOT_VERIFIED means the backend just emailed a fresh code.
-export async function login(input: { email: string; password: string }): Promise<AuthMember> {
+export async function login(input: { email: string; password: string }): Promise<LoginResult> {
   const res = await api.post('/auth/login', { ...input, deviceInfo: getDeviceInfo() });
+  const data = res.data.data;
+  if (data?.twoFactorRequired) return { twoFactorRequired: true, challengeToken: String(data.challengeToken) };
+  return { member: data.member };
+}
+
+// Login step 2: a 6-digit authenticator code OR a recovery code. Same body and cookies as a normal login.
+export async function twoFactorVerify(input: {
+  challengeToken: string;
+  code?: string;
+  recoveryCode?: string;
+}): Promise<AuthMember> {
+  const res = await api.post('/auth/2fa/verify', { ...input, deviceInfo: getDeviceInfo() });
   return res.data.data.member;
+}
+
+export interface TwoFactorSetup {
+  secret: string;
+  otpauthUrl: string;
+}
+export async function twoFactorSetup(): Promise<TwoFactorSetup> {
+  const res = await api.post('/auth/2fa/setup');
+  return res.data.data;
+}
+// Recovery codes are returned once, here and from regenerate.
+export async function twoFactorEnable(input: { code: string }): Promise<string[]> {
+  const res = await api.post('/auth/2fa/enable', input);
+  return res.data.data.recoveryCodes;
+}
+export async function twoFactorDisable(input: { password: string; code: string }) {
+  await api.post('/auth/2fa/disable', input);
+}
+export async function regenerateRecoveryCodes(input: { code: string }): Promise<string[]> {
+  const res = await api.post('/auth/2fa/recovery-codes', input);
+  return res.data.data.recoveryCodes;
 }
 
 // Always 200, whether or not the email has an account.

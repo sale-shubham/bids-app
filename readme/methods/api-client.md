@@ -98,6 +98,10 @@ Exported. Resets `loggedOut` and `suspended`. A successful login or signup verif
 
 Exported. `true` when an error says nothing about whether the member is signed in: no response, a 5xx, or a 401 stamped `authUnreachable`. `AuthBootstrap` uses it to retry `['me']` (up to 3 times with backoff, plus refetch on focus and reconnect) and to stay uninitialized instead of clearing the member.
 
+### Phase D additions
+
+`/auth/2fa/verify` is in `NO_REFRESH_URL` (its 401 `TWO_FACTOR_CHALLENGE_INVALID` is an answer, not an expired token). The response interceptor handles `TWO_FACTOR_SETUP_REQUIRED` (403) by setting `member.twoFactorSetupRequired` in the auth store, and `apiErrorMessage` returns a friendly line for that code. `qrcode` is the only new package (2FA QR, see `flows/auth.md`).
+
 ### `apiErrorCode(err)` / `apiErrorDetails(err)`
 
 Exported. Read `error.code` (`string | undefined`) and `error.details` (an object, else `undefined`) from an axios error's body; `undefined` for non-axios values. Used for code-specific UI, e.g. login's `EMAIL_NOT_VERIFIED` branch reads `details.resendAfterSec`, and `minBidFromError()` reads `details.minBidPaise` on `BID_TOO_LOW`.

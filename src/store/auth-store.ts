@@ -22,6 +22,13 @@ export interface AuthMember {
   createdAt: string;
   // This account's concurrent-session cap.
   deviceLimit: number;
+  // Trust (Phase D). Optional: login / older responses may omit them until `['me']` refetches.
+  phoneVerifiedAt?: string | null;
+  twoFactorEnabled?: boolean;
+  /** Verified-seller badge. */
+  verified?: boolean;
+  /** SUPER_ADMIN only: the server requires admin 2FA and it is not set up yet. */
+  twoFactorSetupRequired?: boolean;
 }
 
 interface AuthState {

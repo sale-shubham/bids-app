@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { Gavel, ImageOff } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Countdown } from '@/components/common/countdown';
+import { VerifiedBadge } from '@/components/common/verified-badge';
 import { MemberAvatar } from '@/components/common/member-avatar';
 import { formatINR } from '@/lib/utils';
 import { WatchButton } from '@/features/watchlist/components/watch-button';
@@ -104,6 +105,7 @@ export function AuctionCard({ auction, priority }: { auction: AuctionCardData; p
         <Link href={`/sellers/${auction.seller.id}`} className="inline-flex max-w-full items-center gap-2 hover:text-foreground hover:underline">
           <MemberAvatar id={auction.seller.id} name={auction.seller.name} email="" avatarUrl={auction.seller.avatarUrl} size="sm" className="h-5 w-5 text-[10px]" />
           <span className="truncate">{auction.seller.name}</span>
+          <VerifiedBadge verified={auction.seller.verified} />
         </Link>
       </div>
       <WatchButton auctionId={auction.id} className="absolute right-2 top-2" />

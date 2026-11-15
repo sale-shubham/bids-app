@@ -67,6 +67,10 @@ function parseMember(raw: unknown): AdminMember {
     unpaidCommissionPaise: num(m.unpaidCommissionPaise),
     auctionsWon: num(m.auctionsWon),
     moneySpentPaise: num(m.moneySpentPaise),
+    verified: m.verified === true,
+    phoneVerifiedAt: strOrNull(m.phoneVerifiedAt),
+    twoFactorEnabled: m.twoFactorEnabled === true,
+    payoutStatus: strOrNull(m.payoutStatus),
   };
 }
 

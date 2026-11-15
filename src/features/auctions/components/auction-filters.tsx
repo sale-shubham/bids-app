@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { SaveSearchButton } from '@/features/saved-searches/components/save-search-button';
 import { BROWSE_STATUSES, DEFAULT_FILTERS, SORT_OPTIONS, filtersToSearchParams, parseFilters } from '../auctions.filters';
 import { useCategories } from '../use-auctions';
@@ -34,7 +36,7 @@ export function AuctionFilterBar() {
     if (next !== filters[key]) update({ [key]: next });
   };
 
-  const dirty = filters.q || filters.category || filters.condition || filters.minPrice !== undefined || filters.maxPrice !== undefined;
+  const dirty = filters.q || filters.category || filters.condition || filters.minPrice !== undefined || filters.maxPrice !== undefined || filters.verified;
 
   return (
     <div className="space-y-3">
@@ -116,10 +118,16 @@ export function AuctionFilterBar() {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-2">
+          <Switch id="verified-only" checked={!!filters.verified} onCheckedChange={(v) => update({ verified: v || undefined })} />
+          <Label htmlFor="verified-only" className="text-sm font-normal">
+            Verified sellers only
+          </Label>
+        </div>
         <SaveSearchButton filters={filters} />
         {dirty && (
-          <Button type="button" variant="ghost" size="sm" onClick={() => update({ ...DEFAULT_FILTERS, status: filters.status, sort: filters.sort, minPrice: undefined, maxPrice: undefined })}>
+          <Button type="button" variant="ghost" size="sm" onClick={() => update({ ...DEFAULT_FILTERS, status: filters.status, sort: filters.sort, minPrice: undefined, maxPrice: undefined, verified: undefined })}>
             Clear filters
           </Button>
         )}

@@ -7,11 +7,13 @@ There is no Home page in the app: the landing page, About, How it works and Cont
 
 ## Browse (`/auctions`)
 - Server-rendered first page + `generateMetadata`; then client `useInfiniteQuery` with key `['auctions', filters]` and `InfiniteScroll`. A client `RecentlyViewed` strip (device-local, see below) sits under the list.
-- Filters live in the URL (`auctions.filters.ts`: `parseFilters` / `filtersToParams`, defaults omitted so URLs stay clean): `status` (`live` default, `upcoming`, `ended`), `q` (max 100 chars), `category`, `condition` (`NEW` / `USED`), `minPrice` / `maxPrice` in rupees, `sort` (`endingSoon` default, `newest`, `priceAsc`, `priceDesc`, `mostBids`). Unknown values fall back to defaults.
+- Filters live in the URL (`auctions.filters.ts`: `parseFilters` / `filtersToParams`, defaults omitted so URLs stay clean): `status` (`live` default, `upcoming`, `ended`), `q` (max 100 chars), `category`, `condition` (`NEW` / `USED`), `minPrice` / `maxPrice` in rupees, `verified=true` ("Verified sellers only" switch in `AuctionFilterBar`, sent as `verified=true`; omitted when off; not part of saved searches), `verified=true` ("Verified sellers only" switch in `AuctionFilterBar`, sent as `verified=true`; omitted when off; not part of saved searches), `sort` (`endingSoon` default, `newest`, `priceAsc`, `priceDesc`, `mostBids`). Unknown values fall back to defaults.
 - `SaveSearchButton` (BIDDERs, when q / category / condition / price is set) next to "Clear filters" saves the filters as an alert (`saved-searches.md`).
 - Categories: `useCategories()` (`['auctions', 'categories']`, stale 5 min).
 
 ## Detail (`/auctions/[id]`)
+- Seller trust: `VerifiedBadge` (`components/common/verified-badge.tsx`, check-shield + tooltip) shows next to the seller name on the detail seller card, on auction cards and in the seller page header when `seller.verified`. A "Report" button (`reports.md`) sits under the share buttons (hidden for the seller).
+- Seller trust: `VerifiedBadge` (`components/common/verified-badge.tsx`, check-shield + tooltip) shows next to the seller name on the detail seller card, on auction cards and in the seller page header when `seller.verified`. A "Report" button (`reports.md`) sits under the share buttons (hidden for the seller).
 - Server component with `generateMetadata` (title, description, OG image) via `getAuctionDetailServer()`; the client `AuctionDetailView` then keeps `['auction', id]` in the TanStack Query cache, and `features/live` updates it from WebSocket frames (`websocket.md`).
 - Parts: `AuctionGallery` (+ `ImageLightbox`), `Countdown`, bid panel and history (`bidding.md`), `WatchButton` (`watchlist.md`), `ShareButtons`, the seller card with `RatingSummary` ("4.6 (12)" or "No ratings yet", `reviews.md`) and `QuestionsSection` under the description (`questions.md`).
 - `ShareButtons`: Copy link (clipboard), WhatsApp (`wa.me/?text=`), and the native share sheet when `navigator.share` exists.

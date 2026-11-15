@@ -12,6 +12,23 @@ export const passwordField = z
 
 const codeField = z.string().trim().regex(/^\d{6}$/, 'Enter the 6-digit code');
 
+export const twoFactorCodeSchema = z.object({ code: codeField });
+
+// Recovery codes are 8-32 chars (the API accepts hyphenated groups); dashes and spaces are tolerated.
+export const recoveryCodeSchema = z.object({
+  recoveryCode: z
+    .string()
+    .trim()
+    .min(8, 'Enter one of your recovery codes')
+    .max(32, 'That recovery code is too long'),
+});
+
+// Turning 2FA off needs the password plus a current code (a recovery code works too).
+export const disableTwoFactorSchema = z.object({
+  password: z.string().min(1, 'Password is required'),
+  code: z.string().trim().min(6, 'Enter a 6-digit code or a recovery code').max(32, 'That code is too long'),
+});
+
 export const loginSchema = z.object({
   email: emailField,
   password: z.string().min(1, 'Password is required'),
@@ -60,3 +77,4 @@ export type SignupFormValues = z.infer<typeof signupSchema>;
 export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
 export type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>;
+export type DisableTwoFactorFormValues = z.infer<typeof disableTwoFactorSchema>;

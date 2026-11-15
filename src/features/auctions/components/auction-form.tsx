@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input';
 import { apiErrorCode } from '@/lib/api-client';
 import { cn, formatINR } from '@/lib/utils';
 import { useMaxPricePaise } from '@/features/settings/use-settings';
+import { legalPagePath } from '@/constants/legal';
 import { useAuthStore } from '@/store/auth-store';
 import { auctionErrorMessage } from '../auctions.errors';
 import {
@@ -130,6 +131,13 @@ export function AuctionForm({ auction, relistFrom }: { auction?: AuctionDetail; 
 
       <section className="space-y-4">
         <h2 className="text-lg font-semibold">Item details</h2>
+        <p className="text-sm text-muted-foreground">
+          Check the{' '}
+          <Link href={legalPagePath('prohibited-items')} target="_blank" className="font-medium text-primary hover:underline">
+            prohibited items list
+          </Link>{' '}
+          before listing.
+        </p>
         <FormInput label="Title" required maxLength={120} error={errors.title?.message} {...register('title')} />
 
         <div className="space-y-1.5">
