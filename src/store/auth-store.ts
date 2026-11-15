@@ -29,6 +29,8 @@ export interface AuthMember {
   verified?: boolean;
   /** SUPER_ADMIN only: the server requires admin 2FA and it is not set up yet. */
   twoFactorSetupRequired?: boolean;
+  /** Unpaid-purchase strikes in force (Phase E). */
+  activeStrikes?: number;
 }
 
 interface AuthState {

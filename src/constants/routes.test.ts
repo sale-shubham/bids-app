@@ -151,3 +151,12 @@ describe('destinationFor', () => {
     expect(destinationFor('SUPER_ADMIN', '/auctions/abc')).toBe('/admin');
   });
 });
+
+describe('second-chance offer routes', () => {
+  it('/purchases/offers/* is in the bidder class', () => {
+    expect(isBidderRoute('/purchases/offers/o1')).toBe(true);
+    expect(gateFor('/purchases/offers/o1', 'BIDDER')).toBe('allow');
+    expect(gateFor('/purchases/offers/o1', 'AUCTIONEER')).toBe('home');
+    expect(gateFor('/purchases/offers/o1', undefined)).toBe('login');
+  });
+});

@@ -1,3 +1,5 @@
+import type { OfferDTO } from '@/features/second-chance/second-chance.types';
+
 export type SaleStatus =
   | 'AWAITING_PAYMENT'
   | 'PAID'
@@ -50,6 +52,10 @@ export interface SaleDTO {
   buyerContact?: SaleContact;
   /** Buyer only, once paid. */
   sellerContact?: SaleContact;
+  /** Seller view of a CANCELLED sale: the second-chance offer made to the runner-up, if any. */
+  secondChanceOffer?: OfferDTO | null;
+  /** Seller view: the sale is CANCELLED and no offer exists yet. */
+  canOfferSecondChance?: boolean;
 }
 
 /** The small `sale` summary on the auction detail (buyer / seller / admin only). */

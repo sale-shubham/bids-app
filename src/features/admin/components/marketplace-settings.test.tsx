@@ -19,6 +19,8 @@ const settings = (mode: AdminSettings['checkoutMode']): AdminSettings => ({
   categories: ['Art'],
   maxPricePaise: 10_000_000_000,
   checkoutMode: mode,
+  depositThresholdPaise: 10_000_000,
+  depositRateBps: 1000,
 });
 
 beforeEach(() => {
@@ -49,5 +51,36 @@ describe('Checkout mode select', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Save settings' }));
     await waitFor(() => expect(m.mutate).toHaveBeenCalled());
     expect(m.mutate.mock.calls[0][0]).toMatchObject({ checkoutMode: 'required', commissionRateBps: 500 });
+  });
+});
+
+describe('Bid deposit fields', () => {
+  it('shows the stored threshold (rupees) and rate (percent)', () => {
+    render(<MarketplaceSettings />);
+    expect(screen.getByLabelText('Deposit threshold (₹, 0 = off)')).toHaveValue('100000');
+    expect(screen.getByLabelText('Deposit rate (%)')).toHaveValue('10.00');
+  });
+
+  it('saving maps rupees to paise and percent to bps', async () => {
+    render(<MarketplaceSettings />);
+    const threshold = screen.getByLabelText('Deposit threshold (₹, 0 = off)');
+    await userEvent.clear(threshold);
+    await userEvent.type(threshold, '0');
+    const rate = screen.getByLabelText('Deposit rate (%)');
+    await userEvent.clear(rate);
+    await userEvent.type(rate, '12.5');
+    await userEvent.click(screen.getByRole('button', { name: 'Save settings' }));
+    await waitFor(() => expect(m.mutate).toHaveBeenCalled());
+    expect(m.mutate.mock.calls[0][0]).toMatchObject({ depositThresholdPaise: 0, depositRateBps: 1250 });
+  });
+
+  it('rejects a rate outside 1-50%', async () => {
+    render(<MarketplaceSettings />);
+    const rate = screen.getByLabelText('Deposit rate (%)');
+    await userEvent.clear(rate);
+    await userEvent.type(rate, '75');
+    await userEvent.click(screen.getByRole('button', { name: 'Save settings' }));
+    expect(await screen.findByText('Must be between 1% and 50%')).toBeInTheDocument();
+    expect(m.mutate).not.toHaveBeenCalled();
   });
 });

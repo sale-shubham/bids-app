@@ -19,7 +19,7 @@ export const PUBLIC_PREFIXES = ['/auctions', '/leaderboard', '/sellers', '/pages
 // pattern: the admin lives only under /admin plus the public pages).
 export const MEMBER_PREFIXES = ['/watchlist', '/profile', '/notifications'];
 
-// Bidder area (BIDDER only): /my-bids, /purchases and /purchases/[id].
+// Bidder area (BIDDER only): /my-bids, /purchases, /purchases/[id] and /purchases/offers/[id] (second-chance offers).
 export const BIDDER_PREFIXES = ['/my-bids', '/purchases'];
 
 // Auctioneer area (AUCTIONEER only): everything under /sell, including /sell/sales, /sell/sales/[id] and /sell/payouts.

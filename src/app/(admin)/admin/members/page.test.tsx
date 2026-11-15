@@ -3,12 +3,14 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as adminApi from '@/features/admin/admin.api';
+import * as strikesApi from '@/features/strikes/strikes.api';
 import type { AdminMember } from '@/features/admin/admin.types';
 import AdminMembersPage from './page';
 
 const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock('sonner', () => ({ toast }));
 vi.mock('@/features/admin/admin.api');
+vi.mock('@/features/strikes/strikes.api');
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace: vi.fn() }),
   usePathname: () => '/admin/members',
@@ -32,6 +34,7 @@ const member: AdminMember = {
   phoneVerifiedAt: '2026-10-02T00:00:00Z',
   twoFactorEnabled: true,
   payoutStatus: 'ACTIVE',
+  activeStrikes: 0,
 };
 const page = (m: AdminMember) => ({ items: [m], meta: { total: 1, page: 1, pageSize: 10, totalPages: 1 } });
 
@@ -73,5 +76,35 @@ describe('AdminMembersPage verification', () => {
     await userEvent.click(await screen.findByRole('button', { name: /Restore verification/ }));
     await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Restore' }));
     await waitFor(() => expect(adminApi.updateMember).toHaveBeenCalledWith('m1', { verified: true }));
+  });
+});
+
+describe('AdminMembersPage strikes', () => {
+  it('shows the strike count and opens the Strikes dialog with the member strikes', async () => {
+    vi.mocked(adminApi.fetchMembers).mockResolvedValue(page({ ...member, activeStrikes: 2 }));
+    vi.mocked(strikesApi.fetchMemberStrikes).mockResolvedValue([
+      { id: 'k1', saleId: 's1', auction: { id: 'a1', title: 'Brass Vase' }, reason: 'UNPAID', createdAt: '2026-10-01T00:00:00Z', expiresAt: '2027-10-01T00:00:00Z', removedAt: null, note: null, active: true },
+    ]);
+    setup();
+    expect(await screen.findByText('2 strikes')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /Strikes \(2\)/ }));
+    expect(strikesApi.fetchMemberStrikes).toHaveBeenCalledWith('m1');
+    expect(await screen.findByText('Brass Vase')).toBeInTheDocument();
+  });
+
+  it('removes a strike through the confirm dialog', async () => {
+    vi.mocked(adminApi.fetchMembers).mockResolvedValue(page({ ...member, activeStrikes: 1 }));
+    vi.mocked(strikesApi.fetchMemberStrikes).mockResolvedValue([
+      { id: 'k1', saleId: 's1', auction: null, reason: 'UNPAID', createdAt: '2026-10-01T00:00:00Z', expiresAt: '2027-10-01T00:00:00Z', removedAt: null, note: null, active: true },
+    ]);
+    vi.mocked(strikesApi.removeStrike).mockResolvedValue({});
+    setup();
+    await userEvent.click(await screen.findByRole('button', { name: /Strikes \(1\)/ }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Remove' }));
+    expect(strikesApi.removeStrike).not.toHaveBeenCalled();
+    const dialogs = await screen.findAllByRole('dialog');
+    await userEvent.click(within(dialogs.at(-1)!).getByRole('button', { name: 'Remove strike' }));
+    await waitFor(() => expect(strikesApi.removeStrike).toHaveBeenCalledWith('k1', undefined));
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Strike removed'));
   });
 });

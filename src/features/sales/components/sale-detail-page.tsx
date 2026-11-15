@@ -9,6 +9,7 @@ import type { SaleListRole } from '../sales.types';
 import { useSale } from '../use-sales';
 import { PurchaseActions } from './purchase-actions';
 import { SaleDetailView } from './sale-detail';
+import { SellerOfferCard } from '@/features/second-chance/components/seller-offer-card';
 import { ShipForm } from './ship-form';
 
 /** Loader + chrome for /purchases/[id] (`buyer`) and /sell/sales/[id] (`seller`). */
@@ -40,7 +41,12 @@ export function SaleDetailPage({ id, view }: { id: string; view: SaleListRole })
         />
       ) : (
         <SaleDetailView sale={sale}>
-          {view === 'buyer' ? <PurchaseActions sale={sale} /> : <ShipForm sale={sale} />}
+          {view === 'buyer' ? <PurchaseActions sale={sale} /> : (
+            <>
+              <ShipForm sale={sale} />
+              <SellerOfferCard sale={sale} />
+            </>
+          )}
         </SaleDetailView>
       )}
     </div>

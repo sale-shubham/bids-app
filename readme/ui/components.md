@@ -102,6 +102,9 @@ Only `Badge` and `Button` use `class-variance-authority`. Both export their `*Va
 |---|---|---|
 | `VerifiedBadge` | `verified-badge.tsx`. Check-shield icon (or icon + "Verified") with a tooltip; renders nothing unless verified | `verified?`, `variant?` (icon or label) |
 | `TwoFactorSetupBanner` | `two-factor-setup-banner.tsx`. Persistent admin banner linking to `/admin/profile?tab=security` | none |
+| `DepositCard` / `DepositPaidChip` / `SetDepositDialog` | `features/deposits/components/`. Bid-panel deposit card + chip; admin set-deposit dialog. See `flows/deposits.md` | `auction` |
+| `StrikeBanner` / `MemberStrikesDialog` | `features/strikes/components/`. Member warning banner (`activeStrikes`); admin strikes list with Remove. See `flows/strikes.md` | `member` / `onClose` |
+| `SellerOfferCard` / `OffersSection` / `OfferDetailPage` / `OfferCountdown` | `features/second-chance/components/`. Second-chance offer UI. See `flows/strikes.md` | `sale` / `id` / `expiresAt` |
 | `ReportButton` / `ReportDialog` | `features/reports/components/`. See `flows/reports.md` | `targetType`, `targetId`, `subject`, `ownerId?`, `hidden?` |
 
 ### Profile page and cards (`/profile`, `/admin/profile`)

@@ -9,6 +9,7 @@ import { useAuthStore, type AuthMember } from '@/store/auth-store';
 import { BidPanel } from './bid-panel';
 
 const mutate = vi.fn();
+const pay = vi.hoisted(() => vi.fn().mockResolvedValue(true));
 const buyMutate = vi.fn();
 const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock('sonner', () => ({ toast }));
@@ -16,6 +17,7 @@ vi.mock('../use-bids', () => ({
   usePlaceBid: () => ({ mutate, isPending: false }),
   useBuyNow: () => ({ mutate: buyMutate, isPending: false }),
 }));
+vi.mock('@/features/deposits/use-deposit', () => ({ useDepositPayment: () => ({ pay, payingId: null }) }));
 vi.mock('./auction-result', () => ({ AuctionResult: () => <div>RESULT-VIEW</div> }));
 
 const HOUR = 3_600_000;
@@ -312,5 +314,69 @@ describe('BidPanel Buy It Now', () => {
     renderPanel(auction({ buyNowPricePaise: 300000 }));
     expect(await screen.findByRole('link', { name: 'Log in to bid' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Buy now/ })).not.toBeInTheDocument();
+  });
+});
+
+describe('BidPanel deposits', () => {
+  const needs = { requiredPaise: 1_000_000, status: null } as const;
+
+  it('replaces the bid controls with the deposit card and pays for this auction', async () => {
+    const user = userEvent.setup();
+    signIn(member());
+    renderPanel(auction({ deposit: needs }));
+    expect(await screen.findByText('Refundable deposit required')).toBeInTheDocument();
+    expect(screen.getByText(/Refunded automatically if you don't win/)).toBeInTheDocument();
+    expect(screen.queryByLabelText('Your maximum bid (₹)')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Pay ₹10,000 deposit' }));
+    expect(pay).toHaveBeenCalledWith('a1');
+  });
+
+  it('a PENDING deposit still needs paying', async () => {
+    signIn(member());
+    renderPanel(auction({ deposit: { requiredPaise: 500_000, status: 'PENDING' } }));
+    expect(await screen.findByRole('button', { name: 'Pay ₹5,000 deposit' })).toBeInTheDocument();
+  });
+
+  it('a HELD deposit shows the chip and the normal controls', async () => {
+    signIn(member());
+    renderPanel(auction({ deposit: { requiredPaise: 1_000_000, status: 'HELD' } }));
+    expect(await screen.findByText('Deposit paid')).toBeInTheDocument();
+    expect(screen.getByLabelText('Your maximum bid (₹)')).toBeInTheDocument();
+    expect(screen.queryByText('Refundable deposit required')).not.toBeInTheDocument();
+  });
+
+  it('no deposit requirement shows neither card nor chip', async () => {
+    signIn(member());
+    renderPanel(auction({ deposit: { requiredPaise: 0, status: null } }));
+    expect(await screen.findByLabelText('Your maximum bid (₹)')).toBeInTheDocument();
+    expect(screen.queryByText('Deposit paid')).not.toBeInTheDocument();
+  });
+
+  it('DEPOSIT_REQUIRED on a bid explains the deposit and refetches the auction', async () => {
+    const user = userEvent.setup();
+    signIn(member());
+    const { qc } = renderPanel(auction());
+    const invalidate = vi.spyOn(qc, 'invalidateQueries');
+    const err = new AxiosError('x');
+    err.response = { status: 403, data: { success: false, error: { code: 'DEPOSIT_REQUIRED', message: 'dep', details: { depositPaise: 1_000_000 } } } } as AxiosResponse;
+    mutate.mockImplementation((_a: number, opts: { onError: (e: unknown) => void }) => opts.onError(err));
+    await user.type(await screen.findByLabelText('Your maximum bid (₹)'), '1,200');
+    await user.click(screen.getByRole('button', { name: 'Place bid' }));
+    await user.click(await screen.findByRole('button', { name: 'Set max ₹1,200' }));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Pay the ₹10,000 refundable deposit to bid on this auction.'));
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['auction', 'a1'] });
+  });
+
+  it.each(['DEPOSIT_ALREADY_HELD', 'DEPOSIT_NOT_REQUIRED'])('%s on buy-now refetches the auction', async (code) => {
+    const user = userEvent.setup();
+    signIn(member());
+    const { qc } = renderPanel(auction({ buyNowPricePaise: 500000 }));
+    const invalidate = vi.spyOn(qc, 'invalidateQueries');
+    const err = new AxiosError('x');
+    err.response = { status: 409, data: { success: false, error: { code, message: 'm' } } } as AxiosResponse;
+    buyMutate.mockImplementation((_v: unknown, opts: { onError: (e: unknown) => void }) => opts.onError(err));
+    await user.click(await screen.findByRole('button', { name: /Buy now for/ }));
+    await user.click(await screen.findByRole('button', { name: /^Buy for/ }));
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['auction', 'a1'] });
   });
 });

@@ -1,4 +1,5 @@
 import { parsePaged, type Paged } from '@/lib/paged';
+import { parseOffer } from '@/features/second-chance/second-chance.parse';
 import { SALE_STATUSES, type SaleContact, type SaleDTO, type SaleRole, type SaleStatus, type ShippingMethod } from './sales.types';
 
 type Obj = Record<string, unknown>;
@@ -51,6 +52,8 @@ export function parseSale(raw: unknown): SaleDTO {
     ...(typeof s.payoutPaise === 'number' ? { payoutPaise: s.payoutPaise } : {}),
     ...(buyerContact ? { buyerContact } : {}),
     ...(sellerContact ? { sellerContact } : {}),
+    ...(typeof s.canOfferSecondChance === 'boolean' ? { canOfferSecondChance: s.canOfferSecondChance } : {}),
+    ...('secondChanceOffer' in s ? { secondChanceOffer: typeof s.secondChanceOffer === 'object' && s.secondChanceOffer !== null ? parseOffer(s.secondChanceOffer) : null } : {}),
   };
 }
 

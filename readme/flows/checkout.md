@@ -21,6 +21,11 @@ Entry points: `AuctionResult` and `/my-bids` Won rows (`BuyerSaleEntry`: AWAITIN
 - **Confirm received** (PAID / SHIPPED): `ConfirmDialog` "This releases the payment to the seller." -> `POST /sales/:id/confirm`.
 - **Report a problem** (PAID / SHIPPED / DELIVERED): `DisputeDialog` (RHF + zod `disputeSchema`, reason 10..1000, trimmed) -> `POST /sales/:id/dispute`.
 
+## Phase E additions
+- `POST /payments/verify` also returns `referenceType: 'DEPOSIT'` (bid deposits, `deposits.md`).
+- Seller view of a CANCELLED sale (`SaleDTO.secondChanceOffer`, `canOfferSecondChance`): `SellerOfferCard` offers the item to the runner-up; accepting creates a new AWAITING_PAYMENT sale the bidder pays at `/purchases/<newSaleId>`. `/purchases` starts with an Offers section and `/purchases/offers/[id]` is the offer page. See `strikes.md`.
+- `/purchases` shows the strike warning banner when `activeStrikes > 0`.
+
 ## Seller action (`ship-form.tsx`)
 PAID only. Delivery method radio COURIER / PICKUP; courier required for COURIER (max 60), tracking number optional (max 60) -> `POST /sales/:id/ship` (`toShipPayload` omits empty fields; PICKUP sends no courier).
 

@@ -11,5 +11,7 @@ export async function fetchPublicSettings(): Promise<PublicSettings> {
     categories: Array.isArray(d.categories) ? d.categories : [],
     maxPricePaise: typeof d.maxPricePaise === 'number' ? d.maxPricePaise : undefined,
     checkoutMode: resolveCheckoutMode(d.checkoutMode),
+    depositThresholdPaise: typeof d.depositThresholdPaise === 'number' ? d.depositThresholdPaise : undefined,
+    depositRateBps: typeof d.depositRateBps === 'number' ? d.depositRateBps : undefined,
   };
 }

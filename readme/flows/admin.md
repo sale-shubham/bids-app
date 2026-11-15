@@ -1,20 +1,20 @@
 # Admin area (frontend)
 
-SUPER_ADMIN only. Routes live in `src/app/(admin)/admin/**`, guarded by `AuthGuard allow={['SUPER_ADMIN']}` in `(admin)/layout.tsx`. SUPER_ADMIN may only use `/admin/*` plus the public pages (member routes redirect to `/admin`; BIDDER / AUCTIONEER hitting `/admin` go to their home). The sidebar (`useNav()`, `nav-items.ts`) lists Dashboard, Members, Auctions, Commissions, Payments, Sales, Reviews, Reports, Settings and Profile; on a phone the bottom bar shows the first three plus a Profile tab, the rest sit in the Profile page's tap grid.
+SUPER_ADMIN only. Routes live in `src/app/(admin)/admin/**`, guarded by `AuthGuard allow={['SUPER_ADMIN']}` in `(admin)/layout.tsx`. SUPER_ADMIN may only use `/admin/*` plus the public pages (member routes redirect to `/admin`; BIDDER / AUCTIONEER hitting `/admin` go to their home). The sidebar (`useNav()`, `nav-items.ts`) lists Dashboard, Members, Auctions, Commissions, Payments, Sales, Reviews, Reports, Risk, Settings and Profile; on a phone the bottom bar shows the first three plus a Profile tab, the rest sit in the Profile page's tap grid.
 
 | Route | Purpose |
 | --- | --- |
 | `/admin` | Stat cards, revenue bar chart (INR), signups line chart, recent auctions |
-| `/admin/members` | Search, role + status filters, trust badges (Verified, phone verified, 2FA, payout status), **Revoke / Restore verification** (`PATCH /admin/members/:id { verified }`, ConfirmDialog), activate/deactivate, change role (SUPER_ADMIN gets an extra warning). The signed-in admin's own row actions are disabled (API also returns 409 `CANNOT_MODIFY_SELF`) |
-| `/admin/auctions` | Status tabs + search; cancel (`DELETE /auctions/:id`) with a bid-count warning |
+| `/admin/members` | Search, role + status filters, trust badges (Verified, phone verified, 2FA, payout status), **Revoke / Restore verification** (`PATCH /admin/members/:id { verified }`, ConfirmDialog), activate/deactivate, change role (SUPER_ADMIN gets an extra warning); strike count badge + **Strikes** dialog with Remove (ConfirmDialog + optional note), see `strikes.md`. The signed-in admin's own row actions are disabled (API also returns 409 `CANNOT_MODIFY_SELF`) |
+| `/admin/auctions` | Status tabs + search; cancel (`DELETE /auctions/:id`) with a bid-count warning; **Set deposit** on LIVE / SCHEDULED rows (`SetDepositDialog`, `PATCH /admin/auctions/:id/deposit`, rupee input or "No deposit"; Deposit column); see `deposits.md` |
 | `/admin/commissions` | Status tabs; waive due commissions (reason field is a client-side note only) |
 | `/admin/payments` | Status tabs; gateway ids with copy buttons |
 | `/admin/sales` | Status tabs + search (`q`); table / cards. Per row `AdminSaleActions`: **Release** (pay the seller now) and **Refund** (optional note, max 500) for PAID / SHIPPED / DELIVERED / DISPUTED sales, both through `<ConfirmDialog>`; see `checkout.md` |
 | `/admin/reviews` | Visible / hidden / all tabs + search; Hide / Unhide through `<ConfirmDialog>` (`PATCH /admin/reviews/:id`); see `reviews.md` |
 | `/admin/reports` | Open / Resolved tabs + target-type filter; Dismiss and Mark action taken (note + apply to all open for the target) through `<ConfirmDialog>`; see `reports.md` |
-| `/admin/reports` | Open / Resolved tabs + target-type filter; Dismiss and Mark action taken (note + apply to all open for the target) through `<ConfirmDialog>`; see `reports.md` |
+| `/admin/risk` | Open / Reviewed tabs; shill-bid flags with score badge, readable reasons, auction / bidder / seller links; Dismiss and Mark action taken (optional note) through `<ConfirmDialog>`; see `risk.md` |
 | `/admin/profile` | The shared profile view (`components/common/profile-page.tsx`, same cards as `/profile`): Account, Security (phone verification, two-factor auth, password, devices, sign out) and App tabs |
-| `/admin/settings` | Tab `marketplace` (commission %, min increment INR, anti-sniping, maximum price INR (`maxPricePaise`, ₹1,000 to ₹1,000 crore), categories editor, **Checkout mode** select off / optional / required with help text, `checkoutMode`; see `payouts.md`) and tab `legal` (slug select + rich text) |
+| `/admin/settings` | Tab `marketplace` (commission %, min increment INR, anti-sniping, maximum price INR (`maxPricePaise`, ₹1,000 to ₹1,000 crore), categories editor, **Checkout mode** select off / optional / required with help text, `checkoutMode`; see `payouts.md`; **Bid deposits** card: deposit threshold INR (`depositThresholdPaise`, 0 = off) and deposit rate % (`depositRateBps`, 1 to 50 %); see `deposits.md`) and tab `legal` (slug select + rich text) |
 
 ## Code map (`src/features/admin/`)
 - `admin.api.ts` - axios calls. `admin.parse.ts` - the ONLY place response keys are mapped (change it if the backend renames fields). `admin.types.ts`, `admin.schema.ts` (settings form <-> API: % <-> bps, rupees <-> paise).

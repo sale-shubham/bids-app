@@ -1,6 +1,7 @@
 import { apiErrorCode, apiErrorDetails, apiErrorMessage } from '@/lib/api-client';
 import { priceTooHighMessage } from '@/features/settings/settings.utils';
 import { formatINR } from '@/lib/utils';
+import { DEPOSIT_MESSAGES, depositRequiredMessage } from '@/features/deposits/deposits.errors';
 
 // Friendly copy for POST /auctions/:id/bids failures.
 const MESSAGES: Record<string, string> = {
@@ -14,6 +15,7 @@ const MESSAGES: Record<string, string> = {
   ACCOUNT_SUSPENDED: 'Your account is suspended and cannot bid.',
   RATE_LIMITED: 'You are bidding too fast. Wait a moment and try again.',
   TOO_MANY_REQUESTS: 'You are bidding too fast. Wait a moment and try again.',
+  ...DEPOSIT_MESSAGES,
 };
 
 /** Minimum bid (paise) the API reported with a BID_TOO_LOW error. */
@@ -35,12 +37,14 @@ export function bidErrorMessage(err: unknown) {
     return typeof cur === 'number' ? `Your new maximum must be higher than your current ${formatINR(cur)}.` : 'Your new maximum must be higher than your current maximum.';
   }
   if (code === 'PRICE_TOO_HIGH') return priceTooHighMessage(err);
+  if (code === 'DEPOSIT_REQUIRED') return depositRequiredMessage(err);
   if (code && MESSAGES[code]) return MESSAGES[code];
   return apiErrorMessage(err, 'Could not place your bid');
 }
 
 export function buyNowErrorMessage(err: unknown) {
   const code = apiErrorCode(err);
+  if (code === 'DEPOSIT_REQUIRED') return depositRequiredMessage(err);
   if (code && MESSAGES[code]) return MESSAGES[code];
   return apiErrorMessage(err, 'Could not complete the purchase');
 }

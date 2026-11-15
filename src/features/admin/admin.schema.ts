@@ -36,6 +36,12 @@ export const marketplaceSchema = z.object({
     .refine((v) => /^\d+(\.\d{1,2})?$/.test(v), 'At most 2 decimal places')
     .refine((v) => Number(v) >= MAX_PRICE_MIN_RUPEES, `Must be at least ${formatINR(MAX_PRICE_MIN_RUPEES * 100)}`)
     .refine((v) => Number(v) <= MAX_PRICE_MAX_RUPEES, `Must be at most ${formatINR(MAX_PRICE_MAX_RUPEES * 100)}`),
+  depositThresholdRupees: numeric('Deposit threshold')
+    .refine((v) => /^\d+(\.\d{1,2})?$/.test(v), 'At most 2 decimal places')
+    .refine((v) => Number(v) <= MAX_PRICE_MAX_RUPEES, `Must be at most ${formatINR(MAX_PRICE_MAX_RUPEES * 100)}`),
+  depositRatePercent: numeric('Deposit rate')
+    .refine((v) => /^\d+(\.\d{1,2})?$/.test(v), 'At most 2 decimal places')
+    .refine((v) => Number(v) >= 1 && Number(v) <= 50, 'Must be between 1% and 50%'),
   categories: z
     .array(categoryNameSchema)
     .min(1, 'Add at least one category')
@@ -52,6 +58,8 @@ export function settingsToForm(s: AdminSettings): MarketplaceValues {
     minIncrementRupees: paiseToRupeesStr(s.minIncrementPaise),
     antiSnipingMinutes: String(s.antiSnipingMinutes),
     maxPriceRupees: paiseToRupeesStr(s.maxPricePaise),
+    depositThresholdRupees: paiseToRupeesStr(s.depositThresholdPaise),
+    depositRatePercent: bpsToPercent(s.depositRateBps),
     categories: s.categories,
     checkoutMode: s.checkoutMode,
   };
@@ -63,6 +71,8 @@ export function formToSettings(v: MarketplaceValues): AdminSettings {
     minIncrementPaise: rupeesToPaiseNum(v.minIncrementRupees),
     antiSnipingMinutes: Number(v.antiSnipingMinutes),
     maxPricePaise: rupeesToPaiseNum(v.maxPriceRupees),
+    depositThresholdPaise: rupeesToPaiseNum(v.depositThresholdRupees),
+    depositRateBps: percentToBps(v.depositRatePercent),
     categories: v.categories.map((c) => c.trim()),
     checkoutMode: v.checkoutMode,
   };

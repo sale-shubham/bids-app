@@ -71,6 +71,7 @@ function parseMember(raw: unknown): AdminMember {
     phoneVerifiedAt: strOrNull(m.phoneVerifiedAt),
     twoFactorEnabled: m.twoFactorEnabled === true,
     payoutStatus: strOrNull(m.payoutStatus),
+    activeStrikes: num(m.activeStrikes),
   };
 }
 
@@ -82,7 +83,11 @@ export function parseMemberPage(body: unknown): Paged<AdminMember> {
 export function parseAuctionAdminPage(body: unknown): Paged<AdminAuction> {
   const p = parsePaged<unknown>(body);
   return {
-    items: p.items.map((a) => ({ ...(a as AuctionCard), sellerEmail: str(obj(a).sellerEmail) })),
+    items: p.items.map((a) => ({
+      ...(a as AuctionCard),
+      sellerEmail: str(obj(a).sellerEmail),
+      depositPaise: typeof obj(a).depositPaise === 'number' ? (obj(a).depositPaise as number) : null,
+    })),
     meta: p.meta,
   };
 }
@@ -132,6 +137,8 @@ export function parseSettings(body: unknown): AdminSettings {
     categories: arr(d.categories).filter((c): c is string => typeof c === 'string'),
     maxPricePaise: num(d.maxPricePaise, DEFAULT_MAX_PRICE_PAISE),
     checkoutMode: resolveCheckoutMode(d.checkoutMode),
+    depositThresholdPaise: num(d.depositThresholdPaise, 0),
+    depositRateBps: num(d.depositRateBps, 1000),
   };
 }
 
