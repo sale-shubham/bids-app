@@ -1,5 +1,5 @@
 'use client';
-import { Archive, Banknote, FileUp, Flag, FolderTree, Gavel, Heart, Landmark, LayoutDashboard, LogIn, Receipt, Settings, ShieldAlert, ShoppingBag, Star, Store, Trophy, User, Users, Wallet } from 'lucide-react';
+import { Archive, Banknote, BarChart3, FileUp, Flag, FolderTree, Gavel, Heart, Landmark, LayoutDashboard, LogIn, Receipt, Settings, ShieldAlert, ShoppingBag, Star, Store, Trophy, User, Users, Wallet } from 'lucide-react';
 import { useAuthStore, type Role } from '@/store/auth-store';
 import type { NavItem } from './dashboard-shell';
 import type { MoreTab } from './mobile-bottom-nav';
@@ -18,6 +18,7 @@ const MEMBER_NAV: RoleNavItem[] = [
   { href: '/my-bids', label: 'My bids', icon: Trophy, roles: ['BIDDER'] },
   { href: '/purchases', label: 'Purchases', icon: ShoppingBag, roles: ['BIDDER'] },
   { href: '/sell/auctions', label: 'Sell', icon: Store, roles: ['AUCTIONEER'] },
+  { href: '/sell/analytics', label: 'Analytics', icon: BarChart3, roles: ['AUCTIONEER'] },
   { href: '/sell/sales', label: 'Sales', icon: Banknote, roles: ['AUCTIONEER'] },
   { href: '/sell/payouts', label: 'Payouts', icon: Landmark, roles: ['AUCTIONEER'] },
   { href: '/sell/bulk', label: 'Bulk upload', icon: FileUp, roles: ['AUCTIONEER'] },

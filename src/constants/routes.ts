@@ -22,7 +22,7 @@ export const MEMBER_PREFIXES = ['/watchlist', '/profile', '/notifications'];
 // Bidder area (BIDDER only): /my-bids, /purchases, /purchases/[id] and /purchases/offers/[id] (second-chance offers).
 export const BIDDER_PREFIXES = ['/my-bids', '/purchases'];
 
-// Auctioneer area (AUCTIONEER only): everything under /sell, including /sell/sales, /sell/sales/[id] and /sell/payouts.
+// Auctioneer area (AUCTIONEER only): everything under /sell, including /sell/sales, /sell/sales/[id], /sell/payouts and /sell/analytics.
 export const AUCTIONEER_PREFIX = '/sell';
 
 // Admin area: SUPER_ADMIN only (/admin, /admin/members, /admin/auctions, /admin/commissions,

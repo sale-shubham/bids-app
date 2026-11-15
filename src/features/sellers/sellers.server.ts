@@ -11,6 +11,7 @@ export interface SellerProfile {
   ratingAvg: number | null;
   ratingCount: number;
   verified?: boolean;
+  followerCount?: number;
 }
 
 /** Calls notFound() when the member does not exist. */

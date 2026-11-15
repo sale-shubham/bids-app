@@ -7,6 +7,7 @@ import { getSellerServer } from '@/features/sellers/sellers.server';
 import { ReportButton } from '@/features/reports/components/report-button';
 import { RatingSummary } from '@/features/reviews/components/star-rating';
 import { SellerReviews } from '@/features/reviews/components/seller-reviews';
+import { FollowButton } from '@/features/follows/components/follow-button';
 import { SellerAuctions } from '@/features/sellers/components/seller-auctions';
 
 type Props = { params: Promise<{ id: string }> };
@@ -50,6 +51,7 @@ export default async function SellerPage({ params }: Props) {
               <Gavel className="h-4 w-4" aria-hidden /> {seller.activeAuctions} active
             </li>
           </ul>
+          <FollowButton sellerId={seller.id} sellerRole={seller.role} initialFollowerCount={seller.followerCount ?? 0} showCount />
           <ReportButton targetType="MEMBER" targetId={seller.id} subject="this seller" ownerId={seller.id} />
         </div>
       </section>
