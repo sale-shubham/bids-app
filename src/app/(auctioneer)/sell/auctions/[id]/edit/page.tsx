@@ -17,7 +17,7 @@ export default function EditAuctionPage() {
   let body: React.ReactNode;
   if (isPending) body = <Skeleton className="h-96 w-full" />;
   else if (error || !auction) body = <Notice text={auctionErrorMessage(error, 'Could not load this auction')} />;
-  else if (member && member.id !== auction.seller.id && member.role !== 'SUPER_ADMIN') body = <Notice text="You can only edit your own auctions." />;
+  else if (member && member.id !== auction.seller.id) body = <Notice text="You can only edit your own auctions." />;
   else if (auction.bidCount > 0) body = <Notice text="This auction already has bids, so it can no longer be edited." />;
   else if (auction.status === 'ENDED' || auction.status === 'CANCELLED') body = <Notice text="This auction has ended and cannot be edited." />;
   else body = <AuctionForm auction={auction} />;

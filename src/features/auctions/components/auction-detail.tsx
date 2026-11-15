@@ -51,7 +51,7 @@ export function AuctionDetailView({ initial, serverTime }: { initial: AuctionDet
     });
   }, [initial]);
 
-  const isOwner = !!member && (member.id === auction.seller.id || member.role === 'SUPER_ADMIN');
+  const isOwner = !!member && member.id === auction.seller.id; // SUPER_ADMIN manages auctions under /admin, not /sell
   const canManage = isOwner && auction.bidCount === 0 && auction.status !== 'ENDED' && auction.status !== 'CANCELLED';
   const hasBids = auction.bidCount > 0;
 
@@ -68,7 +68,7 @@ export function AuctionDetailView({ initial, serverTime }: { initial: AuctionDet
     });
 
   return (
-    <div className="grid gap-8 lg:grid-cols-2">
+    <div className="grid gap-8 @3xl/content:grid-cols-2">
       <AuctionGallery images={auction.images} title={auction.title} />
 
       <div className="space-y-5">
@@ -78,7 +78,7 @@ export function AuctionDetailView({ initial, serverTime }: { initial: AuctionDet
             <Badge variant="outline">{auction.condition === 'NEW' ? 'New' : 'Used'}</Badge>
             <Badge variant="secondary">{auction.category}</Badge>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{auction.title}</h1>
+          <h1 className="text-2xl font-bold tracking-tight @lg/content:text-3xl">{auction.title}</h1>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
             <Countdown startTime={auction.startTime} endTime={auction.endTime} status={auction.status} className="text-sm" />
             {(auction.status === 'LIVE' || auction.status === 'SCHEDULED') && <LiveIndicator />}
@@ -134,11 +134,11 @@ export function AuctionDetailView({ initial, serverTime }: { initial: AuctionDet
         )}
       </div>
 
-      <div className="lg:col-span-2">
+      <div className="@3xl/content:col-span-2">
         <BidHistory auctionId={auction.id} recentBids={auction.recentBids ?? []} bidCount={auction.bidCount} />
       </div>
 
-      <section className="space-y-3 lg:col-span-2" aria-labelledby="description">
+      <section className="space-y-3 @3xl/content:col-span-2" aria-labelledby="description">
         <h2 id="description" className="text-lg font-semibold">
           Description
         </h2>

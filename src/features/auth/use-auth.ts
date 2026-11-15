@@ -3,19 +3,16 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { resetAuthFlags } from '@/lib/api-client';
 import { useAuthStore, type AuthMember, type Role } from '@/store/auth-store';
-import { homeFor, safeNextPath } from '@/constants/routes';
+import { destinationFor } from '@/constants/routes';
 import * as authApi from './auth.api';
 import { syncAppBadge } from '@/lib/push';
 
 // Post-login target. `?next=` is set by the edge gate / client guards when they
-// bounce someone off a page they asked for. SUPER_ADMIN never follows it.
+// bounce someone off a page they asked for; only member roles follow it
+// (destinationFor, shared with the edge gate). SUPER_ADMIN always lands on /admin.
 function landingFor(role: Role) {
-  if (role === 'SUPER_ADMIN') return homeFor(role);
-  const next =
-    typeof window === 'undefined'
-      ? null
-      : safeNextPath(new URLSearchParams(window.location.search).get('next'));
-  return next ?? homeFor(role);
+  const next = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('next');
+  return destinationFor(role, next);
 }
 
 // Shared by login and signup-verify: both end with the auth cookies set.

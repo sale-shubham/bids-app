@@ -1,147 +1,162 @@
 # API client
 
-Single entry point for all backend calls: the `api` axios instance in `src/lib/api-client.ts`. Handles base-URL resolution, transparent single-flight refresh on `401`, and error-message normalization for the UI.
+Single entry point for all browser-side backend calls: the `api` axios instance in `src/lib/api-client.ts`. It sets the base URL, does a transparent single-flight refresh on `401`, ends dead or suspended sessions, and turns API errors into UI text.
 
 ## Purpose
 
-> **Never call `fetch()` directly to the API and never import raw `axios` in feature code.** Always go through `api` (or the per-feature `*.api.ts` wrappers that use it). The one exception is the internal `axios.post('/auth/refresh')` inside `doRefresh()`, which deliberately bypasses the instance to avoid an interceptor loop.
+> **Never call `fetch()` to the API and never create another axios instance in feature code.** Always go through `api` (or the per-feature `*.api.ts` wrappers that use it). Deliberate exceptions:
+> - `doRefresh()` posts to `/auth/refresh` with bare `axios`, so the refresh call cannot re-enter the interceptor.
+> - `src/features/uploads/uploads.api.ts` PUTs file bytes to the presigned S3 URL with `fetch` / XHR, not `api`: extra headers or credentials would break the S3 signature. (It imports `axios` only for `axios.isAxiosError`.)
+> - Server components use `serverFetch` / `serverGet` from `src/lib/server-api.ts` (see below), never `api`.
 
 ### Auth model
 
-- **Both access and refresh tokens live in httpOnly cookies set by the backend** (`nb_at`, `nb_rt` — `bids-api` `src/core/http/cookies.ts`). No token is ever read, held, or attached by frontend JS — there is no in-memory token and no `Authorization` header. `withCredentials: true` makes the browser send both cookies automatically on every request (including the refresh call).
-- This means a hard reload needs no client-side restore step for the token itself — the cookie is already there. `AuthBootstrap` still calls `fetchMe()` on mount to hydrate `member` into the Zustand store (the cookie alone doesn't tell the UI who's logged in).
-- `src/proxy.ts` (edge, see `readme/flows/auth.md`) independently verifies the same `nb_at` cookie with `jose` + a server-only `JWT_SECRET` (must equal the backend's) to redirect by role before a protected page ever renders — this is separate from and in addition to the axios-level refresh flow below.
+- **Both tokens live in httpOnly cookies set by the backend** (`nb_at` access, `nb_rt` refresh). Frontend JS never reads, holds or attaches a token: there is no `Authorization` header. `withCredentials: true` makes the browser send both cookies on every request, including the refresh call.
+- A hard reload needs no token restore step, the cookies are already there. `AuthBootstrap` still runs `fetchMe()` (`GET /members/me`, query key `['me']`) to put the member into the zustand store, because the cookie alone does not tell the UI who is logged in. See `readme/methods/stores.md`.
+- `src/proxy.ts` (edge) separately verifies the same `nb_at` cookie with `jose` and the server-only `JWT_SECRET` (must equal the backend's), refreshes server-to-server via `POST ${serverApiOrigin()}/auth/refresh` when it has expired, and redirects by role before a protected page renders. That is independent of, and in addition to, the axios-level refresh below.
 
 ### Configuration
 
-`NEXT_PUBLIC_ENABLE_SW=1` (optional, dev only, `.env.example`) registers the service worker under `next dev` so Web Push can be tried locally — not an API-client setting, listed here with the other env vars; see `readme/flows/push-notifications.md`.
-
 | Setting | Value | Source |
 |---|---|---|
-| `baseURL` | `API_ORIGIN` = `NEXT_PUBLIC_API_URL` (default `http://localhost:4000`) — always the API directly | `API_BASE` const, from `src/constants/api.ts` |
+| `baseURL` | `API_ORIGIN` | `src/constants/api.ts` |
 | `withCredentials` | `true` | hard-coded (cookie auth) |
 | default `Content-Type` | `application/json` | instance headers |
+| timeout | none | pass `{ timeout }` per call when needed (e.g. `verifyPayment`) |
 
-`NEXT_PUBLIC_API_URL` is the **absolute backend origin** (default `http://localhost:4000`), exported once as `API_ORIGIN` (`src/constants/api.ts`) and used by the browser (this instance), `src/proxy.ts`'s server-side refresh and the service worker. There is no same-origin proxy (removed 2026-11-03): the browser calls the API directly — deployed, on the app's own site (e.g. `https://api.dev.example.com`), so the `nb_at`/`nb_rt` cookies stay first-party, and CORS allows the app origin with credentials. Never read `process.env` at a call site — `src/proxy.ts` used to interpolate it raw and would fetch `"undefined/auth/refresh"` if the var was missing. Backend serves routes at the root (no `/api/v1` prefix). Requirements, env vars, LAN testing and troubleshooting: [`readme/flows/api-connection.md`](../flows/api-connection.md). When adding/changing an env var, update `.env.example` and this file (per `docs/DOC_SYNC.md`).
+`src/constants/api.ts` exports:
 
-**Image/asset URLs** — uploaded images are stored on S3 and served via CDN. `assetUrl(key)` (`src/lib/assets.ts`) builds the public URL: it passes absolute `http(s)://` values through unchanged (new uploads persist the **full CDN URL** in the DB) and prefixes any bare object key with `NEXT_PUBLIC_UPLOADS_BASE_URL` (fallback: first `NEXT_PUBLIC_IMAGE_ORIGINS` entry). Use it for every `<img src>` rendering a stored key/url — never hardcode `/uploads/${key}`.
+- `API_ORIGIN`: `NEXT_PUBLIC_API_URL` with trailing slashes dropped, default `http://localhost:4000`. Used by the axios instance and passed to the service worker as `/sw.js?api=` (`src/components/common/sw-register.tsx`). Never read `process.env.NEXT_PUBLIC_API_URL` at a call site.
+- `API_IS_RELATIVE`: `true` when `API_ORIGIN` is a same-origin path such as `/api` (proxy mode).
+- `serverApiOrigin()`: the absolute origin for server-side code (RSC fetches, `src/proxy.ts`). Returns `API_ORIGIN` when it is absolute; in proxy mode returns `API_PROXY_TARGET` (warns and falls back to `http://localhost:4000` if that is unset). Never import it into client code.
+
+Two deployment modes (details in `readme/flows/deployment.md`):
+
+1. **Custom domain**: `NEXT_PUBLIC_API_URL` is the API's absolute URL on the app's own site (e.g. `https://api.example.com`), so the auth cookies stay first-party. The API's CORS must allow the app origin with credentials.
+2. **Same-origin proxy**: `NEXT_PUBLIC_API_URL=/api` plus server-only `API_PROXY_TARGET` (the raw API Gateway URL). `next.config.ts` rewrites `/api/:path*` to `${API_PROXY_TARGET}/:path*`.
+
+The backend serves routes at the root (`/auth/login`, `/auctions`, ...), with no `/api/v1` prefix.
+
+Environment variables (`.env.example`). `NEXT_PUBLIC_*` values are inlined at build time. When adding or changing one, update `.env.example` and this table (`docs/DOC_SYNC.md`).
+
+| Variable | Scope | Used by |
+|---|---|---|
+| `NEXT_PUBLIC_API_URL` | browser | `API_ORIGIN` (axios, service worker), `next.config.ts` |
+| `API_PROXY_TARGET` | server only, optional | `next.config.ts` `/api` rewrite, `serverApiOrigin()` |
+| `JWT_SECRET` | server only | `src/proxy.ts` (`jose` verify of `nb_at`) |
+| `NEXT_PUBLIC_SITE_URL` | browser | `SITE_URL` in `src/lib/site.ts` (canonical links, OG, sitemap, robots); live `https://bidsapp.shubsale.in` |
+| `NEXT_PUBLIC_WEBSITE_URL` | browser | `WEBSITE_URL` / `websiteUrl()` in `src/constants/website.ts` (absolute links to the website's About / How it works / Contact); default `http://localhost:3000`, live `https://noblebids.shubsale.in` |
+| `NEXT_PUBLIC_IMAGE_ORIGINS` | browser | `next.config.ts` `next/image` remote hosts; fallback base for `assetUrl()` |
+| `NEXT_PUBLIC_UPLOADS_BASE_URL` | browser | base URL for `assetUrl()` |
+| `NEXT_PUBLIC_ENABLE_SW` | dev only, optional | `=1` registers the service worker under `next dev` (`sw-register.tsx`), see `readme/flows/push-notifications.md` |
+
+**Image URLs.** `assetUrl(key)` (`src/lib/assets.ts`) passes absolute `http(s)://` values through unchanged (the presign response's `url`, which is what new uploads store) and prefixes a bare object key with `NEXT_PUBLIC_UPLOADS_BASE_URL` (fallback: the first `NEXT_PUBLIC_IMAGE_ORIGINS` entry). Use it when rendering a stored key; never hardcode a CDN path.
 
 ## Methods
 
 ### `api` (axios instance)
 
-The configured singleton. Use its `.get/.post/.patch/.delete` methods. One interceptor is registered at import time:
+The configured singleton. Use `.get/.post/.put/.patch/.delete`. One response interceptor is registered at import time. Successful responses pass through unchanged. On an error it reads `status`, the request `url` and the body's `error.code`:
 
-**Response interceptor** — passes successful responses through unchanged. On error it inspects `status`, the originating `url`, and the error body's `error.code`:
+- **`error.code === 'ACCOUNT_SUSPENDED'`** is checked first (it can arrive on any request, and refreshing would not help): calls `forceSuspended()` and rejects.
+- **Refresh and retry** when all of these hold: `status === 401`, the request has not been retried yet (`!original._retry`), the URL does not match `NO_REFRESH_URL` (`/auth/login`, `/auth/signup*`, `/auth/refresh`, `/auth/password/forgot`, `/auth/password/reset`), and the code is not `INVALID_CREDENTIALS` (a wrong password is an answer, not an expired token). Other `/auth/*` calls (sessions, `password/change`, `logout`, `logout-all`) are authenticated and do refresh.
+  1. Sets `original._retry = true`, so a request is retried at most once.
+  2. Single-flight: `refreshing ??= doRefresh().finally(() => (refreshing = null))`. Concurrent 401s all await the same refresh.
+  3. `'renewed'`: replays the request with `api(original)`. Nothing to attach, the backend rotated the cookies via `Set-Cookie`.
+  4. `'rejected'`: calls `forceLogout()`.
+  5. `'unreachable'` (no response, or a 5xx): changes nothing. The original 401 is stamped `authUnreachable = true` and rejected, so callers retry instead of ending a session over a dropped connection (the installed-PWA cold start, `readme/flows/pwa.md`).
+- Everything else is re-thrown with `Promise.reject(error)`, so the calling hook or `mutate()` lands in `onError`.
 
-- If `error.code === 'ACCOUNT_SUSPENDED'` (2026-09-12) — checked **first**, before the 401 handling below (this arrives as a 403, and retrying via refresh wouldn't help since the account itself is suspended, not the token): calls `forceSuspended()` and rejects. See `readme/flows/auth.md`'s `ACCOUNT_SUSPENDED` note.
-- If `status === 401` **and** the request has not already been retried (`!original._retry`) **and** the URL does **not** contain `/auth/`:
-  1. Mark `original._retry = true` (so a request is retried at most once).
-  2. Kick off a **single-flight** refresh: `refreshing ??= doRefresh().finally(() => (refreshing = null))`. Concurrent 401s all `await` the same in-flight `refreshing` promise instead of each firing their own refresh.
-  3. If refresh succeeds, **replay** the original request via `api(original)` — no header to set, the backend already rotated the `nb_at`/`nb_rt` cookies via `Set-Cookie` and the browser applies them automatically.
-  4. `doRefresh()` returns `'renewed' | 'rejected' | 'unreachable'`. `'renewed'` retries the original request. Only `'rejected'` (the backend refused) calls `forceLogout()`. `'unreachable'` (no response at all, or a 5xx) changes nothing: the original 401 is stamped `authUnreachable` and rejected, so callers retry instead of ending a session over a dropped connection — the installed-PWA cold-start case (see `readme/flows/pwa.md`).
-- The `/auth/` exclusion prevents an infinite loop: a 401 from `/auth/login`, `/auth/refresh`, etc. must surface to the caller, not trigger another refresh.
-- All other errors (and failed refreshes) are re-thrown via `Promise.reject(error)` so the calling react-query hook lands in `onError`.
+### `doRefresh()` (internal)
 
-### `forceLogout()` (internal, not exported)
+`axios.post(`${API_BASE}/auth/refresh`, {}, { withCredentials: true })` with bare `axios`. Returns `Promise<'renewed' | 'rejected' | 'unreachable'>`: no response or a 5xx is `'unreachable'`, any other error status is `'rejected'`.
 
-Called when `doRefresh()` fails — the refresh token itself is dead (expired/revoked/deactivated member), so the backend's `refresh` controller has already cleared the `nb_at`/`nb_rt` cookies server-side (`bids-api`'s `auth.controller.ts`). This function wipes the client-side mirror of that dead session so nothing stale lingers in memory:
+### `forceLogout()` (internal)
 
-1. **`loggedOut` module-level flag checked/set first, before anything else.** Must come before `queryClient.clear()` — see the gotcha below. Resets to `false` naturally on the next real page load (fresh JS module instance), so it never blocks a legitimate future logout.
-2. **Public-route bail-out** — `isPublicRoute(window.location.pathname)` (`PUBLIC_PREFIXES` in `src/constants/routes.ts`, currently `/pages/*`). Those pages are reachable logged-out by design, so a 401 there means "no session", not "session died, eject the user". Clears the zustand store mirror and **returns**: no `queryClient.clear()` (the cache holds the page's own public `['legal-page']` data) and no navigation.
-3. `useAuthStore.getState().clear()` — zustand's non-hook access, since this runs inside an axios interceptor, outside any component.
-4. `queryClient.clear()` — the same shared singleton instance `<Providers>` passes to `QueryClientProvider` (`src/lib/query-client.ts` exports it directly now, not via a per-mount `useState(makeQueryClient)` factory, precisely so this module can reach it too).
-4a. `syncAppBadge(0)` (`src/lib/push.ts`, 2026-11-03) — the dead session took its push subscription with it server-side, so the installed app's icon badge is cleared too. `forceSuspended()` does the same. See `readme/flows/push-notifications.md`.
-5. `window.location.href = '/login'` — a hard navigation, not `router.push()` (no router instance available here); guarded by `typeof window === 'undefined'` so it's a no-op if this code ever runs during SSR.
+Runs when the refresh was rejected: the refresh token is dead and the backend's refresh handler has already cleared the cookies. It wipes the client-side mirror of the session:
 
-### `forceSuspended()` (internal, not exported, 2026-09-12)
+1. Returns at once during SSR or when the module-level `loggedOut` flag is set.
+2. **Public-route bail-out.** If `isPublicRoute(window.location.pathname)` (any `PUBLIC_PREFIXES` entry in `src/constants/routes.ts`: `/auctions`, `/leaderboard`, `/sellers`, `/pages`, `/suspended`; these render in the guest shell), it only calls `useAuthStore.getState().clear()` and returns. A 401 there means "no session", so the query cache (which holds the page's public data) is kept and there is no navigation.
+3. Sets `loggedOut = true` (before clearing the cache, see the gotcha below).
+4. `useAuthStore.getState().clear()`, then `queryClient.clear()` (the shared singleton from `src/lib/query-client.ts`, the same instance `<Providers>` passes to `QueryClientProvider`).
+5. `syncAppBadge(0)` (`src/lib/push.ts`): the dead session took its push subscription with it, so the app-icon badge is cleared.
+6. Hard navigation to `/login?next=<current path + query>` (no `next` when already on an auth route). A full-page navigation, not `router.push()`, because this runs outside React.
 
-Sibling to `forceLogout()` above, triggered instead of it when `error.code === 'ACCOUNT_SUSPENDED'`. Own `suspended` module-level flag (same idempotency reasoning as `loggedOut`), clears the store + query cache the same way, but hard-navigates to `/suspended` instead of `/login` — a distinct terminal state (member is suspended, not merely logged out) with its own static screen. Does not reuse `forceLogout()`'s public-route bail-out; `/suspended` itself is registered in `PUBLIC_PREFIXES` so it's never redirected away from regardless.
+**Gotcha: why the `loggedOut` flag.** `queryClient.clear()` wipes the entry behind `AuthBootstrap`'s still-mounted `['me']` query, which refetches at once, before the `window.location.href` navigation takes effect. That refetch 401s, its refresh is rejected, and `forceLogout()` re-enters while still on the old page, so a pathname check cannot catch it. The flag makes the function idempotent.
 
-**Gotcha — why the `loggedOut` flag exists, not just a pathname check:** `queryClient.clear()` wipes the cache entry backing `AuthBootstrap`'s still-mounted `['member-me']` `useQuery`, which makes it refetch **immediately and synchronously** — before `window.location.href`'s navigation has actually taken effect (assigning `location.href` doesn't unload the page instantly; JS keeps running/re-rendering until the browser gets around to it). That refetch 401s, its own silent refresh 401s, and `forceLogout()` re-enters — still on the *original* page, not `/login` yet, so a `window.location.pathname === '/login'` guard alone doesn't catch it (an earlier version of this fix tried exactly that and still looped). The `loggedOut` flag makes the whole function idempotent regardless of pathname, which is what actually stops it.
+Route classes live only in `src/constants/routes.ts`, imported by `proxy.ts`, `AuthBootstrap` and this file, so the edge gate, the bootstrap and `forceLogout()` cannot disagree about which pages are public.
 
-**The actual root cause was one layer up, though:** `AuthBootstrap` used to call `fetchMe()` unconditionally on *every* page, including `/login` itself — so even after the `loggedOut` fix, landing on `/login` with no cookie still 401ed once, refreshed-401ed once, and hard-redirected to `/login` again (a real full-page reload, not a loop, but a needless one). `AuthBootstrap` now skips `fetchMe()` entirely on guest-only routes (`AUTH_ROUTES`, see `readme/flows/auth.md`'s "Auth bootstrap" section), so `forceLogout()`'s guards above are defense-in-depth for other authenticated pages' dead sessions, not the thing that stops the `/login` case — that's fixed by never calling an authenticated endpoint from a guest page at all.
+### `forceSuspended()` (internal)
 
-**The same bug then recurred on `/pages/*`** (admin-managed legal copy, `readme/flows/legal-pages.md`), because the route lists were *duplicated* — `proxy.ts` and `AuthBootstrap` each had their own copy, so adding a public route to the edge gate's "falls through untouched" set didn't add it to the client's skip set. A logged-out visitor got the page, then `fetchMe()` 401 → refresh-401 → `forceLogout()` → `/login`. Two changes, both needed:
+Sibling of `forceLogout()` for `ACCOUNT_SUSPENDED`. Own `suspended` flag (same idempotency reason), clears the store and the query cache, calls `syncAppBadge(0)`, then hard-navigates to `/suspended`. It has no public-route bail-out; `/suspended` is itself in `PUBLIC_PREFIXES`.
 
-- All route tables now live in one dependency-free module, `src/constants/routes.ts`, imported by `proxy.ts`, `AuthBootstrap` **and** this file. There is no second copy to forget.
-- `PUBLIC_PREFIXES` is a distinct class from `AUTH_ROUTES`: guest-*only* routes redirect a logged-in user away, public routes redirect nobody. `AuthBootstrap` skips `fetchMe()` on both; `forceLogout()` bails without navigating on public ones (step 2 above) so any *other* authenticated call made from a public page can't eject the visitor either.
+### `resetAuthFlags()`
 
-Net effect: a dead refresh token now behaves exactly like clicking "Log out" (`useLogout` in `use-auth.ts`) — same two cleanup calls — except triggered automatically the moment any authenticated request's silent refresh attempt fails, instead of requiring the user to notice and click something.
-
-### `doRefresh()` (internal, not exported)
-
-Performs the refresh round-trip. Calls `axios.post('${API_BASE}/auth/refresh', {}, { withCredentials: true })` **using bare `axios`** (not the `api` instance — avoids re-entering the interceptor). Returns `true`/`false`; the backend's `Set-Cookie` response headers do the actual work of rotating the token cookies.
-
-- **Returns:** `Promise<boolean>`.
+Exported. Resets `loggedOut` and `suspended`. A successful login or signup verify navigates with `router.replace` (no page reload), so `useSignedIn()` in `use-auth.ts` calls this to make a later session death handled again.
 
 ### `isUnreachableError(err)`
 
-Exported. `true` when an error says nothing about whether the member is signed in: no response, a 5xx, or a 401 stamped `authUnreachable` because its refresh could not reach the backend. `AuthBootstrap` uses it to retry `['member-me']` (up to 3, with backoff, plus refetch on focus/reconnect) and to stay uninitialized instead of clearing the member.
+Exported. `true` when an error says nothing about whether the member is signed in: no response, a 5xx, or a 401 stamped `authUnreachable`. `AuthBootstrap` uses it to retry `['me']` (up to 3 times with backoff, plus refetch on focus and reconnect) and to stay uninitialized instead of clearing the member.
+
+### `apiErrorCode(err)` / `apiErrorDetails(err)`
+
+Exported. Read `error.code` (`string | undefined`) and `error.details` (an object, else `undefined`) from an axios error's body; `undefined` for non-axios values. Used for code-specific UI, e.g. login's `EMAIL_NOT_VERIFIED` branch reads `details.resendAfterSec`, and `minBidFromError()` reads `details.minBidPaise` on `BID_TOO_LOW`.
 
 ### `apiErrorMessage(err, fallback?)`
 
-Normalizes any thrown value into a user-facing string for `toast.error(...)`.
+Normalizes any thrown value into a user-facing string.
 
-- **Params:**
-  - `err: unknown` — the caught error.
-  - `fallback?: string` — default `'Something went wrong'`.
-- **Returns:** `string`. For an axios error, returns `err.response?.data?.error?.message ?? err.message ?? fallback` (i.e. it reads the backend's structured `{ error: { message } }` envelope first). For any non-axios value, returns `fallback`.
-- **Usage:** every mutation `onError` across the feature hooks does `toast.error(apiErrorMessage(e))` (some pass a feature-specific fallback, e.g. `apiErrorMessage(e, 'Payment failed')`).
+- **Params:** `err: unknown`; `fallback?: string`, default `'Something went wrong'`.
+- **Returns:** for an axios error with no response, `"Can't reach the server. Check your connection and try again."`; for an axios error with a response, `response.data.error.message ?? err.message ?? fallback`; for any other `Error` with a message, that message; otherwise `fallback`.
+- **Feature error maps** build on it: `authErrorMessage` (`auth.errors.ts`), `auctionErrorMessage`, `bidErrorMessage`, `commissionErrorMessage` and `contactErrorMessage` map known `error.code`s to friendly copy and fall back to `apiErrorMessage`.
 
 ## Response envelope conventions
 
-The backend wraps responses, and feature `*.api.ts` files unwrap them in **two distinct shapes** — match the one the endpoint uses:
+Every bids-api body is `{ success, data }`; errors are `{ success: false, error: { code, message, details } }`. Feature `*.api.ts` / `*.parse.ts` files unwrap them:
 
-- **Single object / detail:** `res.data.data` — e.g. `fetchMe`, `fetchMySubscription`, `createListing`.
-- **Offset-paginated list:** the **whole** `res.data`, typed as `{ data: T[]; meta: { total, page, pageSize, totalPages } }` — e.g. `fetchMembers`, `fetchMyListings`, `fetchReviewListings`, `fetchMemberEdits`, `fetchAdminSubscriptions`. UI via `<ListPagination>`.
-- **Cursor-paginated list:** the **whole** `res.data`, typed as `{ data: T[]; meta: { nextCursor: string | null } }` — the buyer catalog **search** (`meta.total` too) and `fetchAuditLogs` (backend route pending). 
+- **Single object:** `res.data.data`, often one level deeper, e.g. `fetchMe` and `login` return `res.data.data.member`, `fetchAuction` decodes `data.auction`.
+- **Paginated list:** `{ success, data: T[], meta: { total, page, pageSize, totalPages } }`. `parsePaged()` (`src/lib/paged.ts`) decodes it into `Paged<T> = { items, meta }` with safe defaults, and `nextPagedParam()` is the matching `getNextPageParam`. Used by bids, commissions, watchlist, notifications and admin lists.
+- **Auction lists** (`GET /auctions`, `/auctions/mine`) are decoded by `parseAuctionPage()` (`auctions.parse.ts`), the only place that knows where `serverTime` sits. `meta` may carry either the offset fields or `nextCursor`; `nextAuctionPage()` (`auctions.filters.ts`) handles both. Every decoded `serverTime` is pushed into the live store (`syncServerTime`) so countdowns follow the server clock.
 
-> **Offset** (`page`/`pageSize` → numbered `ListPagination`) is the standard for all admin/member list tables and feeds. **Keyset** (`meta.nextCursor`) remains only on full-text catalog search. Search/filter happens server-side; `?q=`/`search`/`status` params pass through. See `docs/PAGINATION.md`.
+Filtering and search happen server-side; pass `status`, `q`, `tab`, `page`, `pageSize` as `params`. See `docs/PAGINATION.md`.
+
+### Server-side fetches (`src/lib/server-api.ts`)
+
+For RSC and `generateMetadata` only (`*.server.ts` files, `sitemap.ts`). `serverFetch(path, { params, revalidate, notFoundOn404 })` fetches `${serverApiOrigin()}${path}`, uses `cache: 'no-store'` unless `revalidate` is given, calls Next's `notFound()` on a 404 by default, and throws `ServerApiError(status, code, message)` on other failures. `serverGet<T>()` returns `body.data`. These requests carry no cookies, so they only reach public endpoints.
 
 ## Usage
 
 ```ts
 import { api, apiErrorMessage } from '@/lib/api-client';
+import { parsePaged } from '@/lib/paged';
 
-// GET with query params
-const res = await api.get('/listings/mine', { params: { status, cursor } });
-return res.data as { data: MyListing[]; meta: { nextCursor: string | null } };
+// GET with query params, paginated envelope
+const res = await api.get('/commissions/mine', { params: { status, page, pageSize: 20 } });
+return parsePaged<CommissionDTO>(res.data);
 
 // POST returning a single object
-const created = (await api.post('/listings', payload)).data.data;
+const res2 = await api.post(`/auctions/${auctionId}/bids`, { amountPaise });
 
-// multipart upload (override Content-Type)
-const form = new FormData();
-form.append('file', file);
-await api.post('/uploads/image', form, { headers: { 'Content-Type': 'multipart/form-data' } });
+// per-call timeout (the instance has none)
+await api.post('/payments/verify', input, { timeout: 20_000 });
+
+// in a component
+mutation.mutate(values, { onError: (e) => toast.error(apiErrorMessage(e, 'Could not save')) });
 ```
 
 ## Notes
 
-- `api` holds no token state at all now — both tokens are httpOnly cookies the backend manages via `Set-Cookie`. `auth.api.verifyOtp()`/`signupVerify()`/`logout()` just call the endpoint and return/ignore the body; `use-auth`'s `useVerifyOtp`/`useSignupVerify` write the member into the Zustand store.
-- `src/lib/device-info.ts` (`getDeviceInfo()`) is a separate, tiny module — not part of `api-client.ts` — that parses `navigator.userAgent` (`ua-parser-js`) into `{ browser, os, device, type }`, sent by `auth.api.ts`'s `verifyOtp`/`signupVerify` as `deviceInfo`. The `deviceId` used for the backend's 2-device-per-Member session cap is server-generated/reused via an httpOnly `dvid` cookie (not this module, not localStorage). See `readme/flows/auth.md`.
-- `AuthBootstrap` (`src/providers/auth-bootstrap.tsx`) calls `fetchMe()` (`GET /members/me`) on mount and route change — **except** on `AUTH_ROUTES` (`/login`, `/signup`, `/`) and `PUBLIC_PREFIXES` (`/pages/*`), where the query is disabled entirely. The httpOnly cookies survive a reload on their own; if the access cookie happens to be expired, that request 401s, the response interceptor silently refreshes, and `fetchMe()` is replayed. The member is then written to the store and `initialized` is set. `AuthBootstrap` also does `void api;` to guarantee the module (and thus its interceptor) is imported.
+- `api` holds no token state. `auth.api.ts`'s `login()` and `signupVerify()` return the member from the body; `use-auth.ts`'s `useSignedIn()` writes it into the store and invalidates `['me']`. `logout()` / `logoutAll()` just call the endpoint.
+- `getDeviceInfo()` (`src/lib/device-info.ts`, separate from this module) parses `navigator.userAgent` with `ua-parser-js` into `{ browser, os, device, type }`, sent as `deviceInfo` by `login()` and `signupVerify()`. The device id behind the per-member session cap (`deviceLimit`) is server-generated via an httpOnly `dvid` cookie, not this module.
+- `AuthBootstrap` (`src/providers/auth-bootstrap.tsx`) skips `fetchMe()` only on guest-only routes (`AUTH_ROUTES`: `/login`, `/signup`, `/forgot-password`, `/reset-password`). Public pages do fetch, so the header can show the user menu; a 401 there just means logged out (and `forceLogout()`'s public-route bail-out keeps the visitor on the page).
 
 ### Reference files
 
 - `src/lib/api-client.ts` (canonical)
+- `src/constants/api.ts`, `src/constants/routes.ts`
+- `src/lib/server-api.ts`, `src/lib/paged.ts`, `src/lib/assets.ts`
 - `src/providers/auth-bootstrap.tsx`
-- `src/features/auth/auth.api.ts`
-- `src/features/*/*.api.ts` (per-feature wrappers)
-- `src/proxy.ts` — edge-side counterpart, verifies the same `nb_at` cookie independently (see `readme/flows/auth.md`)
+- `src/features/auth/auth.api.ts`, `src/features/*/*.api.ts`, `src/features/*/*.errors.ts`
+- `src/proxy.ts` (edge-side counterpart, verifies the same `nb_at` cookie)
 
-*Last updated: 2026-11-03 (`/api` proxy removed — `API_ORIGIN` is `NEXT_PUBLIC_API_URL` for every caller; `NEXT_PUBLIC_BROWSER_API_URL` and `API_SERVER_ORIGIN` gone)*
-*Previously: 2026-11-03 (`forceLogout()`/`forceSuspended()` clear the app-icon badge; `NEXT_PUBLIC_ENABLE_SW` noted)*
-*Previously: 2026-10-19 (`API_ORIGIN` = `NEXT_PUBLIC_BROWSER_API_URL` when set — deployed browsers call the API directly, skipping the proxy's extra serverless hop/cold start; `/api` proxy kept for local/LAN dev)*
-*Previously: 2026-09-24 (`baseURL` is `/api`, was `/api/backend` — see `readme/flows/api-proxy.md`)*
-*Previously: 2026-09-24 (`baseURL` is always `/api/backend`: the proxy is now a route handler in dev and production, not a dev-only rewrite — see `readme/flows/api-proxy.md`. `DEV_API_PROXY_PATH` removed.)*
-*Previously: 2026-09-24 (ported from `unikorncoatings_app`: `doRefresh()` is tri-state and only `'rejected'` calls `forceLogout()`; new exported `isUnreachableError()`; `baseURL` from `API_ORIGIN` in new `src/constants/api.ts` (`API_SERVER_ORIGIN`, `DEV_API_PROXY_PATH`, `API_ORIGIN`); dev-only `/api/backend` proxy; refresh `console.log`/`console.error` removed)*
-*Previously: 2026-09-12 (new `forceSuspended()` + `ACCOUNT_SUSPENDED` interceptor branch — see the new section above and `readme/flows/auth.md`)*
-*Previously: 2026-07-31 (`forceLogout()` gained a `PUBLIC_PREFIXES` bail-out — it no longer navigates when the 401 happened on a public page like `/pages/*`; route tables de-duplicated into `src/constants/routes.ts`, shared with `proxy.ts` + `AuthBootstrap`, since the duplication is what let `/pages/*` be public at the edge but still eject to `/login` client-side)*
-*Previously: 2026-07-24 (wallet/points removed — updated the response-envelope example list, which cited `fetchBalance`/`fetchLedger`/`fetchUnlocked`/`fetchAdminTransactions`, all now gone)*
-*Previously: 2026-07-23 (root-caused the `/login` redirect loop to `AuthBootstrap` calling `fetchMe()` unconditionally on every page — it now skips the call entirely on `GUEST_ROUTES`, see `readme/flows/auth.md`; `forceLogout()`'s `loggedOut` flag stays as defense-in-depth for dead sessions on authenticated pages)*
-*Previously: 2026-07-23 (fixed the `me`/`refresh` 401 loop for real this time: a pathname-based guard wasn't enough since `queryClient.clear()` retriggers `AuthBootstrap`'s `useQuery` synchronously, before the redirect's navigation takes effect and while still on the original page — replaced with a module-level `loggedOut` idempotency flag, set before any cleanup runs)*
-*Previously: 2026-07-23 (first attempt: `forceLogout()` no-op'd its redirect if already on `/login` — insufficient, see above)*
-*Previously: 2026-07-23 (added `forceLogout()` — a failed silent refresh now clears the Zustand auth store + react-query cache and hard-redirects to `/login`, instead of just rejecting the original request and leaving stale state in memory; `src/lib/query-client.ts` now exports a shared `queryClient` singleton instead of only a `makeQueryClient()` factory, so this module and `<Providers>` reference the same instance)*
-*Previously: 2026-07-22 (removed the in-memory access token / `Authorization: Bearer` header entirely — the backend already sets `nb_at`/`nb_rt` as httpOnly cookies and `withCredentials` was already sending them, so the manual header was dead weight; `src/proxy.ts` now verifies the real `nb_at` cookie via `jose`, replacing an earlier client-set role-hint cookie; no separate `proxy.ts` — this project is on Next.js 15, which only auto-runs `proxy.ts`)*
+*Last updated: 2026-11-15 (rewritten against the current code: deployment modes and `API_PROXY_TARGET`, `NO_REFRESH_URL` / `INVALID_CREDENTIALS`, `resetAuthFlags`, `apiErrorCode` / `apiErrorDetails`, `['me']` key, `server-api.ts`, real envelopes and env vars)*

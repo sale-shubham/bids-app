@@ -35,9 +35,3 @@ export async function getLegalDocServer(slug: string): Promise<LegalDoc | null> 
     return null;
   }
 }
-
-/** 1500 bps -> "15%". */
-export function formatBps(bps: number): string {
-  const pct = bps / 100;
-  return `${Number.isInteger(pct) ? pct : pct.toFixed(2).replace(/0+$/, '')}%`;
-}

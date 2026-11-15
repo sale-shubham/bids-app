@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { Crown, Trophy } from 'lucide-react';
 import { MemberAvatar } from '@/components/common/member-avatar';
 import { cn, formatINR } from '@/lib/utils';
@@ -7,7 +6,7 @@ import type { LeaderboardBy, LeaderboardEntry } from '../leaderboard.server';
 const wins = (n: number) => `${n} ${n === 1 ? 'win' : 'wins'}`;
 
 const PODIUM_STYLE: Record<number, string> = {
-  1: 'border-amber-500/50 bg-amber-500/10 sm:-mt-4 sm:pb-8',
+  1: 'border-amber-500/50 bg-amber-500/10 @lg/content:-mt-4 @lg/content:pb-8',
   2: 'border-slate-400/50 bg-slate-400/10',
   3: 'border-orange-700/40 bg-orange-700/10',
 };
@@ -17,14 +16,14 @@ export function Podium({ entries, by }: { entries: LeaderboardEntry[]; by: Leade
   // Visual order 2-1-3 on wide screens; rank order on mobile.
   const ordered = [top[1], top[0], top[2]].filter(Boolean) as LeaderboardEntry[];
   return (
-    <ol className="grid grid-cols-1 items-end gap-3 sm:grid-cols-3" aria-label="Top three">
+    <ol className="grid grid-cols-1 items-end gap-3 @lg/content:grid-cols-3" aria-label="Top three">
       {ordered.map((e) => (
         <li
           key={e.member.id}
           className={cn(
             'flex flex-col items-center gap-2 rounded-xl border p-4 text-center',
             PODIUM_STYLE[e.rank] ?? '',
-            e.rank === 1 && 'order-first sm:order-none',
+            e.rank === 1 && 'order-first @lg/content:order-none',
           )}
         >
           {e.rank === 1 ? (
@@ -73,31 +72,5 @@ export function LeaderboardTable({ entries, by }: { entries: LeaderboardEntry[];
         </tbody>
       </table>
     </div>
-  );
-}
-
-/** Top-5 compact list for the home page. */
-export function TopBidders({ entries }: { entries: LeaderboardEntry[] }) {
-  if (entries.length === 0) return null;
-  return (
-    <section className="space-y-4" aria-label="Top bidders">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold tracking-tight">Top bidders</h2>
-        <Link href="/leaderboard" className="text-sm font-medium text-primary hover:underline">
-          Full leaderboard
-        </Link>
-      </div>
-      <ol className="divide-y rounded-xl border">
-        {entries.map((e) => (
-          <li key={e.member.id} className="flex items-center gap-3 px-4 py-3">
-            <span className="w-6 text-sm font-semibold text-muted-foreground">{e.rank}</span>
-            <MemberAvatar id={e.member.id} name={e.member.displayName} email="" avatarUrl={e.member.avatarUrl} size="sm" />
-            <span className="min-w-0 flex-1 truncate text-sm font-medium">{e.member.displayName}</span>
-            <span className="hidden text-sm text-muted-foreground sm:inline">{wins(e.auctionsWon)}</span>
-            <span className="text-sm font-semibold text-primary">{formatINR(e.moneySpentPaise)}</span>
-          </li>
-        ))}
-      </ol>
-    </section>
   );
 }
