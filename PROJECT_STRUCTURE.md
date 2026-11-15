@@ -29,7 +29,7 @@ src/
     members/, uploads/               profile + devices (use-members); presigned S3 upload (use-upload)
     auctions/                        auctions.api/server/parse/schema/filters/types, use-auctions, use-image-uploader,
                                      components/{auction-card,auction-grid,auction-list,auction-detail,auction-form,auction-filters,
-                                     auction-gallery,republish-dialog,recently-viewed,share-buttons}
+                                     auction-gallery,new-auction,republish-dialog,recently-viewed,share-buttons}
     bids/                            bids.api/parse/types/errors/utils, use-bids, components/{bid-panel,bid-history,auction-result}
     live/                            live-socket (WS client), live-socket-provider, use-auction-live, live.reducers/types/api, components/live-indicator
     commissions/                     commissions.api/parse/types/errors, use-commissions, use-pay-commission, components/unpaid-commission-banner

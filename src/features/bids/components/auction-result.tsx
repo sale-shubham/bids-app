@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { Mail, Phone, Trophy, User } from 'lucide-react';
+import { Mail, Phone, RotateCcw, Trophy, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/auth-store';
 import { formatINR } from '@/lib/utils';
@@ -37,7 +37,9 @@ export function AuctionResult({ auction }: { auction: AuctionDetail }) {
     return <p className="rounded-lg border border-dashed p-3 text-center text-sm text-muted-foreground">This auction was cancelled.</p>;
   }
 
-  const sold = auction.bidCount > 0;
+  // A bid is not a sale: with a hidden reserve the auction can end with bids and no winner.
+  const sold = !!auction.winnerId;
+  const reserveNotMet = !sold && auction.bidCount > 0 && auction.hasReserve && !auction.reserveMet;
   const isWinner = !!member && (auction.winnerId === member.id || contact?.role === 'SELLER');
   const isSeller = !!member && (auction.seller.id === member.id || contact?.role === 'WINNER');
 
@@ -45,8 +47,18 @@ export function AuctionResult({ auction }: { auction: AuctionDetail }) {
     <div className="space-y-3 rounded-lg border bg-muted/40 p-3">
       <div>
         <p className="text-sm text-muted-foreground">Result</p>
-        <p className="text-xl font-bold">{sold ? `Sold for ${formatINR(auction.currentBidPaise)}` : 'Ended with no bids'}</p>
+        <p className="text-xl font-bold">
+          {sold ? `Sold for ${formatINR(auction.currentBidPaise)}` : reserveNotMet ? 'Reserve not met — not sold' : auction.bidCount > 0 ? 'Ended without a sale' : 'Ended with no bids'}
+        </p>
       </div>
+
+      {!sold && isSeller && (
+        <Button asChild variant="outline" size="sm">
+          <Link href={`/sell/new?from=${auction.id}`}>
+            <RotateCcw className="h-4 w-4" aria-hidden /> Relist
+          </Link>
+        </Button>
+      )}
 
       {sold && isWinner && (
         <>

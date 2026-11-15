@@ -9,6 +9,7 @@ const MESSAGES: Record<string, string> = {
   AUCTION_ENDED: 'This auction has ended, so bids are closed.',
   OWN_AUCTION: 'You cannot bid on your own auction.',
   ALREADY_HIGHEST: 'You are already the highest bidder.',
+  BUY_NOW_UNAVAILABLE: 'Buy It Now is no longer available for this auction.',
   FORBIDDEN: 'Only bidder accounts can place bids.',
   ACCOUNT_SUSPENDED: 'Your account is suspended and cannot bid.',
   RATE_LIMITED: 'You are bidding too fast. Wait a moment and try again.',
@@ -29,7 +30,17 @@ export function bidErrorMessage(err: unknown) {
       ? `Someone bid before you. The minimum bid is now ${formatINR(min)}.`
       : 'Your bid is too low. Check the minimum bid and try again.';
   }
+  if (code === 'MAX_TOO_LOW') {
+    const cur = apiErrorDetails(err)?.currentMaxPaise;
+    return typeof cur === 'number' ? `Your new maximum must be higher than your current ${formatINR(cur)}.` : 'Your new maximum must be higher than your current maximum.';
+  }
   if (code === 'PRICE_TOO_HIGH') return priceTooHighMessage(err);
   if (code && MESSAGES[code]) return MESSAGES[code];
   return apiErrorMessage(err, 'Could not place your bid');
+}
+
+export function buyNowErrorMessage(err: unknown) {
+  const code = apiErrorCode(err);
+  if (code && MESSAGES[code]) return MESSAGES[code];
+  return apiErrorMessage(err, 'Could not complete the purchase');
 }

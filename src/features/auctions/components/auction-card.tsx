@@ -91,6 +91,11 @@ export function AuctionCard({ auction, priority }: { auction: AuctionCardData; p
               {auction.bidCount} {auction.bidCount === 1 ? 'bid' : 'bids'}
             </p>
           </div>
+          {typeof auction.buyNowPricePaise === 'number' && auction.status !== 'ENDED' && auction.status !== 'CANCELLED' && (
+            <Badge variant="default" className="w-fit">
+              Buy now {formatINR(auction.buyNowPricePaise)}
+            </Badge>
+          )}
           <Countdown startTime={auction.startTime} endTime={auction.endTime} status={auction.status} />
         </div>
       </Link>

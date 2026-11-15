@@ -21,6 +21,7 @@ Props: `open`, `onOpenChange`, `title`, `description?`, `confirmLabel?` (default
 | Action | Confirm required |
 |---|---|
 | Place a bid | Yes (bids cannot be withdrawn) |
+| Buy It Now | Yes (ends the auction immediately) |
 | Delete an auction (owner) | Yes |
 | Cancel an auction (admin) | Yes |
 | Activate / deactivate a member (admin) | Yes |
@@ -114,7 +115,7 @@ onClick={() => setToDelete(auction)}
 
 | File | Action confirmed |
 |---|---|
-| `src/features/bids/components/bid-panel.tsx` | Place a bid ("Confirm your bid", confirm label shows the amount) |
+| `src/features/bids/components/bid-panel.tsx` | Place / raise a maximum bid ("Confirm your maximum bid"), and Buy It Now ("Buy it now"; confirm label shows the price) |
 | `src/app/(auctioneer)/sell/auctions/page.tsx` | Delete auction (row action on My auctions) |
 | `src/app/(auctioneer)/sell/auctions/[id]/page.tsx` | Delete auction (seller's auction page) |
 | `src/features/auctions/components/auction-detail.tsx` | Delete auction (owner only, from the public detail page) |

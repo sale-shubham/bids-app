@@ -1,5 +1,7 @@
 import type { AuctionCard, AuctionDetail } from '@/features/auctions/auctions.types';
 
+export type BidKind = 'MANUAL' | 'AUTO' | 'BUY_NOW';
+
 /** One bid as the API shows it: bidder identity is masked, `isMe` marks the caller's own. */
 export interface BidDTO {
   id: string;
@@ -8,6 +10,8 @@ export interface BidDTO {
   /** Masked label, e.g. "R***h". */
   bidderLabel: string;
   isMe: boolean;
+  /** AUTO = placed by the proxy for a bidder's maximum; BUY_NOW = the closing buy-now purchase. */
+  kind: BidKind;
 }
 
 /** Counterparty contact, only sent after an auction ended with a winner. `role` is the OTHER party's role. */
@@ -20,7 +24,14 @@ export interface AuctionContact {
 
 export interface PlaceBidResult {
   auction: AuctionDetail;
-  bid: BidDTO;
+  bid: BidDTO | null;
+  serverTime: string | null;
+  /** True when another bidder's maximum was higher, so the requester is not leading. */
+  outbidByProxy: boolean;
+}
+
+export interface BuyNowResult {
+  auction: AuctionDetail;
   serverTime: string | null;
 }
 
@@ -30,6 +41,8 @@ export type MyBidState = 'WINNING' | 'OUTBID' | 'WON' | 'LOST';
 export interface MyBidRow {
   auction: AuctionCard;
   myHighestBidPaise: number;
+  /** The viewer's own maximum bid on this auction. */
+  myMaxBidPaise: number | null;
   myBidCount: number;
   lastBidAt: string;
   state: MyBidState;

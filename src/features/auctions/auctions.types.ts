@@ -27,6 +27,10 @@ export interface AuctionCard {
   endTime: string;
   status: AuctionStatus;
   seller: AuctionSeller;
+  /** Buy It Now price; null when not set or once any bid exists. */
+  buyNowPricePaise: number | null;
+  hasReserve: boolean;
+  reserveMet: boolean;
 }
 
 export interface AuctionDetail extends AuctionCard {
@@ -46,6 +50,10 @@ export interface AuctionDetail extends AuctionCard {
   recentBids?: BidDTO[];
   /** The signed-in bidder's highest bid on this auction. */
   myHighestBidPaise?: number | null;
+  /** The signed-in bidder's own maximum (proxy) bid. */
+  myMaxBidPaise?: number | null;
+  /** Seller / admin only. The reserve is hidden from everyone else. */
+  reservePricePaise?: number | null;
   /** Counterparty contact — only for the winner and the seller once the auction ended with a winner. */
   contact?: AuctionContact | null;
 }
@@ -79,6 +87,9 @@ export interface AuctionWritePayload {
   images: string[];
   startingBidPaise: number;
   minIncrementPaise?: number;
+  /** null clears it on update. */
+  reservePricePaise?: number | null;
+  buyNowPricePaise?: number | null;
   startTime: string;
   endTime: string;
 }

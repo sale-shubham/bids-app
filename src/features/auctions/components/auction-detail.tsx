@@ -45,9 +45,11 @@ export function AuctionDetailView({ initial, serverTime }: { initial: AuctionDet
     void useRecentlyViewedStore.persist.rehydrate();
     const {
       id, title, category, condition, coverImage, startingBidPaise, currentBidPaise, bidCount, startTime, endTime, status, seller,
+      buyNowPricePaise, hasReserve, reserveMet,
     } = initial;
     useRecentlyViewedStore.getState().add({
       id, title, category, condition, coverImage, startingBidPaise, currentBidPaise, bidCount, startTime, endTime, status, seller,
+      buyNowPricePaise, hasReserve, reserveMet,
     });
   }, [initial]);
 

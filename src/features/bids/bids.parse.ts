@@ -1,6 +1,6 @@
 import { parsePaged } from '@/lib/paged';
 import type { AuctionDetail } from '@/features/auctions/auctions.types';
-import type { BidDTO, MyBidRow, PlaceBidResult } from './bids.types';
+import type { BidDTO, BuyNowResult, MyBidRow, PlaceBidResult } from './bids.types';
 
 // Decoding for the bids endpoints (same role as auctions.parse.ts):
 //   POST /auctions/:id/bids -> { success, data: { auction, bid, serverTime } }
@@ -13,9 +13,15 @@ export function parsePlaceBid(body: unknown): PlaceBidResult {
   const d = isObj(body) && isObj(body.data) ? body.data : {};
   return {
     auction: d.auction as AuctionDetail,
-    bid: d.bid as BidDTO,
+    bid: isObj(d.bid) ? (d.bid as unknown as BidDTO) : null,
     serverTime: typeof d.serverTime === 'string' ? d.serverTime : null,
+    outbidByProxy: d.outbidByProxy === true,
   };
+}
+
+export function parseBuyNow(body: unknown): BuyNowResult {
+  const d = isObj(body) && isObj(body.data) ? body.data : {};
+  return { auction: d.auction as AuctionDetail, serverTime: typeof d.serverTime === 'string' ? d.serverTime : null };
 }
 
 export const parseBidPage = (body: unknown) => parsePaged<BidDTO>(body);
