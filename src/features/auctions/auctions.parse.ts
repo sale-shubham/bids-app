@@ -1,4 +1,4 @@
-import type { AuctionCard, AuctionCategory, AuctionDetail, AuctionPage, HomeAuctions, PageMeta } from './auctions.types';
+import type { AuctionCard, AuctionCategory, AuctionDetail, AuctionPage, PageMeta } from './auctions.types';
 
 // The ONLY place that knows where `serverTime` and the page meta live in a
 // response. Backend shapes (src/core/http/response.ts):
@@ -32,17 +32,6 @@ export function parseAuctionPage(body: unknown): AuctionPage {
 export function parseAuctionDetail(body: unknown): { auction: AuctionDetail; serverTime: string | null } {
   const data = isObj(body) && isObj(body.data) ? body.data : {};
   return { auction: data.auction as AuctionDetail, serverTime: pickServerTime(body) };
-}
-
-export function parseHome(body: unknown): HomeAuctions {
-  const d = (isObj(body) && isObj(body.data) ? body.data : {}) as Obj;
-  const list = (v: unknown) => (Array.isArray(v) ? (v as AuctionCard[]) : []);
-  return {
-    featured: list(d.featured),
-    endingSoon: list(d.endingSoon),
-    upcoming: list(d.upcoming),
-    serverTime: pickServerTime(body),
-  };
 }
 
 export function parseCategories(body: unknown): AuctionCategory[] {

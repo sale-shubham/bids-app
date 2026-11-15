@@ -1,24 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { contactSchema } from './contact/contact.schema';
 import { profileSchema } from './members/members.schema';
 import { legalPagesFormSchema } from './legal/legal.schema';
 import { bpsToPercent, formToSettings, marketplaceSchema, percentToBps, settingsToForm } from './admin/admin.schema';
 
 const msgs = (r: { success: boolean; error?: { issues: { message: string }[] } }) => (r.success ? [] : r.error!.issues.map((i) => i.message));
-
-describe('contactSchema', () => {
-  const ok = { name: 'Asha', email: 'a@b.co', subject: 'Hello', message: 'This is a long enough message.' };
-  it('accepts a valid message and trims', () => {
-    expect(contactSchema.safeParse({ ...ok, name: '  Asha  ' }).data?.name).toBe('Asha');
-  });
-  it('validates each field', () => {
-    expect(msgs(contactSchema.safeParse({ ...ok, name: 'A' }))).toContain('Enter your name');
-    expect(msgs(contactSchema.safeParse({ ...ok, email: 'x' }))).toContain('Enter a valid email address');
-    expect(msgs(contactSchema.safeParse({ ...ok, subject: 'hi' }))).toContain('Enter a subject');
-    expect(msgs(contactSchema.safeParse({ ...ok, message: 'short' }))).toContain('Tell us a little more (at least 10 characters)');
-    expect(msgs(contactSchema.safeParse({ ...ok, message: 'x'.repeat(2001) }))).toContain('Keep it under 2000 characters');
-  });
-});
 
 describe('profileSchema', () => {
   it('phone may be empty or a plausible number', () => {

@@ -17,6 +17,7 @@ import { NotificationBell } from "@/features/notifications/components/notificati
 import { PageTransition } from "@/components/common/motion";
 import { useAuthStore } from "@/store/auth-store";
 import { useLogout } from "@/features/auth/use-auth";
+import { homeFor } from "@/constants/routes";
 import { useClientSnapshot } from "@/hooks/use-client-state";
 
 export interface NavItem {
@@ -59,10 +60,13 @@ function renderNavLink(item: NavItem, pathname: string) {
 export function DashboardShell({
   nav,
   moreTab,
+  guest = false,
   children,
 }: {
   nav: NavItem[];
   moreTab: MoreTab;
+  /** Logged-out visitor on a public page: no Logout / theme-in-profile, brand goes to /auctions. */
+  guest?: boolean;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -102,29 +106,32 @@ export function DashboardShell({
     }
   };
 
+  const brandHref = member ? homeFor(member.role) : "/auctions";
   const primaryNav = nav.filter((item) => !item.pinBottomDesktop);
   const bottomNav = nav.filter((item) => item.pinBottomDesktop);
 
   const SidebarBody = (
     <>
       <div className="flex h-16 items-center gap-2 border-b px-6">
-        <Link href="/" className="text-2xl font-extrabold text-gradient">
+        <Link href={brandHref} className="text-2xl font-extrabold text-gradient">
           NobleBid
         </Link>
       </div>
       <nav className="flex-1 space-y-1 overflow-y-auto p-3">
         {primaryNav.map((item) => renderNavLink(item, pathname))}
       </nav>
-      <div className="space-y-1 border-t p-3">
-        {bottomNav.map((item) => renderNavLink(item, pathname))}
-        <Button
-          variant="ghost"
-          className="w-full justify-start text-muted-foreground"
-          onClick={() => setLogoutOpen(true)}
-        >
-          <LogOut className="h-4 w-4" /> Logout
-        </Button>
-      </div>
+      {!guest && (
+        <div className="space-y-1 border-t p-3">
+          {bottomNav.map((item) => renderNavLink(item, pathname))}
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-muted-foreground"
+            onClick={() => setLogoutOpen(true)}
+          >
+            <LogOut className="h-4 w-4" /> Logout
+          </Button>
+        </div>
+      )}
     </>
   );
 
@@ -153,7 +160,7 @@ export function DashboardShell({
         <header className="z-30 flex h-[72px] shrink-0 items-center justify-between border-b bg-background px-4 pt-2 sm:px-6 md:h-16 md:pt-0">
           <div className="flex items-center gap-2">
             <Link
-              href="/"
+              href={brandHref}
               className="text-xl font-extrabold text-gradient md:hidden"
             >
               NobleBid
@@ -172,7 +179,8 @@ export function DashboardShell({
             )}
           </div>
           <div className="flex items-center gap-3">
-            <div className="hidden md:block">
+            {/* A signed-in member's theme switch lives on Profile > App on a phone; a guest has no Profile. */}
+            <div className={guest ? undefined : "hidden md:block"}>
               <ThemeToggle />
             </div>
             <NotificationBell />

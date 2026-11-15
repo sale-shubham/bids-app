@@ -12,7 +12,7 @@ Read this before any code change. It defines exactly which docs to update for ea
 | New shared hook or utility | Update `readme/methods/<domain>.md` (create if new domain) |
 | New common component | Update `readme/ui/components.md` |
 | New layout component | Update `readme/ui/layout.md` |
-| New route group or page | Update `readme/flows/<area>.md` (admin/member/marketing match) |
+| New route group or page | Update `src/constants/routes.ts` tables + `readme/ARCHITECTURE.md` route areas + `PROJECT_STRUCTURE.md` + the feature's `readme/flows/<feature>.md` |
 | New environment variable | Update `readme/methods/api-client.md` + `.env.example` |
 | New confirmable action | Add row to `docs/CONFIRM_DIALOG.md` "Live reference files" |
 | New Tailwind token or CSS var | Update `readme/theming/tokens.md` |
@@ -33,13 +33,16 @@ Read this before any code change. It defines exactly which docs to update for ea
 | Pagination defaults | `docs/PAGINATION.md` |
 | Confirm dialog pattern | `docs/CONFIRM_DIALOG.md` |
 | CRUD pattern | `docs/CRUD_PATTERN.md` |
-| Auth flow | `readme/flows/auth.md` |
-| Leads flow | `readme/flows/leads.md` |
-| Plans / subscription flow | `readme/flows/plans.md` |
-| Listing flow | `readme/flows/listings.md` |
+| Auth / session flow (login, signup, OTP, refresh, route gate, route areas, role homes) | `readme/ARCHITECTURE.md` auth section + `readme/methods/api-client.md` |
+| Browse / auction detail / selling / public-page shell (guest mode) | `readme/flows/auctions.md` |
+| Bidding flow | `readme/flows/bidding.md` |
+| Live updates (WebSocket) | `readme/flows/websocket.md` |
+| Commission payments | `readme/flows/payments.md` |
+| Watchlist | `readme/flows/watchlist.md` |
 | Admin flow | `readme/flows/admin.md` |
-| Search flow | `readme/flows/search.md` |
-| `package.json` dependency version | `PROJECT_STRUCTURE.md` Framework Versions table |
+| SEO (metadata, sitemap, robots, OG) | `readme/flows/seo.md` |
+| PWA / service worker / push | `readme/flows/pwa.md`, `readme/flows/push-notifications.md` |
+| Amplify / CI / deploy env | `readme/flows/deployment.md` |
 | `.gitignore` | `.claudeignore` (keep in sync) |
 
 ## Removals

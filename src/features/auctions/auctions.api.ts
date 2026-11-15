@@ -5,7 +5,6 @@ import {
   parseAuctionDetail,
   parseAuctionPage,
   parseCategories,
-  parseHome,
   parseWritten,
 } from './auctions.parse';
 import type {
@@ -34,11 +33,6 @@ export async function fetchAuctions(filters: AuctionFilters, param: AuctionPageP
 export async function fetchMyAuctions(status: MineStatus, param: AuctionPageParam): Promise<AuctionPage> {
   const res = await api.get('/auctions/mine', { params: { status, ...pageParams(param) } });
   return sync(parseAuctionPage(res.data));
-}
-
-export async function fetchHome() {
-  const res = await api.get('/auctions/home');
-  return sync(parseHome(res.data));
 }
 
 export async function fetchCategories() {

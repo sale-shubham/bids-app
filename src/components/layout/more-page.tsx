@@ -50,8 +50,8 @@ import { LEGAL_PAGES, legalPagePath } from '@/constants/legal';
 import { getOverflowNavItems, isNavActive } from './mobile-bottom-nav';
 import type { NavItem } from './dashboard-shell';
 
-// The legal pages aren't nav items (no sidebar or bottom-bar slot, and they render
-// outside DashboardShell on public chrome), so the Profile page is the in-app
+// The legal pages aren't nav items (no sidebar or bottom-bar slot; they are public
+// pages that share the shell's footer links), so the Profile page is also an in-app
 // entry point. Driven off LEGAL_PAGES so a new page shows up here for free.
 const LEGAL_ICONS: Record<string, typeof FileText> = {
   'privacy-policy': ShieldCheck,

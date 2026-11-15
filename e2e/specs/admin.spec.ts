@@ -11,9 +11,10 @@ test('dashboard loads its stat cards and navigation', async ({ page }) => {
   for (const label of ['Members', 'Live auctions', 'Bids today', 'Commission paid', 'Commission due']) {
     await expect(page.getByText(label, { exact: true }).first()).toBeVisible();
   }
-  const nav = page.getByRole('navigation', { name: 'Admin sections' });
-  for (const name of ['Members', 'Auctions', 'Commissions', 'Payments', 'Settings']) {
-    await expect(nav.getByRole('link', { name })).toBeVisible();
+  // The sidebar lists every admin page (the old "Admin sections" strip is gone).
+  const sidebar = page.locator('aside');
+  for (const name of ['Dashboard', 'Members', 'Auctions', 'Commissions', 'Payments', 'Settings', 'Profile']) {
+    await expect(sidebar.getByRole('link', { name, exact: true })).toBeVisible();
   }
 });
 
@@ -56,7 +57,21 @@ test('settings: marketplace and legal tabs', async ({ page }) => {
   await expect(page.getByRole('tab', { name: 'Legal pages' })).toHaveAttribute('data-state', 'active');
 });
 
-test('SUPER_ADMIN may also enter the seller area', async ({ page }) => {
-  await page.goto('/sell/auctions');
-  await expect(page.getByRole('heading', { name: 'My auctions' })).toBeVisible();
+test('SUPER_ADMIN is kept to /admin: member routes redirect to /admin', async ({ page }) => {
+  for (const path of ['/', '/sell/auctions', '/my-bids', '/watchlist', '/profile', '/notifications']) {
+    await page.goto(path);
+    await expect(page).toHaveURL(/\/admin$/);
+  }
+});
+
+test('SUPER_ADMIN can still browse the public pages (in the admin shell)', async ({ page }) => {
+  await page.goto('/auctions');
+  await expect(page.getByRole('heading', { name: 'Auctions', level: 1 })).toBeVisible();
+  await expect(page.locator('aside').getByRole('link', { name: 'Members' })).toBeVisible();
+});
+
+test('admin profile page shows the account and security tabs', async ({ page }) => {
+  await page.goto('/admin/profile');
+  await expect(page.getByRole('heading', { name: 'Profile', level: 1 })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Security' })).toBeVisible();
 });

@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { createAuction } from '../lib/db.ts';
 import { loadState } from '../lib/run.ts';
 
-// Public (logged-out) pages. Auctions are seeded straight into the DB under the run's auctioneer.
+// Public (logged-out) pages, rendered in the app shell's guest mode. Auctions are seeded straight into the DB under the run's auctioneer.
 
 const HOUR = 3600;
 let seller: string;
@@ -16,24 +16,38 @@ test.beforeAll(async () => {
   upcoming = await createAuction({ sellerId: seller, title: `E2E Upcoming Clock ${runId}`, startsInSec: HOUR, endsInSec: 3 * HOUR });
 });
 
-test('home shows the hero and how-it-works, and links to browse', async ({ page }) => {
+test('the root "/" is only a redirect to /login for guests (marketing lives on the website)', async ({ page }) => {
   await page.goto('/');
-  await expect(page).toHaveTitle(/NobleBid/);
-  await expect(page.getByRole('heading', { name: 'Bid. Win. Sell.' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'How it works' })).toBeVisible();
-  await page.getByRole('link', { name: 'Browse auctions' }).first().click();
-  await expect(page).toHaveURL(/\/auctions$/);
+  await expect(page).toHaveURL(/\/login$/);
 });
 
-test('home lists any non-empty auction sections with a "View all" link', async ({ page }) => {
-  await page.goto('/');
-  // Sections render only when they have items; whichever ones exist must be well formed.
-  for (const name of ['Featured', 'Ending soon', 'Upcoming']) {
-    const section = page.getByRole('region', { name });
-    if (await section.count()) {
-      await expect(section.getByRole('link', { name: 'View all' })).toBeVisible();
-      await expect(section.getByRole('link').first()).toBeVisible();
-    }
+test('public pages render in the app shell in guest mode', async ({ page }) => {
+  await page.goto('/auctions');
+  // Guest nav (sidebar on desktop): Auctions + Leaderboard only.
+  const sidebar = page.locator('aside');
+  await expect(sidebar.getByRole('link', { name: 'Auctions' })).toBeVisible();
+  await expect(sidebar.getByRole('link', { name: 'Leaderboard' })).toBeVisible();
+  await expect(sidebar.getByRole('link', { name: 'Watchlist' })).toHaveCount(0);
+  // Header: Log in / Sign up carry ?next= back to this page instead of a user menu.
+  await expect(page.getByRole('link', { name: 'Log in', exact: true })).toHaveAttribute('href', '/login?next=%2Fauctions');
+  await expect(page.getByRole('link', { name: 'Sign up', exact: true })).toHaveAttribute('href', '/signup?next=%2Fauctions');
+  // Footer links point at the separate website as absolute links.
+  for (const [name, path] of [['About', '/about'], ['How it works', '/how-it-works'], ['Contact', '/contact']] as const) {
+    await expect(page.getByRole('link', { name, exact: true }).last()).toHaveAttribute('href', new RegExp(`^https?://.+${path}$`));
+  }
+});
+
+test('the leaderboard and legal pages are public too', async ({ page }) => {
+  await page.goto('/leaderboard');
+  await expect(page.getByRole('heading', { name: 'Leaderboard', level: 1 })).toBeVisible();
+  await page.goto('/pages/privacy-policy');
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+});
+
+test('marketing pages are no longer served by the app', async ({ page }) => {
+  for (const p of ['/about', '/how-it-works', '/contact']) {
+    const res = await page.goto(p);
+    expect(res?.status()).toBe(404);
   }
 });
 
@@ -78,4 +92,6 @@ test('protected areas bounce guests to login with a next param', async ({ page }
   await expect(page).toHaveURL(/\/login\?next=%2Fwatchlist/);
   await page.goto('/admin');
   await expect(page).toHaveURL(/\/login/);
+  await page.goto('/profile');
+  await expect(page).toHaveURL(/\/login\?next=%2Fprofile/);
 });

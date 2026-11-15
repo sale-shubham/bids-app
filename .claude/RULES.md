@@ -9,7 +9,7 @@ No need to re-state them in a prompt — they are always active.
 ## 1. Documentation sync (mandatory)
 
 - All documentation lives in the `readme/` directory at the project root.
-- Before touching a file in any directory, read the corresponding flow-specific README in `readme/` (e.g., `readme/flows/listings.md` for listing logic).
+- Before touching a file in any directory, read the corresponding flow-specific README in `readme/` (e.g., `readme/flows/bidding.md` for bid panel logic).
 - After any code change, update the corresponding flow-specific README in `readme/`.
 - After adding a new feature or flow, update the relevant flow doc or create a new one in `readme/flows/` and register it in `CLAUDE.md`.
 - `CLAUDE.md` itself must be updated whenever a new flow README is added.
@@ -25,7 +25,7 @@ No need to re-state them in a prompt — they are always active.
   - Validation: **zod** only (not joi, yup, valibot).
   - State: **zustand** only (not redux, jotai, recoil).
   - Data fetching: **@tanstack/react-query** only (not swr, useSWR).
-  - Date/time: **dayjs** only if date manipulation is needed (not moment, date-fns, luxon).
+  - Date/time: **date-fns** only (not moment, dayjs, luxon).
 - Do not modify `package.json` without explicit instruction.
 - After adding a package, document it in the relevant `readme/methods/<domain>.md`.
 
@@ -51,7 +51,7 @@ Every repository starts with exactly two long-lived branches:
 
 ### Pull requests
 - Target branch is always `dev` (never `main` directly).
-- PR title format: `[TYPE] Short description` — e.g. `[feat] Add listing search with spec filters`
+- PR title format: `[TYPE] Short description` — e.g. `[feat] Add category filter to auction browse`
 - PR description must include:
   - **Summary** — what changed and why
   - **Changes** — bullet list of files/modules affected
@@ -64,14 +64,14 @@ Every repository starts with exactly two long-lived branches:
 
 ## 4. PR review instructions
 
-PR/diff review runs through the vendored official Claude Code plugins (see `CLAUDE.md` → Plugins & Skills). Do NOT hand-roll a custom review format.
+PR/diff review runs through the plugins enabled in `.claude/settings.json` (code-review, pr-review-toolkit, feature-dev, commit-commands, frontend-design). Do NOT hand-roll a custom review format.
 
 1. **Primary:** run `/code-review` (confidence-scored, multi-agent) for any PR or working-tree diff.
 2. **Deeper pass:** use `/review-pr` (pr-review-toolkit) to invoke specialized agents — silent-failure-hunter, type-design-analyzer, pr-test-analyzer, comment-analyzer, code-simplifier.
 3. **Project-specific gates (always check, plugins don't know these):**
    - Anything that does not match the project's existing implementation style.
    - Missing README/doc updates per the doc-sync policy (§1).
-   - Hard rules in §11 (confirm dialogs, `api` client, zod, auth guard, theming).
+   - Hard rules in §10 (confirm dialogs, `api` client, zod, auth guard, theming).
 4. **Do not approve or request changes on behalf of the reviewer** — summarise only.
 
 ---
@@ -94,8 +94,8 @@ When asked to create a ticket (GitHub issue):
 - No commented-out code left in commits.
 - TypeScript: strict mode; no `any` unless unavoidable and documented.
 - Add `'use client'` at the top of any file that uses React hooks, browser APIs, or event handlers. Server Components are the default in Next.js App Router.
-- Keep Server Components for static/SEO pages (marketing group). Use Client Components for interactive UI (dashboards, forms, member area).
-- **Reuse before creating.** Before writing a new component, hook, or util, search `src/components/common/`, `src/components/ui/`, `src/lib/`, and the relevant `src/features/<feature>/use-<feature>.ts` for one that already does the job (e.g. `<ConfirmDialog>`, `<ResponsiveList>`, `<EmptyState>`, `<DynamicSpecField>`, `formatInr`/`formatPoints` in `lib/utils.ts`, `apiErrorMessage`). Only write a new one if nothing fits — and if the need is generic (not one-page-specific), add it to `components/common`/`ui`/`lib` rather than inlining it in the page. Never duplicate an existing component/util under a new name or copy-paste its logic into a page.
+- Keep Server Components for the public SEO pages (`src/app/(public)/`: auctions, detail, leaderboard, sellers, legal pages; they pass data into client children). Use Client Components for interactive UI (dashboards, forms, member area). The app has no marketing pages: those live in the separate `bids-website` repo and the app links to them with absolute `<a href>` from `src/constants/website.ts` (`NEXT_PUBLIC_WEBSITE_URL`).
+- **Reuse before creating.** Before writing a new component, hook, or util, search `src/components/common/`, `src/components/ui/`, `src/lib/`, and the relevant `src/features/<feature>/use-<feature>.ts` for one that already does the job (e.g. `<ConfirmDialog>`, `<ResponsiveList>`, `<EmptyState>`, `<Countdown>`, `<InfiniteScroll>`, `formatINR` / `formatDate` in `lib/utils.ts`, `apiErrorMessage`). Only write a new one if nothing fits — and if the need is generic (not one-page-specific), add it to `components/common`/`ui`/`lib` rather than inlining it in the page. Never duplicate an existing component/util under a new name or copy-paste its logic into a page.
 
 ---
 
@@ -104,7 +104,7 @@ When asked to create a ticket (GitHub issue):
 - Never hard-code secrets, API keys, or environment-specific values.
 - All config goes through environment variables — `NEXT_PUBLIC_*` for client-visible, bare `*` for server-only.
 - New environment variables must be documented in `readme/methods/api-client.md` and added to `.env.example`.
-- API base URL: `NEXT_PUBLIC_API_URL` (absolute backend URL, defaults to `http://localhost:4000`). Browser calls the backend directly (cross-origin; backend CORS allows the origin). No Next.js proxy.
+- API base URL: `NEXT_PUBLIC_API_URL` (defaults to `http://localhost:4000`, logic in `src/constants/api.ts`). Two modes: an absolute API URL on the app's parent domain (browser calls the API cross-origin with cookies; API CORS allows the origin), or `/api` with `API_PROXY_TARGET`, where `next.config.ts` rewrites `/api/*` to the API (used before a custom domain exists).
 
 ---
 
@@ -117,47 +117,15 @@ When asked to create a ticket (GitHub issue):
 
 ---
 
-## 9. Initial Project Alignment (Migration)
+## 9. Session bootstrap
 
-When these configuration files (`CLAUDE.md`, `RULES.md`, `AGENTS.md`, `PROJECT_STRUCTURE.md`) are first copied into an existing project:
-- **Immediate Audit:** Read the actual project directory and update `PROJECT_STRUCTURE.md` to reflect the *real* file tree.
-- **Version Alignment:** Run `node -v`, `npm -v`, `next --version`, and update "Framework Versions" in `PROJECT_STRUCTURE.md`.
-- **Registry Update:** Update the README registry in `CLAUDE.md` to point to correct paths.
-- **Agent Adaptation:** Review `AGENTS.md` and modify triggers/paths that differ from the template.
+`CLAUDE.md` points here; read this file at the start of every session. Hooks in `.claude/settings.json`: `SessionStart` clears `.claude/.session-edits.log`; `PostToolUse` logs edits (`log-edit.sh`); `Stop` runs `check-readme-sync.sh`, `quality-gate.sh` and `e2e-reminder.sh`.
 
 ---
 
-## 10. Session bootstrap (mandatory)
+## 10. App-specific hard rules (bids-app)
 
-RULES.md must be auto-injected at the start of every session via a `SessionStart` hook in `.claude/settings.local.json`.
-Without this hook, Claude will not read the rules unless manually prompted.
-
-Required `.claude/settings.local.json` for every project:
-
-```json
-{
-  "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo '=== PROJECT RULES ===' && cat .claude/RULES.md"
-          }
-        ]
-      }
-    ]
-  }
-}
-```
-
-Relative path — works on any machine, any clone location. No edits needed after copying.
-
----
-
-## 11. App-specific hard rules (bids-app)
-
-- **Confirmation dialogs (MANDATORY)** — every destructive / irreversible / consequential action MUST use `<ConfirmDialog>` from `src/components/common/confirm-dialog.tsx`. No `window.confirm`, no inline `<AlertDialog>` for confirms, no direct mutation on click. Actions requiring confirmation: delete listing, withdraw from wallet, deactivate member, remove product (admin), bulk operations. Full spec: `docs/CONFIRM_DIALOG.md`.
+- **Confirmation dialogs (MANDATORY)** — every destructive / irreversible / consequential action MUST use `<ConfirmDialog>` from `src/components/common/confirm-dialog.tsx`. No `window.confirm`, no inline `<AlertDialog>` for confirms, no direct mutation on click. Actions requiring confirmation include: placing a bid, deleting an auction, cancelling an auction, activating / deactivating a member or changing its role, waiving a commission (admin), logging out (one or all devices), removing a device. Full spec: `docs/CONFIRM_DIALOG.md`.
 
 - **API calls** — every backend call goes through the `api` axios instance from `src/lib/api-client.ts`. It handles JWT bearer injection, single-flight 401 refresh, and error normalisation. Never import raw `axios` elsewhere for API calls. Never use `fetch()` for backend calls. Correct: `import { api } from '@/lib/api-client'`.
 
@@ -175,7 +143,7 @@ Relative path — works on any machine, any clone location. No edits needed afte
 
 - **Toast notifications** — use `sonner` (`toast.success()`, `toast.error()`). Never use `alert()` or custom toast implementations.
 
-- **Responsive rules inside a page body** — container variants (`@lg/content:`, `@2xl/content:`, `@3xl/content:`; `@sm/content:` inside a dialog), never a bare `sm:`/`md:`/`lg:`. The desktop sidebar is 0 or 256px wide on the member's own toggle, so a viewport breakpoint can't tell a page how much room it has. A list's table/cards switch is a container query too (`ResponsiveList` / `MobileSortControl` at `@3xl/content`), and its data side `useIsNarrowContent()` measures the same box. Viewport breakpoints only for chrome/device choice, `/search`'s paging split (`useIsMobile()`), overlay widths, and components also mounted outside `DashboardShell`. Full spec: `docs/CONTAINER_QUERIES.md`.
+- **Responsive rules inside a page body** — container variants (`@lg/content:`, `@2xl/content:`, `@3xl/content:`; `@sm/content:` inside a dialog), never a bare `sm:`/`md:`/`lg:`. The desktop sidebar is 0 or 256px wide on the member's own toggle, so a viewport breakpoint can't tell a page how much room it has. A list's table/cards switch is a container query too (`ResponsiveList` / `MobileSortControl` at `@3xl/content`), and its data side `useIsNarrowContent()` measures the same box. Viewport breakpoints only for chrome/device choice, overlay widths, and components also mounted outside `DashboardShell`. Full spec: `docs/CONTAINER_QUERIES.md`.
 
 ### Pre-PR grep audit
 
@@ -188,7 +156,7 @@ grep -rn "fetch('" src/                # must be 0 for backend calls
 
 ---
 
-## 12. Reuse audit (grep before writing new code)
+## 11. Reuse audit (grep before writing new code)
 
 Before adding a component/hook/util, check it doesn't already exist under a different name:
 
@@ -200,9 +168,9 @@ If something close already exists, extend or parameterize it instead of adding a
 
 ---
 
-## 13. Cross-layer / cross-repo impact check (mandatory)
+## 12. Cross-layer / cross-repo impact check (mandatory)
 
-`bids-app` (this repo) and `bids-api` (the backend, sibling directory `D:\Aialphatech\noblebid\bids-api`) are two halves of one contract. Before implementing ANY change that assumes the other side does something — a new request param, a response field, a header, a websocket event, a query param the caller expects to be honored — **check the other repo's actual code first**, not after the user notices it doesn't work.
+`bids-app` (this repo) and `bids-api` (the backend, sibling directory `../bids-api`) are two halves of one contract. Before implementing ANY change that assumes the other side does something — a new request param, a response field, a header, a websocket event, a query param the caller expects to be honored — **check the other repo's actual code first**, not after the user notices it doesn't work.
 
 - Frontend sends a new query param / body field expecting server behavior (filtering, sorting, a new response shape)? Grep the matching `bids-api` controller/service/route **before** wiring it, to confirm it reads and acts on that param. If it doesn't, either implement both sides in the same change, or tell the user up front "backend doesn't support this yet" and ask whether to add it there too — never silently ship a frontend-only half of a two-sided contract and report it as done.
 - Backend changes a response shape, adds/removes a field, or changes status codes? Grep `bids-app`'s `src/features/*/​*.api.ts` and the hooks that consume it before merging, so the frontend types/usages aren't left silently stale.
@@ -211,4 +179,4 @@ If something close already exists, extend or parameterize it instead of adding a
 
 ---
 
-*Last updated by: NobleBid scaffold (Phase 0)*
+*Last updated: 2026-11-15*

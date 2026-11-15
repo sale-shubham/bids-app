@@ -1,11 +1,9 @@
 import type { Metadata } from 'next';
-import { PublicHeader } from '@/components/layout/public-header';
-import { SiteFooter } from '@/components/layout/site-footer';
+import { SITE_URL } from '@/lib/site';
 import { AuctionDetailView } from '@/features/auctions/components/auction-detail';
 import { getAuctionDetailServer } from '@/features/auctions/auctions.server';
 import type { AuctionDetail } from '@/features/auctions/auctions.types';
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3002').replace(/\/+$/, '');
 
 function excerpt(html: string, max = 160) {
   const text = html
@@ -89,13 +87,9 @@ export default async function AuctionDetailPage({ params }: Props) {
   const ld = JSON.stringify(jsonLd(auction)).replace(/</g, '\\u003c');
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <PublicHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ld }} />
-        <AuctionDetailView initial={auction} serverTime={serverTime} />
-      </main>
-      <SiteFooter />
-    </div>
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ld }} />
+      <AuctionDetailView initial={auction} serverTime={serverTime} />
+    </>
   );
 }

@@ -12,10 +12,10 @@ import { useAuthStore } from '@/store/auth-store';
 import { useLatestNotifications, useMarkAllRead, useMarkRead } from '../use-notifications';
 import { NotificationItem, useOpenNotification } from './notification-item';
 
-/** Header bell: unread badge + dropdown with the latest 10. Renders nothing for guests. */
+/** Header bell: unread badge + dropdown with the latest 10. Renders nothing for guests or SUPER_ADMIN (no /notifications for admins). */
 export function NotificationBell() {
   const member = useAuthStore((s) => s.member);
-  if (!member) return null;
+  if (!member || member.role === 'SUPER_ADMIN') return null;
   return <MemberBell />;
 }
 
