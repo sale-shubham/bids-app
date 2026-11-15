@@ -20,8 +20,6 @@ const numeric = (label: string) =>
 export const MAX_PRICE_MIN_RUPEES = 1_000;
 export const MAX_PRICE_MAX_RUPEES = 10_000_000_000;
 
-export const categoryNameSchema = z.string().trim().min(2, 'At least 2 characters').max(40, 'At most 40 characters');
-
 export const marketplaceSchema = z.object({
   commissionPercent: numeric('Commission')
     .refine((v) => Number(v) >= 0 && Number(v) <= 30, 'Must be between 0% and 30%')
@@ -42,11 +40,6 @@ export const marketplaceSchema = z.object({
   depositRatePercent: numeric('Deposit rate')
     .refine((v) => /^\d+(\.\d{1,2})?$/.test(v), 'At most 2 decimal places')
     .refine((v) => Number(v) >= 1 && Number(v) <= 50, 'Must be between 1% and 50%'),
-  categories: z
-    .array(categoryNameSchema)
-    .min(1, 'Add at least one category')
-    .max(30, 'At most 30 categories')
-    .refine((c) => new Set(c.map((x) => x.trim().toLowerCase())).size === c.length, 'Categories must be unique'),
   checkoutMode: z.enum(['off', 'optional', 'required'], { message: 'Choose a checkout mode' }),
 });
 
@@ -60,7 +53,6 @@ export function settingsToForm(s: AdminSettings): MarketplaceValues {
     maxPriceRupees: paiseToRupeesStr(s.maxPricePaise),
     depositThresholdRupees: paiseToRupeesStr(s.depositThresholdPaise),
     depositRatePercent: bpsToPercent(s.depositRateBps),
-    categories: s.categories,
     checkoutMode: s.checkoutMode,
   };
 }
@@ -73,7 +65,6 @@ export function formToSettings(v: MarketplaceValues): AdminSettings {
     maxPricePaise: rupeesToPaiseNum(v.maxPriceRupees),
     depositThresholdPaise: rupeesToPaiseNum(v.depositThresholdRupees),
     depositRateBps: percentToBps(v.depositRatePercent),
-    categories: v.categories.map((c) => c.trim()),
     checkoutMode: v.checkoutMode,
   };
 }

@@ -43,3 +43,9 @@ PAID / SHIPPED / DELIVERED / DISPUTED: **Release** (`POST /admin/sales/:id/relea
 
 ## Contract assumptions (not yet confirmed against bids-api)
 Admin Release / Refund buttons show for PAID, SHIPPED, DELIVERED and DISPUTED; `POST /sales/:id/*` action responses return the sale (also accepted as `{ sale }`); the admin list rows come back as `SaleDTO` (role is forced to ADMIN client-side for the action rules).
+
+## Delivery choice (Phase F)
+- `SaleDTO` gains `deliveryChoice` (`'COURIER'|'PICKUP'|null`) and `shippingOptions` (`{ pickup, pickupCity, courier, shippingFeePaise, shipsWithinDays }`); `shippingFeePaise` / `amountPaise` reflect the choice once checkout has started.
+- `needsDeliveryChoice(sale)` (`sales.utils.ts`): unpaid and the auction offers both pickup and courier. `PurchaseActions` then shows a Pickup / Courier radio group (with the fee) before "Pay"; Pay stays disabled until one is chosen and its amount previews item + courier fee. `pay(id, delivery)` -> `createSaleCheckout(id, delivery)` -> `POST /sales/:id/checkout { delivery }`. With a single option offered nothing is sent (`pay(id)`).
+- `SaleBreakdown` labels the shipping row "Delivery (pickup)" / "Delivery (courier)" once chosen. `DELIVERY_CHOICE_REQUIRED` is mapped in `sales.errors.ts`.
+- Unconfirmed against bids-api: exact field names above and that a pickup choice yields `shippingFeePaise: 0`.

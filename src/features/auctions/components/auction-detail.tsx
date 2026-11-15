@@ -15,7 +15,7 @@ import { useAuthStore } from '@/store/auth-store';
 import { useLiveStore } from '@/store/live-store';
 import { useRecentlyViewedStore } from '@/store/recently-viewed-store';
 import { auctionErrorMessage } from '../auctions.errors';
-import type { AuctionDetail } from '../auctions.types';
+import { conditionLabel, type AuctionDetail } from '../auctions.types';
 import { BidHistory } from '@/features/bids/components/bid-history';
 import { BidPanel } from '@/features/bids/components/bid-panel';
 import { LiveIndicator } from '@/features/live/components/live-indicator';
@@ -24,6 +24,8 @@ import { useAuction, useAuctionBoundaryRefetch, useDeleteAuction } from '../use-
 import { AuctionGallery } from './auction-gallery';
 import { AuctionStatusBadge } from './auction-card';
 import { ShareButtons } from './share-buttons';
+import { CategoryBreadcrumb, ConditionReport, DeliveryBlock, EstimateLine, SpecsTable } from './listing-info';
+import { SimilarSold } from './similar-sold';
 import { ReportButton } from '@/features/reports/components/report-button';
 import { RatingSummary } from '@/features/reviews/components/star-rating';
 import { QuestionsSection } from '@/features/questions/components/questions-section';
@@ -75,15 +77,16 @@ export function AuctionDetailView({ initial, serverTime }: { initial: AuctionDet
 
   return (
     <div className="grid gap-8 @3xl/content:grid-cols-2">
-      <AuctionGallery images={auction.images} title={auction.title} />
+      <AuctionGallery images={auction.images} title={auction.title} videoUrl={auction.videoUrl} />
 
       <div className="space-y-5">
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
             <AuctionStatusBadge status={auction.status} />
-            <Badge variant="outline">{auction.condition === 'NEW' ? 'New' : 'Used'}</Badge>
-            <Badge variant="secondary">{auction.category}</Badge>
+            <Badge variant="outline">{conditionLabel(auction.condition)}</Badge>
+            {!auction.categoryPath?.length && <Badge variant="secondary">{auction.category}</Badge>}
           </div>
+          <CategoryBreadcrumb path={auction.categoryPath ?? []} />
           <h1 className="text-2xl font-bold tracking-tight @lg/content:text-3xl">{auction.title}</h1>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
             <Countdown startTime={auction.startTime} endTime={auction.endTime} status={auction.status} className="text-sm" />
@@ -101,6 +104,8 @@ export function AuctionDetailView({ initial, serverTime }: { initial: AuctionDet
         </div>
 
         <BidPanel auction={auction} />
+        <EstimateLine low={auction.estimateLowPaise} high={auction.estimateHighPaise} />
+        {auction.shippingOptions && <DeliveryBlock options={auction.shippingOptions} />}
 
         <Link
           href={`/sellers/${auction.seller.id}`}
@@ -158,8 +163,24 @@ export function AuctionDetailView({ initial, serverTime }: { initial: AuctionDet
         <RichText html={auction.description} />
       </section>
 
+      {(auction.specs?.length ?? 0) > 0 && (
+        <div className="@3xl/content:col-span-2">
+          <SpecsTable specs={auction.specs ?? []} />
+        </div>
+      )}
+
+      {auction.conditionReport && auction.conditionReport.trim() !== '' && (
+        <div className="@3xl/content:col-span-2">
+          <ConditionReport html={auction.conditionReport} />
+        </div>
+      )}
+
       <div className="@3xl/content:col-span-2">
         <QuestionsSection auctionId={auction.id} sellerId={auction.seller.id} ended={auction.status === 'ENDED' || auction.status === 'CANCELLED'} />
+      </div>
+
+      <div className="empty:hidden @3xl/content:col-span-2">
+        <SimilarSold auctionId={auction.id} />
       </div>
 
       <ConfirmDialog

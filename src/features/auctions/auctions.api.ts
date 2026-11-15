@@ -4,6 +4,7 @@ import { auctionListParams, pageParams } from './auctions.filters';
 import {
   parseAuctionDetail,
   parseAuctionPage,
+  parseCardList,
   parseCategories,
   parseWritten,
 } from './auctions.parse';
@@ -62,4 +63,9 @@ export async function deleteAuction(id: string) {
 export async function republishAuction(id: string, input: { startTime: string; endTime: string }) {
   const res = await api.post(`/auctions/${id}/republish`, input);
   return parseWritten(res.data);
+}
+
+export async function fetchSimilarSold(id: string) {
+  const res = await api.get(`/auctions/${id}/similar-sold`);
+  return parseCardList(res.data);
 }

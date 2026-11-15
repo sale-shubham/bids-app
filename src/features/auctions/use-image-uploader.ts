@@ -2,7 +2,7 @@
 import * as React from 'react';
 import { toast } from 'sonner';
 import { presign, putToPresignedWithProgress } from '@/features/uploads/uploads.api';
-import { IMAGE_TYPES, MAX_IMAGE_BYTES } from '@/features/uploads/use-upload';
+import { imageFileError, prepareImage } from '@/features/uploads/use-upload';
 import { apiErrorMessage } from '@/lib/api-client';
 
 export interface ImageItem {
@@ -62,8 +62,9 @@ export function useImageUploader({
   const uploadOne = React.useCallback(
     async (item: ImageItem, file: File) => {
       try {
-        const { uploadUrl, url } = await presign({ folder: 'auctions', contentType: file.type, size: file.size });
-        await putToPresignedWithProgress(uploadUrl, file, (pct) => {
+        const prepared = await prepareImage(file); // downscaled to a 2000 px WebP when the browser can
+        const { uploadUrl, url } = await presign({ folder: 'auctions', contentType: prepared.type, size: prepared.size });
+        await putToPresignedWithProgress(uploadUrl, prepared, (pct) => {
           // Progress ticks don't change the URL list; update render state only.
           itemsRef.current = itemsRef.current.map((i) => (i.id === item.id ? { ...i, progress: pct } : i));
           setItems(itemsRef.current);
@@ -86,12 +87,9 @@ export function useImageUploader({
     if (list.length > room) toast.info(`Only ${room} more image${room === 1 ? '' : 's'} fit — extra files were skipped.`);
     const accepted: { item: ImageItem; file: File }[] = [];
     for (const file of list.slice(0, room)) {
-      if (!IMAGE_TYPES.includes(file.type)) {
-        toast.error(`${file.name}: use a JPG, PNG or WebP image.`);
-        continue;
-      }
-      if (file.size > MAX_IMAGE_BYTES) {
-        toast.error(`${file.name}: image must be 5 MB or smaller.`);
+      const bad = imageFileError(file);
+      if (bad) {
+        toast.error(`${file.name}: ${bad}`);
         continue;
       }
       accepted.push({ item: { id: uid(), previewUrl: URL.createObjectURL(file), progress: 0, status: 'uploading' }, file });

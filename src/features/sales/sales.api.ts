@@ -1,7 +1,7 @@
 import { api } from '@/lib/api-client';
 import { parseCheckout } from '@/features/commissions/commissions.parse';
 import { parseSalePage, parseSaleResponse } from './sales.parse';
-import type { SaleListRole, SaleStatus, ShipSaleInput } from './sales.types';
+import type { SaleListRole, SaleStatus, ShipSaleInput, ShippingMethod } from './sales.types';
 
 export const SALES_PAGE_SIZE = 20;
 
@@ -18,8 +18,9 @@ export async function fetchSale(id: string) {
 }
 
 /** Same payload as `POST /commissions/:id/checkout` (stub mode when `keyId === 'stub'`). */
-export async function createSaleCheckout(id: string) {
-  const res = await api.post(`/sales/${encodeURIComponent(id)}/checkout`);
+export async function createSaleCheckout(id: string, delivery?: ShippingMethod) {
+  // `delivery` is required by the API when the auction offers both pickup and courier.
+  const res = await api.post(`/sales/${encodeURIComponent(id)}/checkout`, delivery ? { delivery } : undefined);
   return parseCheckout(res.data);
 }
 

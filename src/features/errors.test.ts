@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { apiErrorCode, apiErrorDetails, apiErrorMessage } from '@/lib/api-client';
 import { formatINR } from '@/lib/utils';
 import { authErrorMessage } from './auth/auth.errors';
-import { auctionErrorMessage } from './auctions/auctions.errors';
+import { attributeFieldErrors, auctionErrorMessage } from './auctions/auctions.errors';
+import { categoryErrorMessage } from './categories/categories.errors';
 import { bidErrorMessage, buyNowErrorMessage, minBidFromError } from './bids/bids.errors';
 import { commissionErrorMessage } from './commissions/commissions.errors';
 import { payoutErrorMessage } from './payouts/payouts.errors';
@@ -227,5 +228,30 @@ describe('Phase E error maps', () => {
     expect(riskErrorMessage(apiError('RISK_ALREADY_REVIEWED'))).toMatch(/already reviewed/);
     expect(isStaleRiskError(apiError('RISK_ALREADY_REVIEWED'))).toBe(true);
     expect(isStaleRiskError(apiError('WEIRD'))).toBe(false);
+  });
+});
+
+describe('listing quality error codes', () => {
+  it('auction codes have friendly copy', () => {
+    for (const code of ['INVALID_CATEGORY', 'INVALID_ATTRIBUTES', 'INVALID_ESTIMATE', 'INVALID_SHIPPING']) {
+      expect(auctionErrorMessage(apiError(code, 'raw server text'))).not.toBe('raw server text');
+    }
+    expect(auctionErrorMessage(apiError('INVALID_ESTIMATE'))).toMatch(/estimate/i);
+    expect(auctionErrorMessage(apiError('INVALID_SHIPPING'))).toMatch(/pickup/i);
+  });
+  it('attributeFieldErrors reads details.fields as a map or a list', () => {
+    expect(attributeFieldErrors(apiError('INVALID_ATTRIBUTES', 'x', { fields: { brand: 'Required' } }))).toEqual({ brand: 'Required' });
+    expect(attributeFieldErrors(apiError('INVALID_ATTRIBUTES', 'x', { fields: [{ key: 'size', message: 'Bad' }] }))).toEqual({ size: 'Bad' });
+    expect(attributeFieldErrors(apiError('OTHER', 'x', { fields: { a: 'b' } }))).toEqual({});
+    expect(attributeFieldErrors(apiError('INVALID_ATTRIBUTES'))).toEqual({});
+  });
+  it('DELIVERY_CHOICE_REQUIRED maps for sales and payments', () => {
+    expect(saleErrorMessage(apiError('DELIVERY_CHOICE_REQUIRED'))).toMatch(/pickup or courier/i);
+    expect(salePaymentErrorMessage(apiError('DELIVERY_CHOICE_REQUIRED'))).toMatch(/pickup or courier/i);
+  });
+  it('category admin codes', () => {
+    expect(categoryErrorMessage(apiError('CATEGORY_CYCLE'))).toMatch(/under itself/);
+    expect(categoryErrorMessage(apiError('CATEGORY_SLUG_TAKEN'))).toMatch(/slug/i);
+    expect(categoryErrorMessage(apiError('CATEGORY_IN_USE'))).toMatch(/cannot be deleted/);
   });
 });

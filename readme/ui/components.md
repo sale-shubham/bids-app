@@ -187,3 +187,18 @@ See `readme/ui/layout.md` for how these assemble.
 - `src/components/layout/nav-items.ts` — the nav arrays, `useMoreTab()` and `guestMoreTab()`
 
 *Last updated: 2026-11-15 (public pages render in `DashboardShell` guest mode via `PublicShell` and `ShellFooter`; the old public header, footer, page wrapper, admin sub-navigation and contact feature are gone; `MEMBER_NAV` / `ADMIN_NAV` / `GUEST_NAV`; shared `ProfilePage`)*
+
+## Listing media (features/auctions)
+
+| Component | Notes |
+|---|---|
+| `VideoUploadField` | `features/auctions/components/video-upload-field.tsx`. Optional listing video picker: MP4 / WebM up to 50 MB, upload progress, `<video controls preload="metadata">` preview, remove. Props `value: string \| null`, `onChange(url \| null)` |
+| `AuctionGallery` | Now opens `yet-another-react-lightbox` (Zoom plugin) instead of `ImageLightbox`; optional `videoUrl` renders a video under the thumbnails |
+| `AuctionCard` | Video icon when `hasVideo`; "Sold for ₹X · date" line when `sold` |
+| `SimilarSold` | "Recently sold in this category" grid on the detail page; renders nothing when empty |
+| `BulkPreviewTable` | `features/bulk/components/`. CSV preview with per-row problems (client + `BULK_INVALID`) |
+
+## Categories and listing blocks (Phase F)
+- `features/categories/components/`: `CategoryPicker` (cascading selects, `tree` / `value` id / `onChange`), `AttributeFields` (`defs`, `values`, `onChange(key, value)`, `errors`), `AttributeSchemaEditor` (react-hook-form `useFieldArray` rows), `CategoryDialog` (create / edit), `AdminCategories` (page body).
+- `features/auctions/components/listing-info.tsx`: `CategoryBreadcrumb`, `EstimateLine`, `SpecsTable`, `ConditionReport` (collapsible), `DeliveryBlock`, `estimateText`.
+- `PurchaseActions` shows a delivery radio group when both options are offered.

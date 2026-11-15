@@ -75,6 +75,21 @@ describe('AuctionCard', () => {
   });
 });
 
+describe('AuctionCard sold archive', () => {
+  it('shows the sale price and date when sold', () => {
+    render(<AuctionCard auction={card({ status: 'ENDED', sold: true, bidCount: 3, currentBidPaise: 250000, endedAt: '2026-11-10T12:00:00.000Z' })} />);
+    expect(screen.getByText(/Sold for ₹2,500 · 10 Nov 2026/)).toBeInTheDocument();
+    expect(screen.queryByText('Current bid')).not.toBeInTheDocument();
+  });
+
+  it('shows a video icon only when the listing has a video', () => {
+    const { rerender } = render(<AuctionCard auction={card({ hasVideo: true })} />);
+    expect(screen.getByText('Has video')).toBeInTheDocument();
+    rerender(<AuctionCard auction={card()} />);
+    expect(screen.queryByText('Has video')).not.toBeInTheDocument();
+  });
+});
+
 describe('AuctionStatusBadge', () => {
   it.each([
     ['LIVE', 'Live'],

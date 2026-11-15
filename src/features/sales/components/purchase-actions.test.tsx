@@ -154,3 +154,38 @@ describe('SaleStatusBadge', () => {
     expect(screen.getByText(label)).toBeInTheDocument();
   });
 });
+
+describe('PurchaseActions delivery choice', () => {
+  const both = { pickup: true, pickupCity: 'Pune', courier: true, shippingFeePaise: 15000, shipsWithinDays: 3 };
+
+  it('both offered: radios with fees; Pay is disabled until one is chosen', async () => {
+    render(<PurchaseActions sale={sale({ shippingOptions: both })} />);
+    expect(screen.getByRole('radio', { name: /Pickup in Pune/ })).not.toBeChecked();
+    expect(screen.getByText('₹150')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Pay ₹2,500' })).toBeDisabled();
+  });
+
+  it('choosing courier adds the fee to the button and passes { delivery } to pay', async () => {
+    render(<PurchaseActions sale={sale({ shippingOptions: both })} />);
+    await userEvent.click(screen.getByRole('radio', { name: /Courier/ }));
+    const pay = screen.getByRole('button', { name: 'Pay ₹2,650' });
+    expect(pay).toBeEnabled();
+    await userEvent.click(pay);
+    expect(m.pay).toHaveBeenCalledWith('s1', 'COURIER');
+  });
+
+  it('choosing pickup keeps the item price', async () => {
+    render(<PurchaseActions sale={sale({ shippingOptions: both })} />);
+    await userEvent.click(screen.getByRole('radio', { name: /Pickup/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Pay ₹2,500' }));
+    expect(m.pay).toHaveBeenCalledWith('s1', 'PICKUP');
+  });
+
+  it('only one option offered: no radios, plain pay(id)', async () => {
+    m.pay.mockClear();
+    render(<PurchaseActions sale={sale({ shippingOptions: { pickup: false, courier: true, shippingFeePaise: 15000 }, shippingFeePaise: 15000, amountPaise: 265000 })} />);
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Pay ₹2,650' }));
+    expect(m.pay).toHaveBeenCalledWith('s1');
+  });
+});

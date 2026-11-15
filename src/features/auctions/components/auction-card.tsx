@@ -2,14 +2,15 @@
 import * as React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Gavel, ImageOff } from 'lucide-react';
+import { Gavel, ImageOff, Video } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Countdown } from '@/components/common/countdown';
 import { VerifiedBadge } from '@/components/common/verified-badge';
 import { MemberAvatar } from '@/components/common/member-avatar';
-import { formatINR } from '@/lib/utils';
+import { formatDate, formatINR } from '@/lib/utils';
 import { WatchButton } from '@/features/watchlist/components/watch-button';
 import type { AuctionCard as AuctionCardData, AuctionStatus } from '../auctions.types';
+import { estimateText } from './listing-info';
 
 const STATUS: Record<AuctionStatus, { label: string; variant: 'success' | 'warning' | 'secondary' | 'destructive' }> = {
   LIVE: { label: 'Live', variant: 'success' },
@@ -79,19 +80,37 @@ export function AuctionCard({ auction, priority }: { auction: AuctionCardData; p
             className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
           <AuctionStatusBadge status={auction.status} className="absolute left-2 top-2 border-border bg-background/90 backdrop-blur-xs" />
+          {auction.hasVideo && (
+            <span
+              title="Has video"
+              className="absolute bottom-2 left-2 inline-flex items-center rounded-full bg-background/90 p-1.5 text-foreground backdrop-blur-xs"
+            >
+              <Video className="h-3.5 w-3.5" aria-hidden />
+              <span className="sr-only">Has video</span>
+            </span>
+          )}
         </div>
         <div className="flex flex-1 flex-col gap-2 p-3 pb-2">
           <h3 className="line-clamp-2 text-sm font-semibold leading-snug">{auction.title}</h3>
           <div className="flex items-end justify-between gap-2">
-            <div>
-              <p className="text-xs text-muted-foreground">{hasBids ? 'Current bid' : 'Starting bid'}</p>
-              <p className="text-base font-bold text-primary">{formatINR(hasBids ? auction.currentBidPaise : auction.startingBidPaise)}</p>
-            </div>
+            {auction.sold ? (
+              <p className="text-sm font-semibold text-primary">
+                Sold for {formatINR(auction.currentBidPaise)} · {formatDate(auction.endedAt ?? auction.endTime)}
+              </p>
+            ) : (
+              <div>
+                <p className="text-xs text-muted-foreground">{hasBids ? 'Current bid' : 'Starting bid'}</p>
+                <p className="text-base font-bold text-primary">{formatINR(hasBids ? auction.currentBidPaise : auction.startingBidPaise)}</p>
+              </div>
+            )}
             <p className="inline-flex items-center gap-1 text-xs text-muted-foreground">
               <Gavel className="h-3.5 w-3.5" aria-hidden />
               {auction.bidCount} {auction.bidCount === 1 ? 'bid' : 'bids'}
             </p>
           </div>
+          {estimateText(auction.estimateLowPaise, auction.estimateHighPaise, '\u2013') && (
+            <p className="text-xs text-muted-foreground">Est. {estimateText(auction.estimateLowPaise, auction.estimateHighPaise, '\u2013')}</p>
+          )}
           {typeof auction.buyNowPricePaise === 'number' && auction.status !== 'ENDED' && auction.status !== 'CANCELLED' && (
             <Badge variant="default" className="w-fit">
               Buy now {formatINR(auction.buyNowPricePaise)}

@@ -87,3 +87,31 @@ describe('verified sellers filter', () => {
     expect(auctionListParams(DEFAULT_FILTERS)).not.toHaveProperty('verified');
   });
 });
+
+describe('attribute filters (attr.<key>) and condition grades', () => {
+  it('round-trips attr params and the category slug', () => {
+    const f: AuctionFilters = { ...DEFAULT_FILTERS, category: 'watches', attrs: { metal: 'Gold', size: 'M' } };
+    const qs = filtersToSearchParams(f).toString();
+    expect(qs).toContain('attr.metal=Gold');
+    expect(parseFilters(new URLSearchParams(qs))).toEqual({ ...f, minPrice: undefined, maxPrice: undefined });
+  });
+  it('maps attrs into API params; defaults are omitted', () => {
+    expect(auctionListParams({ ...DEFAULT_FILTERS, category: 'watches', attrs: { metal: 'Gold' } })).toMatchObject({ category: 'watches', 'attr.metal': 'Gold' });
+    expect(Object.keys(auctionListParams(DEFAULT_FILTERS)).some((k) => k.startsWith('attr.'))).toBe(false);
+    expect(filtersToSearchParams(DEFAULT_FILTERS).toString()).toBe('');
+  });
+  it('drops unknown / invalid params, empty values and anything past 5', () => {
+    const p = new URLSearchParams('attr.ok=1&attr.Bad=2&attr.=3&attr.empty=&foo=bar&attr.a1=1&attr.a2=1&attr.a3=1&attr.a4=1&attr.a5=1');
+    expect(Object.keys(parseFilters(p).attrs!)).toEqual(['ok', 'a1', 'a2', 'a3', 'a4']);
+    expect(parseFilters(new URLSearchParams('foo=bar')).attrs).toBeUndefined();
+  });
+  it('reads attr from record params too', () => {
+    expect(parseFilters({ 'attr.metal': ['Gold', 'x'] }).attrs).toEqual({ metal: 'Gold' });
+  });
+  it('accepts all six condition grades', () => {
+    for (const c of ['NEW', 'LIKE_NEW', 'GOOD', 'FAIR', 'USED', 'FOR_PARTS']) {
+      expect(parseFilters(new URLSearchParams(`condition=${c}`)).condition).toBe(c);
+    }
+    expect(parseFilters(new URLSearchParams('condition=MINT')).condition).toBe('');
+  });
+});

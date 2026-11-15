@@ -21,11 +21,11 @@ describe('legalPagesFormSchema', () => {
 });
 
 describe('marketplaceSchema (admin settings)', () => {
-  const ok = { commissionPercent: '5.00', minIncrementRupees: '100', antiSnipingMinutes: '2', maxPriceRupees: '100000000', depositThresholdRupees: '100000', depositRatePercent: '10', categories: ['Art', 'Cars'], checkoutMode: 'optional' as const };
+  const ok = { commissionPercent: '5.00', minIncrementRupees: '100', antiSnipingMinutes: '2', maxPriceRupees: '100000000', depositThresholdRupees: '100000', depositRatePercent: '10', checkoutMode: 'optional' as const };
   it('accepts valid settings and converts to API units', () => {
     const r = marketplaceSchema.safeParse(ok);
     expect(r.success).toBe(true);
-    expect(formToSettings(r.data!)).toEqual({ commissionRateBps: 500, minIncrementPaise: 10000, antiSnipingMinutes: 2, categories: ['Art', 'Cars'], maxPricePaise: 10_000_000_000, depositThresholdPaise: 10_000_000, depositRateBps: 1000, checkoutMode: 'optional' });
+    expect(formToSettings(r.data!)).toEqual({ commissionRateBps: 500, minIncrementPaise: 10000, antiSnipingMinutes: 2, maxPricePaise: 10_000_000_000, depositThresholdPaise: 10_000_000, depositRateBps: 1000, checkoutMode: 'optional' });
   });
   it('deposit fields: rupees <-> paise and percent <-> bps, 0 threshold = off', () => {
     const off = formToSettings(marketplaceSchema.parse({ ...ok, depositThresholdRupees: '0', depositRatePercent: '12.5' }));
@@ -40,8 +40,8 @@ describe('marketplaceSchema (admin settings)', () => {
     expect(formToSettings(marketplaceSchema.parse({ ...ok, checkoutMode: 'required' })).checkoutMode).toBe('required');
   });
   it('round-trips settings through the form', () => {
-    const s = { commissionRateBps: 750, minIncrementPaise: 12550, antiSnipingMinutes: 5, categories: ['A1'], maxPricePaise: 250_000_000_000, depositThresholdPaise: 5_000_000, depositRateBps: 2000, checkoutMode: 'required' as const };
-    expect(settingsToForm(s)).toEqual({ commissionPercent: '7.50', minIncrementRupees: '125.5', antiSnipingMinutes: '5', maxPriceRupees: '2500000000', depositThresholdRupees: '50000', depositRatePercent: '20.00', categories: ['A1'], checkoutMode: 'required' });
+    const s = { commissionRateBps: 750, minIncrementPaise: 12550, antiSnipingMinutes: 5, maxPricePaise: 250_000_000_000, depositThresholdPaise: 5_000_000, depositRateBps: 2000, checkoutMode: 'required' as const };
+    expect(settingsToForm(s)).toEqual({ commissionPercent: '7.50', minIncrementRupees: '125.5', antiSnipingMinutes: '5', maxPriceRupees: '2500000000', depositThresholdRupees: '50000', depositRatePercent: '20.00', checkoutMode: 'required' });
     expect(bpsToPercent(500)).toBe('5.00');
     expect(percentToBps('7.5')).toBe(750);
   });
@@ -61,9 +61,8 @@ describe('marketplaceSchema (admin settings)', () => {
     expect(msgs(marketplaceSchema.safeParse({ ...ok, maxPriceRupees: '' }))).toContain('Maximum price is required');
     expect(formToSettings(marketplaceSchema.parse({ ...ok, maxPriceRupees: '10000000000' })).maxPricePaise).toBe(1_000_000_000_000);
   });
-  it('categories: at least one, unique case-insensitively', () => {
-    expect(msgs(marketplaceSchema.safeParse({ ...ok, categories: [] }))).toContain('Add at least one category');
-    expect(msgs(marketplaceSchema.safeParse({ ...ok, categories: ['Art', 'art'] }))).toContain('Categories must be unique');
-    expect(msgs(marketplaceSchema.safeParse({ ...ok, categories: ['A'] }))).toContain('At least 2 characters');
+  it('categories are no longer part of the settings form (managed at /admin/categories)', () => {
+    expect(marketplaceSchema.safeParse({ ...ok, categories: [] }).success).toBe(true);
+    expect('categories' in settingsToForm({ commissionRateBps: 500, minIncrementPaise: 100, antiSnipingMinutes: 2, categories: ['A'], maxPricePaise: 100_000, depositThresholdPaise: 0, depositRateBps: 1000, checkoutMode: 'off' })).toBe(false);
   });
 });

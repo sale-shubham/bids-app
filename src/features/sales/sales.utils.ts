@@ -23,6 +23,11 @@ export const SALE_TABS: { value: SaleStatus | 'all'; label: string }[] = [
 const SETTLEABLE: SaleStatus[] = ['PAID', 'SHIPPED', 'DELIVERED', 'DISPUTED'];
 const ADMIN_RELEASABLE: SaleStatus[] = ['DELIVERED', 'DISPUTED'];
 
+/** The buyer must pick pickup or courier before paying: the auction offers both and the sale is unpaid. */
+export function needsDeliveryChoice(sale: Pick<SaleDTO, 'status' | 'shippingOptions'>): boolean {
+  return sale.status === 'AWAITING_PAYMENT' && !!sale.shippingOptions?.pickup && !!sale.shippingOptions?.courier;
+}
+
 export interface SaleActions {
   /** Buyer can still pay (inside the pay-by window). */
   canPay: boolean;

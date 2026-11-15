@@ -13,7 +13,19 @@ import { AuctionGrid, AuctionGridSkeleton } from './auction-grid';
 // Client half of /auctions: shows the server-fetched first page instantly,
 // then continues with infinite scroll. `filters` and `initialPage` come from
 // the same searchParams on the server, so they always match.
-export function AuctionList({ filters, initialPage }: { filters: AuctionFilters; initialPage: AuctionPage | null }) {
+export function AuctionList({
+  filters,
+  initialPage,
+  emptyTitle = 'No auctions found',
+  emptyDescription = 'Try a different search or clear some filters.',
+  emptyActionLabel = 'Clear filters',
+}: {
+  filters: AuctionFilters;
+  initialPage: AuctionPage | null;
+  emptyTitle?: string;
+  emptyDescription?: string;
+  emptyActionLabel?: string;
+}) {
   const q = useAuctionsList(filters, initialPage);
   const syncServerTime = useLiveStore((s) => s.syncServerTime);
   const serverTime = initialPage?.serverTime;
@@ -42,9 +54,9 @@ export function AuctionList({ filters, initialPage }: { filters: AuctionFilters;
     return (
       <EmptyState
         icon={Gavel}
-        title="No auctions found"
-        description="Try a different search or clear some filters."
-        actionLabel="Clear filters"
+        title={emptyTitle}
+        description={emptyDescription}
+        actionLabel={emptyActionLabel}
         actionHref="/auctions"
       />
     );

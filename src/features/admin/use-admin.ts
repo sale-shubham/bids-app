@@ -126,7 +126,7 @@ export function useSaveSettings() {
     mutationFn: (body: AdminSettings) => api.saveSettings(body),
     onSuccess: (data) => {
       qc.setQueryData(adminKeys.settings, data);
-      void qc.invalidateQueries({ queryKey: ['auctions', 'categories'] });
+      void qc.invalidateQueries({ queryKey: ['categories'] });
     },
   });
 }

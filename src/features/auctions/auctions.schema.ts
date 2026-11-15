@@ -1,7 +1,9 @@
 import { z } from '@/lib/zod';
 import { DEFAULT_MAX_PRICE_PAISE } from '@/features/settings/settings.utils';
 import { formatINR } from '@/lib/utils';
-import type { AuctionDetail, AuctionWritePayload } from './auctions.types';
+import { attributeErrors, attributesToPayload, specsToValues } from '@/features/categories/categories.schema';
+import type { AttributeDef } from '@/features/categories/categories.types';
+import { CONDITIONS, type AuctionCondition, type AuctionDetail, type AuctionWritePayload } from './auctions.types';
 
 // Mirrors bids-api's create/update rules. Rupee inputs are strings in the form
 // and converted to paise by `toWritePayload`.
@@ -42,6 +44,9 @@ const optionalMoney = (label: string, max: number) =>
     .refine((v) => v === '' || (Number.isFinite(Number(v)) && Number(v) > 0), `${label} must be a positive amount`)
     .refine((v) => v === '' || !Number.isFinite(Number(v)) || Math.round(Number(v) * 100) <= max, tooHigh(label, max));
 
+/** Rich-text HTML with no visible text (Quill's empty `<p><br></p>`) counts as empty. */
+export const isBlankHtml = (html: string) => html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim() === '';
+
 /** Combine "YYYY-MM-DD" + "HH:mm" (local time) into a Date; null when incomplete. */
 export function combineDateTime(date: string, time: string): Date | null {
   if (!date || !time) return null;
@@ -52,9 +57,25 @@ export function combineDateTime(date: string, time: string): Date | null {
 export interface AuctionFormValues {
   title: string;
   description: string;
-  category: string;
-  condition: 'NEW' | 'USED';
+  /** Category node id (leaf or any level). */
+  categoryId: string;
+  /** Category attribute values as strings, keyed by attribute key. */
+  attributes: Record<string, string>;
+  condition: AuctionCondition;
+  /** Optional pre-auction estimate range (rupees); both or neither. */
+  estimateLow: string;
+  estimateHigh: string;
+  /** Optional rich-text condition report (HTML). */
+  conditionReport: string;
+  pickup: boolean;
+  pickupCity: string;
+  courier: boolean;
+  /** Courier fee in rupees; empty = free. */
+  shippingFee: string;
+  shipsWithinDays: string;
   images: string[];
+  /** Uploaded listing video URL, or null. */
+  videoUrl: string | null;
   startingBid: string;
   minIncrement: string;
   /** Optional hidden reserve (rupees); empty = none. */
@@ -83,7 +104,12 @@ export function resolveWindow(v: Pick<AuctionFormValues, 'startNow' | 'startDate
  * `maxPricePaise`: platform maximum price (public settings); caps the starting
  * bid and the minimum increment.
  */
-export function makeAuctionFormSchema(originalStart?: string, maxPricePaise: number = DEFAULT_MAX_PRICE_PAISE) {
+export function makeAuctionFormSchema(
+  originalStart?: string,
+  maxPricePaise: number = DEFAULT_MAX_PRICE_PAISE,
+  /** Attribute definitions of the chosen category; their values are validated too. */
+  attributeDefs: AttributeDef[] = [],
+) {
   return z
     .object({
       title: z.string().trim().min(5, 'At least 5 characters').max(120, 'At most 120 characters'),
@@ -92,9 +118,26 @@ export function makeAuctionFormSchema(originalStart?: string, maxPricePaise: num
         .refine((v) => v.length >= 20, 'Describe the item (at least 20 characters)')
         .refine((v) => v.length <= 10000, 'Description is too long (max 10,000 characters)')
         .refine((v) => v.replace(/<[^>]*>/g, '').trim().length >= 10, 'Describe the item (at least 20 characters)'),
-      category: z.string().trim().min(1, 'Choose a category').max(60),
-      condition: z.enum(['NEW', 'USED'], { error: 'Choose a condition' }),
+      categoryId: z.string().trim().min(1, 'Choose a category'),
+      attributes: z.record(z.string(), z.string()),
+      condition: z.enum(CONDITIONS.map((c) => c.value) as [AuctionCondition, ...AuctionCondition[]], { error: 'Choose a condition' }),
+      estimateLow: optionalMoney('Low estimate', maxPricePaise),
+      estimateHigh: optionalMoney('High estimate', maxPricePaise),
+      conditionReport: z.string().refine((v) => v.length <= 5000, 'Condition report is too long (max 5,000 characters)'),
+      pickup: z.boolean(),
+      pickupCity: z.string().trim().max(80, 'At most 80 characters'),
+      courier: z.boolean(),
+      shippingFee: z
+        .string()
+        .trim()
+        .refine((v) => v === '' || (Number.isFinite(Number(v)) && Number(v) >= 0), 'Shipping fee must be 0 or more')
+        .refine((v) => v === '' || !Number.isFinite(Number(v)) || Math.round(Number(v) * 100) <= maxPricePaise, tooHigh('Shipping fee', maxPricePaise)),
+      shipsWithinDays: z
+        .string()
+        .trim()
+        .refine((v) => v === '' || (/^\d+$/.test(v) && Number(v) >= 1 && Number(v) <= 30), 'Whole days from 1 to 30'),
       images: z.array(z.string()).min(1, 'Add at least one image').max(8, 'At most 8 images'),
+      videoUrl: z.string().nullable(),
       startingBid: money(100, maxPricePaise, 'Starting bid'),
       minIncrement: z
         .string()
@@ -124,6 +167,23 @@ export function makeAuctionFormSchema(originalStart?: string, maxPricePaise: num
       } else if (reserve !== null && buyNow !== null && buyNow < reserve) {
         ctx.addIssue({ code: 'custom', path: ['buyNowPrice'], message: 'Buy It Now price must be at least the reserve price' });
       }
+      // Estimate: both or neither, at least ₹1, low <= high.
+      const low = num(v.estimateLow);
+      const high = num(v.estimateHigh);
+      if ((low === null) !== (high === null)) {
+        ctx.addIssue({ code: 'custom', path: [low === null ? 'estimateLow' : 'estimateHigh'], message: 'Enter both estimates, or leave both empty' });
+      } else if (low !== null && high !== null) {
+        if (low < 100) ctx.addIssue({ code: 'custom', path: ['estimateLow'], message: 'Low estimate must be at least ₹1' });
+        if (high < 100) ctx.addIssue({ code: 'custom', path: ['estimateHigh'], message: 'High estimate must be at least ₹1' });
+        else if (low > high) ctx.addIssue({ code: 'custom', path: ['estimateHigh'], message: 'High estimate must be at least the low estimate' });
+      }
+      // Delivery: at least one option; pickup needs a city.
+      if (!v.pickup && !v.courier) ctx.addIssue({ code: 'custom', path: ['courier'], message: 'Offer pickup, courier, or both' });
+      if (v.pickup && !v.pickupCity.trim()) ctx.addIssue({ code: 'custom', path: ['pickupCity'], message: 'Enter the pickup city' });
+      // Category attributes.
+      for (const [key, message] of Object.entries(attributeErrors(attributeDefs, v.attributes))) {
+        ctx.addIssue({ code: 'custom', path: ['attributes', key], message });
+      }
       if (!v.startNow && !combineDateTime(v.startDate, v.startTime)) {
         ctx.addIssue({ code: 'custom', path: ['startDate'], message: 'Choose a start date and time' });
         return;
@@ -144,19 +204,31 @@ export function makeAuctionFormSchema(originalStart?: string, maxPricePaise: num
     });
 }
 
-export function toWritePayload(v: AuctionFormValues): AuctionWritePayload {
+export function toWritePayload(v: AuctionFormValues, attributeDefs: AttributeDef[] = []): AuctionWritePayload {
   const { start, end } = resolveWindow(v);
   return {
     title: v.title.trim(),
     description: v.description,
-    category: v.category,
+    categoryId: v.categoryId,
+    attributes: attributesToPayload(attributeDefs, v.attributes),
     condition: v.condition,
     images: v.images,
+    videoUrl: v.videoUrl,
     startingBidPaise: rupeesToPaise(v.startingBid),
     ...(v.minIncrement.trim() ? { minIncrementPaise: rupeesToPaise(v.minIncrement) } : {}),
     // null = none / cleared (the API clears on update; `withoutNullPrices` drops them for create).
     reservePricePaise: v.reservePrice.trim() ? rupeesToPaise(v.reservePrice) : null,
     buyNowPricePaise: v.buyNowPrice.trim() ? rupeesToPaise(v.buyNowPrice) : null,
+    estimateLowPaise: v.estimateLow.trim() && v.estimateHigh.trim() ? rupeesToPaise(v.estimateLow) : null,
+    estimateHighPaise: v.estimateLow.trim() && v.estimateHigh.trim() ? rupeesToPaise(v.estimateHigh) : null,
+    conditionReport: isBlankHtml(v.conditionReport) ? '' : v.conditionReport,
+    shippingOptions: {
+      pickup: v.pickup,
+      ...(v.pickup ? { pickupCity: v.pickupCity.trim() } : {}),
+      courier: v.courier,
+      ...(v.courier ? { shippingFeePaise: v.shippingFee.trim() ? rupeesToPaise(v.shippingFee) : 0 } : {}),
+      ...(v.courier && v.shipsWithinDays.trim() ? { shipsWithinDays: Number(v.shipsWithinDays) } : {}),
+    },
     startTime: (start ?? new Date()).toISOString(),
     endTime: (end ?? new Date()).toISOString(),
   };
@@ -164,9 +236,11 @@ export function toWritePayload(v: AuctionFormValues): AuctionWritePayload {
 
 /** Create payload: leave out reserve / Buy It Now when they were not set. */
 export function withoutNullPrices(p: AuctionWritePayload): AuctionWritePayload {
-  const { reservePricePaise, buyNowPricePaise, ...rest } = p;
+  const { reservePricePaise, buyNowPricePaise, estimateLowPaise, estimateHighPaise, conditionReport, ...rest } = p;
   return {
     ...rest,
+    ...(estimateLowPaise != null && estimateHighPaise != null ? { estimateLowPaise, estimateHighPaise } : {}),
+    ...(conditionReport ? { conditionReport } : {}),
     ...(reservePricePaise != null ? { reservePricePaise } : {}),
     ...(buyNowPricePaise != null ? { buyNowPricePaise } : {}),
   };
@@ -181,9 +255,19 @@ export function defaultFormValues(a?: AuctionDetail): AuctionFormValues {
     return {
       title: '',
       description: '',
-      category: '',
+      categoryId: '',
+      attributes: {},
       condition: 'NEW',
+      estimateLow: '',
+      estimateHigh: '',
+      conditionReport: '',
+      pickup: false,
+      pickupCity: '',
+      courier: true,
+      shippingFee: '',
+      shipsWithinDays: '',
       images: [],
+      videoUrl: null,
       startingBid: '',
       minIncrement: '',
       reservePrice: '',
@@ -201,9 +285,20 @@ export function defaultFormValues(a?: AuctionDetail): AuctionFormValues {
   return {
     title: a.title,
     description: a.description,
-    category: a.category,
+    categoryId: a.categoryId ?? '',
+    attributes: specsToValues(undefined, a.specs),
     condition: a.condition,
+    estimateLow: typeof a.estimateLowPaise === 'number' ? paiseToRupees(a.estimateLowPaise) : '',
+    estimateHigh: typeof a.estimateHighPaise === 'number' ? paiseToRupees(a.estimateHighPaise) : '',
+    conditionReport: a.conditionReport ?? '',
+    // Legacy listings have no delivery options: default to courier so the form validates.
+    pickup: a.shippingOptions ? !!a.shippingOptions.pickup : false,
+    pickupCity: a.shippingOptions?.pickupCity ?? '',
+    courier: a.shippingOptions ? !!a.shippingOptions.courier : true,
+    shippingFee: typeof a.shippingOptions?.shippingFeePaise === 'number' && a.shippingOptions.shippingFeePaise > 0 ? paiseToRupees(a.shippingOptions.shippingFeePaise) : '',
+    shipsWithinDays: typeof a.shippingOptions?.shipsWithinDays === 'number' ? String(a.shippingOptions.shipsWithinDays) : '',
     images: a.images,
+    videoUrl: a.videoUrl ?? null,
     startingBid: paiseToRupees(a.startingBidPaise),
     minIncrement: paiseToRupees(a.minIncrementPaise),
     reservePrice: typeof a.reservePricePaise === 'number' ? paiseToRupees(a.reservePricePaise) : '',
@@ -225,9 +320,19 @@ export function relistFormValues(a: AuctionDetail): AuctionFormValues {
     ...base,
     title: old.title,
     description: old.description,
-    category: old.category,
+    categoryId: old.categoryId,
+    attributes: old.attributes,
     condition: old.condition,
+    estimateLow: old.estimateLow,
+    estimateHigh: old.estimateHigh,
+    conditionReport: old.conditionReport,
+    pickup: old.pickup,
+    pickupCity: old.pickupCity,
+    courier: old.courier,
+    shippingFee: old.shippingFee,
+    shipsWithinDays: old.shipsWithinDays,
     images: old.images,
+    videoUrl: old.videoUrl,
     startingBid: old.startingBid,
     minIncrement: old.minIncrement,
     reservePrice: old.reservePrice,

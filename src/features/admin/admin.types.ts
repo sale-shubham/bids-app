@@ -76,7 +76,8 @@ export interface AdminSettings {
   commissionRateBps: number;
   minIncrementPaise: number;
   antiSnipingMinutes: number;
-  categories: string[];
+  /** Read-only, derived from the category tree (managed at /admin/categories); the API ignores it on save. */
+  categories?: string[];
   /** Platform maximum price in paise (100_000 .. 1_000_000_000_000). */
   maxPricePaise: number;
   /** Winner checkout through the platform: off / optional / required. */

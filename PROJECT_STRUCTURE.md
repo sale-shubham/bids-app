@@ -7,6 +7,7 @@ src/
     page.tsx                         root: redirect('/login') (P2X pattern; signed-in users are sent home by the edge gate). The marketing site is the separate bids-website repo
     (public)/                        public pages, rendered in the app shell (guest mode when logged out) via PublicShell; layout.tsx
       auctions/, auctions/[id]/      browse (filters, sort, infinite scroll, recently viewed) and auction detail (server-rendered + live)
+      sold/                          public sold archive (server-rendered first page + infinite scroll)
       leaderboard/, sellers/[id]/    ranking (podium + table), seller profile (tabs + infinite scroll)
       pages/[slug]                   legal pages (server-rendered from GET /settings/legal/:slug)
       suspended/                     deactivated-account page
@@ -14,7 +15,7 @@ src/
     (member)/                        BIDDER / AUCTIONEER: /watchlist, /profile, /notifications
     (bidder)/my-bids                 BIDDER only; tabs Winning / Outbid / Won / Lost
     (bidder)/purchases, purchases/[id]  BIDDER only; checkout list + detail (pay, confirm received, report a problem)
-    (auctioneer)/                    AUCTIONEER only; /sell/* (auctions list, new, edit, auctions/[id] = bids + result, commissions = pay via Razorpay, sales + sales/[id] = ship + payout amounts, payouts = payout account onboarding)
+    (auctioneer)/                    AUCTIONEER only; /sell/* (auctions list, new, edit, bulk = CSV bulk upload, auctions/[id] = bids + result, commissions = pay via Razorpay, sales + sales/[id] = ship + payout amounts, payouts = payout account onboarding)
     (admin)/                         SUPER_ADMIN only: /admin (dashboard + charts), /admin/members, auctions, commissions, payments, sales (release / refund), reviews, reports, risk (shill-bid queue), settings (incl. checkout mode + bid deposits), profile
     sitemap.ts, robots.ts            SEO (app public pages + /auctions/sitemap, fail-soft); public/og-image.png = default OG image
   components/
@@ -27,10 +28,11 @@ src/
   constants/                         api.ts (API_ORIGIN, proxy mode), routes.ts (route tables + gateFor), website.ts (WEBSITE_URL, links to the website), legal.ts, apple-splash-devices.json
   features/                          one folder per feature: *.api.ts, *.parse.ts, *.schema.ts, *.types.ts, use-*.ts, components/
     auth/                            auth.api/schema/errors, use-auth, components/{verify-email-step,forgot-password-flow}
-    members/, uploads/               profile + devices (use-members); presigned S3 upload (use-upload)
+    members/, uploads/               profile + devices (use-members); presigned S3 upload (use-upload, resize-image = client WebP resize, use-video-upload)
     auctions/                        auctions.api/server/parse/schema/filters/types, use-auctions, use-image-uploader,
                                      components/{auction-card,auction-grid,auction-list,auction-detail,auction-form,auction-filters,
-                                     auction-gallery,new-auction,republish-dialog,recently-viewed,share-buttons}
+                                     auction-gallery,video-upload-field,similar-sold,new-auction,republish-dialog,recently-viewed,share-buttons}
+    bulk/                            bulk.csv (template, papaparse, row mapping + validation, file matching), bulk.api/errors/types, use-bulk, components/{bulk-upload,bulk-preview-table}
     bids/                            bids.api/parse/types/errors/utils, use-bids, components/{bid-panel,bid-history,auction-result}
     live/                            live-socket (WS client), live-socket-provider, use-auction-live, live.reducers/types/api, components/live-indicator
     commissions/                     commissions.api/parse/types/errors, use-commissions, use-pay-commission, components/unpaid-commission-banner
@@ -65,3 +67,8 @@ scripts/                             gen-version, generate-icons, generate-apple
 e2e/                                 Playwright suite (see e2e/README.md)
 docs/, readme/                       guides: methods/, ui/, theming/, flows/ (admin, auctions, auth, bidding, deployment, payments, push-notifications, pwa, seo, watchlist, websocket, reviews, questions, saved-searches, reports, deposits, strikes, risk)
 ```
+
+### Phase F additions (categories)
+- `src/features/categories/`: `categories.types/api/parse/schema/utils/errors`, `use-categories.ts`, `components/` (`category-picker`, `attribute-fields`, `attribute-schema-editor`, `category-dialog`, `admin-categories`), tests.
+- `src/features/auctions/components/listing-info.tsx`: detail blocks (breadcrumb, estimate, specs, condition report, delivery).
+- `src/app/(admin)/admin/categories/page.tsx`: admin category tree.

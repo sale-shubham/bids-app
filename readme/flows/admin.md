@@ -27,3 +27,6 @@ SUPER_ADMIN only. Routes live in `src/app/(admin)/admin/**`, guarded by `AuthGua
 - Destructive actions use `ConfirmDialog`; results are sonner toasts; errors via `apiErrorMessage` (`commissionErrorMessage` for waive).
 - Saving settings refreshes the `['auctions','categories']` cache.
 - Legal pages are read from the public `GET /settings/legal/:slug`, saved with `PUT /admin/settings/legal/:slug`.
+
+## Categories (`/admin/categories`, Phase F)
+Nav item "Categories". Tree list with active switch, auction counts, create / edit dialog with attribute schema editor, delete via `<ConfirmDialog>` (disabled when in use). Full description in `categories.md`. Settings > Marketplace no longer has a category editor (it links to this page); `categories` in admin settings is read-only and omitted from the save payload.

@@ -1,5 +1,6 @@
 import { parsePaged, type Paged } from '@/lib/paged';
 import { parseOffer } from '@/features/second-chance/second-chance.parse';
+import type { ShippingOptions } from '@/features/auctions/auctions.types';
 import { SALE_STATUSES, type SaleContact, type SaleDTO, type SaleRole, type SaleStatus, type ShippingMethod } from './sales.types';
 
 type Obj = Record<string, unknown>;
@@ -12,6 +13,18 @@ function contact(v: unknown): SaleContact | undefined {
   if (typeof v !== 'object' || v === null) return undefined;
   const c = obj(v);
   return { name: str(c.name), email: str(c.email), phone: str(c.phone) };
+}
+
+function shippingOptions(v: unknown): ShippingOptions | null {
+  if (typeof v !== 'object' || v === null) return null;
+  const o = obj(v);
+  return {
+    pickup: o.pickup === true,
+    pickupCity: strOrNull(o.pickupCity),
+    courier: o.courier === true,
+    shippingFeePaise: typeof o.shippingFeePaise === 'number' ? o.shippingFeePaise : null,
+    shipsWithinDays: typeof o.shipsWithinDays === 'number' ? o.shipsWithinDays : null,
+  };
 }
 
 export function parseSale(raw: unknown): SaleDTO {
@@ -32,6 +45,8 @@ export function parseSale(raw: unknown): SaleDTO {
     itemPaise: num(s.itemPaise),
     shippingFeePaise: num(s.shippingFeePaise),
     amountPaise: num(s.amountPaise),
+    deliveryChoice: s.deliveryChoice === 'COURIER' || s.deliveryChoice === 'PICKUP' ? s.deliveryChoice : null,
+    shippingOptions: shippingOptions(s.shippingOptions),
     payBy: strOrNull(s.payBy),
     paidAt: strOrNull(s.paidAt),
     shippingMethod: method,

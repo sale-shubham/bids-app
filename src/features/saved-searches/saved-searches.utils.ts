@@ -1,5 +1,5 @@
 import { filtersToSearchParams } from '@/features/auctions/auctions.filters';
-import type { AuctionFilters } from '@/features/auctions/auctions.types';
+import { conditionLabel, type AuctionFilters } from '@/features/auctions/auctions.types';
 import { formatINR } from '@/lib/utils';
 import type { SavedSearchDTO, SavedSearchPayload } from './saved-searches.types';
 
@@ -26,7 +26,7 @@ export function summarizeSavedSearch(s: SavedSearchDTO): string {
   const parts: string[] = [];
   if (s.q) parts.push(`"${s.q}"`);
   if (s.category) parts.push(s.category);
-  if (s.condition) parts.push(s.condition === 'NEW' ? 'New' : 'Used');
+  if (s.condition) parts.push(conditionLabel(s.condition));
   if (s.minPricePaise != null && s.maxPricePaise != null) parts.push(`${formatINR(s.minPricePaise)} - ${formatINR(s.maxPricePaise)}`);
   else if (s.minPricePaise != null) parts.push(`From ${formatINR(s.minPricePaise)}`);
   else if (s.maxPricePaise != null) parts.push(`Up to ${formatINR(s.maxPricePaise)}`);
