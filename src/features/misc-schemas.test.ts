@@ -21,15 +21,20 @@ describe('legalPagesFormSchema', () => {
 });
 
 describe('marketplaceSchema (admin settings)', () => {
-  const ok = { commissionPercent: '5.00', minIncrementRupees: '100', antiSnipingMinutes: '2', maxPriceRupees: '100000000', categories: ['Art', 'Cars'] };
+  const ok = { commissionPercent: '5.00', minIncrementRupees: '100', antiSnipingMinutes: '2', maxPriceRupees: '100000000', categories: ['Art', 'Cars'], checkoutMode: 'optional' as const };
   it('accepts valid settings and converts to API units', () => {
     const r = marketplaceSchema.safeParse(ok);
     expect(r.success).toBe(true);
-    expect(formToSettings(r.data!)).toEqual({ commissionRateBps: 500, minIncrementPaise: 10000, antiSnipingMinutes: 2, categories: ['Art', 'Cars'], maxPricePaise: 10_000_000_000 });
+    expect(formToSettings(r.data!)).toEqual({ commissionRateBps: 500, minIncrementPaise: 10000, antiSnipingMinutes: 2, categories: ['Art', 'Cars'], maxPricePaise: 10_000_000_000, checkoutMode: 'optional' });
+  });
+  it('checkout mode: accepts off / optional / required, rejects anything else', () => {
+    for (const m of ['off', 'optional', 'required']) expect(marketplaceSchema.safeParse({ ...ok, checkoutMode: m }).success).toBe(true);
+    expect(marketplaceSchema.safeParse({ ...ok, checkoutMode: 'always' }).success).toBe(false);
+    expect(formToSettings(marketplaceSchema.parse({ ...ok, checkoutMode: 'required' })).checkoutMode).toBe('required');
   });
   it('round-trips settings through the form', () => {
-    const s = { commissionRateBps: 750, minIncrementPaise: 12550, antiSnipingMinutes: 5, categories: ['A1'], maxPricePaise: 250_000_000_000 };
-    expect(settingsToForm(s)).toEqual({ commissionPercent: '7.50', minIncrementRupees: '125.5', antiSnipingMinutes: '5', maxPriceRupees: '2500000000', categories: ['A1'] });
+    const s = { commissionRateBps: 750, minIncrementPaise: 12550, antiSnipingMinutes: 5, categories: ['A1'], maxPricePaise: 250_000_000_000, checkoutMode: 'required' as const };
+    expect(settingsToForm(s)).toEqual({ commissionPercent: '7.50', minIncrementRupees: '125.5', antiSnipingMinutes: '5', maxPriceRupees: '2500000000', categories: ['A1'], checkoutMode: 'required' });
     expect(bpsToPercent(500)).toBe('5.00');
     expect(percentToBps('7.5')).toBe(750);
   });

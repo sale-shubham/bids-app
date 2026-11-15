@@ -10,8 +10,8 @@
 - guest-only (exact match) — `/`, `/login`, `/signup`, `/forgot-password`, `/reset-password`; a signed-in user is redirected away (members to a safe `?next=`, else their home)
 - public (no gate, guest or signed in) — `/auctions`, `/auctions/[id]`, `/leaderboard`, `/sellers/[id]`, `/pages/*`, `/suspended`
 - member (BIDDER / AUCTIONEER) — `/watchlist`, `/profile`, `/notifications`
-- bidder — `/my-bids` (BIDDER); auctioneer — `/sell/*` (AUCTIONEER)
-- admin — `/admin/*` (SUPER_ADMIN only; members, auctions, commissions, payments, reviews, settings, profile). **SUPER_ADMIN may only use `/admin/*` plus the public pages**: member routes redirect it to `/admin`; BIDDER / AUCTIONEER hitting `/admin` go to their home
+- bidder — `/my-bids`, `/purchases`, `/purchases/[id]` (BIDDER); auctioneer — `/sell/*` incl. `/sell/sales`, `/sell/sales/[id]`, `/sell/payouts` (AUCTIONEER)
+- admin — `/admin/*` (SUPER_ADMIN only; members, auctions, commissions, payments, sales, reviews, settings, profile). **SUPER_ADMIN may only use `/admin/*` plus the public pages**: member routes redirect it to `/admin`; BIDDER / AUCTIONEER hitting `/admin` go to their home
 - homes (`homeFor(role)`): SUPER_ADMIN `/admin`, AUCTIONEER `/sell/auctions`, BIDDER `/auctions`. `?next=` is honored only for member roles (`destinationFor`)
 
 **Auth:** the API sets httpOnly `nb_at` (short-lived JWT) and `nb_rt` cookies; the browser never sees a token. `proxy.ts` verifies `nb_at` with `JWT_SECRET` (jose) and refreshes via `POST /auth/refresh` when it expired. Client: `AuthBootstrap` loads `GET /members/me` into the zustand `auth-store`; `api-client.ts` sends cookies (`withCredentials`), does single-flight 401 refresh and `forceLogout()`.

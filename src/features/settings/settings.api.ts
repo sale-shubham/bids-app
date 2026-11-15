@@ -1,5 +1,5 @@
 import { api } from '@/lib/api-client';
-import type { PublicSettings } from './settings.types';
+import { resolveCheckoutMode, type PublicSettings } from './settings.types';
 
 export async function fetchPublicSettings(): Promise<PublicSettings> {
   const res = await api.get('/settings/public');
@@ -10,5 +10,6 @@ export async function fetchPublicSettings(): Promise<PublicSettings> {
     antiSnipingMinutes: d.antiSnipingMinutes ?? 0,
     categories: Array.isArray(d.categories) ? d.categories : [],
     maxPricePaise: typeof d.maxPricePaise === 'number' ? d.maxPricePaise : undefined,
+    checkoutMode: resolveCheckoutMode(d.checkoutMode),
   };
 }

@@ -1,5 +1,7 @@
 import { api } from '@/lib/api-client';
 import type { Paged } from '@/lib/paged';
+import { parseSalePage, parseSaleResponse } from '@/features/sales/sales.parse';
+import type { SaleDTO } from '@/features/sales/sales.types';
 import type { Role } from '@/constants/routes';
 import {
   parseAuctionAdminPage,
@@ -69,6 +71,16 @@ export async function fetchAdminPayments(
   const res = await api.get('/admin/payments', { params: clean({ status: noAll(f.status), page, pageSize }) });
   return parsePaymentPage(res.data);
 }
+
+export async function fetchAdminSales(f: { status: string; q: string }, page: number, pageSize: number): Promise<Paged<SaleDTO>> {
+  const res = await api.get('/admin/sales', { params: clean({ status: noAll(f.status), q: f.q, page, pageSize }) });
+  return parseSalePage(res.data);
+}
+
+export const releaseSale = (id: string) => api.post(`/admin/sales/${encodeURIComponent(id)}/release`).then((r) => parseSaleResponse(r.data));
+
+export const refundSale = (id: string, note?: string) =>
+  api.post(`/admin/sales/${encodeURIComponent(id)}/refund`, note ? { note } : {}).then((r) => parseSaleResponse(r.data));
 
 export async function fetchSettings() {
   const res = await api.get('/admin/settings');

@@ -1,3 +1,4 @@
+import type { CheckoutMode } from '@/features/settings/settings.types';
 import type { AuctionCard } from '@/features/auctions/auctions.types';
 import type { CommissionDTO } from '@/features/commissions/commissions.types';
 import type { Role } from '@/constants/routes';
@@ -70,6 +71,8 @@ export interface AdminSettings {
   categories: string[];
   /** Platform maximum price in paise (100_000 .. 1_000_000_000_000). */
   maxPricePaise: number;
+  /** Winner checkout through the platform: off / optional / required. */
+  checkoutMode: CheckoutMode;
 }
 
 export type LegalSlug = 'terms-conditions' | 'privacy-policy' | 'refund-policy';

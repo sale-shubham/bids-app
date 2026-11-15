@@ -13,8 +13,9 @@ src/
     (auth)/                          guest-only: /login, /signup (+ email OTP verify), /forgot-password, /reset-password
     (member)/                        BIDDER / AUCTIONEER: /watchlist, /profile, /notifications
     (bidder)/my-bids                 BIDDER only; tabs Winning / Outbid / Won / Lost
-    (auctioneer)/                    AUCTIONEER only; /sell/* (auctions list, new, edit, auctions/[id] = bids + result, commissions = pay via Razorpay)
-    (admin)/                         SUPER_ADMIN only: /admin (dashboard + charts), /admin/members, auctions, commissions, payments, reviews, settings, profile
+    (bidder)/purchases, purchases/[id]  BIDDER only; checkout list + detail (pay, confirm received, report a problem)
+    (auctioneer)/                    AUCTIONEER only; /sell/* (auctions list, new, edit, auctions/[id] = bids + result, commissions = pay via Razorpay, sales + sales/[id] = ship + payout amounts, payouts = payout account onboarding)
+    (admin)/                         SUPER_ADMIN only: /admin (dashboard + charts), /admin/members, auctions, commissions, payments, sales (release / refund), reviews, settings (incl. checkout mode), profile
     sitemap.ts, robots.ts            SEO (app public pages + /auctions/sitemap, fail-soft); public/og-image.png = default OG image
   components/
     ui/                              shadcn/Radix primitives
@@ -33,7 +34,9 @@ src/
     bids/                            bids.api/parse/types/errors/utils, use-bids, components/{bid-panel,bid-history,auction-result}
     live/                            live-socket (WS client), live-socket-provider, use-auction-live, live.reducers/types/api, components/live-indicator
     commissions/                     commissions.api/parse/types/errors, use-commissions, use-pay-commission, components/unpaid-commission-banner
-    payments/                        payments.api (POST /payments/verify); checkout loader in lib/razorpay.ts
+    payments/                        payments.api (POST /payments/verify), payments.types, use-razorpay-payment (generic), use-stub-payment-confirm; checkout loader in lib/razorpay.ts
+    sales/                           sales.api/parse/types/schema/utils/errors, use-sales, components/{sale-status-badge,sale-list,sale-detail,sale-detail-page,purchase-actions,ship-form,buyer-sale-entry,admin-sale-actions}
+    payouts/                         payouts.api/parse/types/schema/errors, use-payouts, components/{payout-account-panel,payout-status-card,payout-form,payout-required-gate}
     notifications/                   api, use-notifications, components/{notification-bell,notification-item}
     push/                            push.api, use-push (Web Push subscribe / unsubscribe)
     watchlist/                       api, use-watchlist (['watchlist-ids'], ['watchlist'], optimistic toggle), components/{watch-button,watchlist-view}

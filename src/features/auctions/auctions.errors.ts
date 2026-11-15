@@ -8,6 +8,7 @@ const MESSAGES: Record<string, string> = {
   AUCTION_ENDED: 'This auction has already ended.',
   AUCTION_NOT_REPUBLISHABLE: 'Only ended auctions with no bids can be republished.',
   COMMISSION_UNPAID: 'Pay your outstanding commission before creating a new auction.',
+  PAYOUT_ACCOUNT_REQUIRED: 'Set up your payout account before creating an auction.',
   INVALID_RESERVE: 'The reserve price must be at least the starting bid and within the platform maximum.',
   INVALID_BUY_NOW: 'The Buy It Now price must be above the starting bid, at least the reserve, and within the platform maximum.',
   FORBIDDEN: 'You do not have permission to do that.',
