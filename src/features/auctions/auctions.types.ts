@@ -66,13 +66,6 @@ export interface AuctionPage {
 
 export type AuctionPageParam = { page: number } | { cursor: string };
 
-export interface HomeAuctions {
-  featured: AuctionCard[];
-  endingSoon: AuctionCard[];
-  upcoming: AuctionCard[];
-  serverTime: string | null;
-}
-
 export interface AuctionCategory {
   name: string;
   liveCount: number;

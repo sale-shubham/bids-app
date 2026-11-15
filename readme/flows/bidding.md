@@ -6,7 +6,7 @@ Code: `src/features/bids/`, `src/features/notifications/`, `src/features/auction
 1. Auction detail (`/auctions/[id]`) renders `BidPanel`. The viewer state decides the action area: guest (Log in to bid, `?next=`), non-bidder, own auction, not started (start countdown), highest bidder (disabled, badge), ended (`AuctionResult`), otherwise `BidControls`.
 2. Min next bid = `bidCount === 0 ? startingBidPaise : currentBidPaise + minIncrementPaise` (`bids.utils.ts`). Quick buttons are `base + k * increment` (k = 1, 2, 5); the custom input takes whole rupees (converted to paise, must be at least the min).
 3. A confirm dialog shows the amount, then `POST /auctions/:id/bids { amountPaise }`.
-4. On success `usePlaceBid` writes `data.auction` into `['auction', id]`, syncs the server clock from `serverTime`, and invalidates `['auction-bids', id]`, `['my-bids']`, `['auctions']`.
+4. No optimistic UI for bids: the server response is the truth. On success `usePlaceBid` writes `data.auction` into `['auction', id]`, syncs the server clock from `serverTime`, and invalidates `['auction-bids', id]`, `['my-bids']`, `['auctions']`.
 5. Errors map to copy in `bids.errors.ts`. `BID_TOO_LOW` shows `details.minBidPaise`; `BID_TOO_LOW`, `AUCTION_ENDED`, `ALREADY_HIGHEST`, `AUCTION_NOT_STARTED` also refetch the auction.
 
 ## Freshness

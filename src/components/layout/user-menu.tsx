@@ -17,15 +17,18 @@ import { MemberAvatar } from '@/components/common/member-avatar';
 import { useAuthStore } from '@/store/auth-store';
 import { useLogout } from '@/features/auth/use-auth';
 import { apiErrorMessage } from '@/lib/api-client';
+import { useAuthHref } from '@/hooks/use-login-href';
 
 // Header account control: avatar menu (Profile, Log out) when signed in,
-// Login / Sign up buttons when not. Shows a placeholder until the session check
+// Log in / Sign up buttons (carrying `?next=` back to this page) for a guest. Shows a placeholder until the session check
 // finishes so the buttons never flash for a logged-in visitor.
 export function UserMenu() {
   const member = useAuthStore((s) => s.member);
   const initialized = useAuthStore((s) => s.initialized);
   const logout = useLogout();
   const [confirmOpen, setConfirmOpen] = React.useState(false);
+  const loginHref = useAuthHref('/login');
+  const signupHref = useAuthHref('/signup');
 
   if (!initialized) return <Skeleton className="h-9 w-24 rounded-full" />;
 
@@ -33,10 +36,10 @@ export function UserMenu() {
     return (
       <div className="flex items-center gap-2">
         <Button asChild variant="ghost" size="sm">
-          <Link href="/login">Log in</Link>
+          <Link href={loginHref}>Log in</Link>
         </Button>
         <Button asChild size="sm">
-          <Link href="/signup">Sign up</Link>
+          <Link href={signupHref}>Sign up</Link>
         </Button>
       </div>
     );
@@ -64,7 +67,7 @@ export function UserMenu() {
           </div>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
-            <Link href="/profile">
+            <Link href={member.role === 'SUPER_ADMIN' ? '/admin/profile' : '/profile'}>
               <User className="h-4 w-4" /> Profile
             </Link>
           </DropdownMenuItem>

@@ -33,8 +33,8 @@ export default async function ContentPage({ params }: Props) {
   const title = doc?.title ?? legalPageName(slug);
 
   return (
-    <main className="container max-w-3xl py-10 sm:py-16">
-      <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{title}</h1>
+    <article className="mx-auto max-w-3xl py-2">
+      <h1 className="text-3xl font-bold tracking-tight @3xl/content:text-4xl">{title}</h1>
       {doc?.updatedAt && (
         <p className="mt-2 text-sm text-muted-foreground">
           Last updated{' '}
@@ -50,6 +50,6 @@ export default async function ContentPage({ params }: Props) {
           <p className="text-sm text-muted-foreground">This page has not been published yet.</p>
         )}
       </div>
-    </main>
+    </article>
   );
 }

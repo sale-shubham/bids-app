@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { CalendarDays, Gavel, PackageCheck } from 'lucide-react';
-import { PublicPage } from '@/components/layout/public-page';
 import { MemberAvatar } from '@/components/common/member-avatar';
 import { formatDate } from '@/lib/utils';
 import { getSellerServer } from '@/features/sellers/sellers.server';
@@ -25,12 +24,12 @@ export default async function SellerPage({ params }: Props) {
   const seller = await getSellerServer(id);
 
   return (
-    <PublicPage className="space-y-8">
-      <section className="flex flex-col items-center gap-4 rounded-xl border bg-muted/30 p-6 text-center sm:flex-row sm:text-left">
+    <div className="space-y-8">
+      <section className="flex flex-col items-center gap-4 rounded-xl border bg-muted/30 p-6 text-center @lg/content:flex-row @lg/content:text-left">
         <MemberAvatar id={seller.id} name={seller.name} email="" avatarUrl={seller.avatarUrl} size="xl" />
         <div className="space-y-3">
           <h1 className="text-2xl font-bold tracking-tight">{seller.name}</h1>
-          <ul className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground sm:justify-start">
+          <ul className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground @lg/content:justify-start">
             <li className="inline-flex items-center gap-1.5">
               <CalendarDays className="h-4 w-4" aria-hidden /> Member since {formatDate(seller.createdAt)}
             </li>
@@ -44,6 +43,6 @@ export default async function SellerPage({ params }: Props) {
         </div>
       </section>
       <SellerAuctions sellerId={seller.id} />
-    </PublicPage>
+    </div>
   );
 }

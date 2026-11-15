@@ -47,9 +47,9 @@ export function AuctionFilterBar() {
         </TabsList>
       </Tabs>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 @2xl/content:grid-cols-6">
         <SearchInput
-          className="col-span-2 md:col-span-2"
+          className="col-span-2 @2xl/content:col-span-2"
           value={filters.q}
           onChange={(q) => update({ q })}
           placeholder="Search auctions"
@@ -88,7 +88,7 @@ export function AuctionFilterBar() {
             ))}
           </SelectContent>
         </Select>
-        <div className="col-span-2 flex items-center gap-2 md:col-span-1">
+        <div className="col-span-2 flex items-center gap-2 @2xl/content:col-span-1">
           <Input
             key={`min-${filters.minPrice ?? ''}`}
             type="number"

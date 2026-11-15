@@ -69,8 +69,9 @@ export function isUnreachableError(err: unknown): boolean {
 let loggedOut = false;
 function forceLogout() {
   if (typeof window === "undefined" || loggedOut) return;
-  // Public pages (PUBLIC_PREFIXES — auctions, /pages/* legal copy) are
-  // reachable logged-out by design. A 401 there means "no session", not
+  // Public pages (PUBLIC_PREFIXES — auctions, leaderboard, sellers, /pages/*
+  // legal copy, /suspended) render in the guest shell and are reachable
+  // logged-out by design. A 401 there means "no session", not
   // "session died". Drop the stale store mirror but stay put: don't clear the
   // query cache (it holds this page's own public data) and don't navigate.
   if (isPublicRoute(window.location.pathname)) {

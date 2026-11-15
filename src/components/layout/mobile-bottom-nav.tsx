@@ -7,8 +7,8 @@ import { CountBadge } from '@/components/common/count-badge';
 import type { NavItem } from './dashboard-shell';
 
 // The bar's fixed 4th tab — the page that hosts the overflow grid plus
-// theme/install/update/logout (MorePage): "Profile" for both roles
-// (/profile). Declared beside each role's nav array.
+// theme/install/update/logout (MorePage): "Profile" (/profile for members,
+// /admin/profile for SUPER_ADMIN), or "Log in" for a guest on a public page. Declared beside each role's nav array.
 export interface MoreTab {
   href: string;
   label: string;
@@ -33,9 +33,9 @@ export function getOverflowNavItems(nav: NavItem[]): NavItem[] {
 }
 
 // Hrefs that are a literal path-prefix of a sibling nav item's route (e.g.
-// '/' vs. '/admin/…') must match exactly — otherwise the prefix
+// '/admin' vs. '/admin/members') must match exactly — otherwise the prefix
 // check below would light up both items at once.
-const EXACT_MATCH_HREFS = new Set(['/admin', '/']);
+const EXACT_MATCH_HREFS = new Set(['/admin']);
 
 export function isNavActive(pathname: string, href: string) {
   if (EXACT_MATCH_HREFS.has(href)) return pathname === href;

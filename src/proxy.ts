@@ -1,14 +1,10 @@
 import { jwtVerify } from "jose";
 import { NextResponse, type NextRequest } from "next/server";
 import {
-  ADMIN_PREFIX,
-  AUCTIONEER_PREFIX,
-  AUTH_ROUTES,
-  BIDDER_PREFIXES,
-  MEMBER_PREFIXES,
-  homeFor,
-  safeNextPath,
-  startsWithAny,
+  destinationFor,
+  gateFor,
+  isAuthRoute,
+  isGatedRoute,
   type Role,
 } from "@/constants/routes";
 import { serverApiOrigin } from "@/constants/api";
@@ -18,8 +14,10 @@ import { serverApiOrigin } from "@/constants/api";
 // equal the backend's JWT_SECRET (server-only env var, never NEXT_PUBLIC_ — see
 // .env.example). No token is ever read/written by client JS.
 //
-// Areas: public (no gate), member (any role), bidder (/my-bids),
-// auctioneer (/sell/*), admin (/admin/*). SUPER_ADMIN may enter every area.
+// Areas (P2X pattern): public (no gate), member (BIDDER / AUCTIONEER),
+// bidder (/my-bids), auctioneer (/sell/*), admin (/admin/*, SUPER_ADMIN only).
+// SUPER_ADMIN may only use /admin/* plus the public pages; the decision table is
+// gateFor() in src/constants/routes.ts (unit-tested).
 interface AccessPayload {
   sub: string;
   role: Role;
@@ -79,15 +77,6 @@ async function refreshAccess(
   }
 }
 
-// Where to send someone who already has a session but hit /login: back to
-// the page they were bounced from (`?next=`, set below), else the role's
-// home. Members only, same rule as use-auth.ts's landingFor() — every
-// ?next= worth honoring is a member page, and an admin always lands on /admin.
-function destinationFor(request: NextRequest, role: Role) {
-  const next = role === "SUPER_ADMIN" ? null : safeNextPath(request.nextUrl.searchParams.get("next"));
-  return next ?? homeFor(role);
-}
-
 // The bounce itself — keep the attempted path (with its query) so the login
 // can return to it.
 function loginRedirect(request: NextRequest) {
@@ -98,13 +87,7 @@ function loginRedirect(request: NextRequest) {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const isAuthRoute = startsWithAny(pathname, AUTH_ROUTES);
-  const isAdminRoute = startsWithAny(pathname, [ADMIN_PREFIX]);
-  const isAuctioneerRoute = startsWithAny(pathname, [AUCTIONEER_PREFIX]);
-  const isBidderRoute = startsWithAny(pathname, BIDDER_PREFIXES);
-  const isMemberRoute = startsWithAny(pathname, MEMBER_PREFIXES);
-  if (!isAuthRoute && !isAdminRoute && !isAuctioneerRoute && !isBidderRoute && !isMemberRoute)
-    return NextResponse.next();
+  if (!isGatedRoute(pathname)) return NextResponse.next();
 
   const accessCookie = request.cookies.get(ACCESS_COOKIE)?.value;
 
@@ -129,18 +112,13 @@ export async function proxy(request: NextRequest) {
   const role = payload?.role;
   let response: NextResponse;
 
-  if (isAuthRoute && role) {
-    response = NextResponse.redirect(
-      new URL(destinationFor(request, role), request.url),
-    );
-  } else if (!isAuthRoute && !role) {
+  const gate = gateFor(pathname, role);
+  if (gate === "login") {
     response = loginRedirect(request);
-  } else if (isAdminRoute && role !== "SUPER_ADMIN") {
-    response = NextResponse.redirect(new URL(homeFor(role!), request.url));
-  } else if (isAuctioneerRoute && role === "BIDDER") {
-    response = NextResponse.redirect(new URL(homeFor(role), request.url));
-  } else if (isBidderRoute && role === "AUCTIONEER") {
-    response = NextResponse.redirect(new URL(homeFor(role), request.url));
+  } else if (gate === "home" && role) {
+    // On an auth route a member returns to `?next=`; everywhere else it is just their home.
+    const to = destinationFor(role, isAuthRoute(pathname) ? request.nextUrl.searchParams.get("next") : null);
+    response = NextResponse.redirect(new URL(to, request.url));
   } else {
     response = NextResponse.next();
   }

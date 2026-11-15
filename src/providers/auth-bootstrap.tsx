@@ -15,10 +15,11 @@ import { isAuthRoute } from '@/constants/routes';
 // re-syncs the store.
 export function AuthBootstrap({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  // Guest-only pages (login, signup, …) skip the call: the visitor there has no
-  // session by definition, so it would only produce a pointless 401. Public
-  // pages (auctions, legal) DO fetch — the header shows the user menu for a
-  // logged-in visitor — and a 401 there just means "logged out".
+  // Guest-only pages (/, login, signup, …) skip the call: the visitor there has no
+  // session by definition (the edge gate already sent a signed-in user home), so
+  // it would only produce a pointless 401. Public
+  // pages (auctions, legal) DO fetch — the shell header shows the user menu (or the
+  // guest Log in / Sign up buttons) accordingly — and a 401 there just means "logged out".
   const skip = isAuthRoute(pathname);
   const { setMember, setInitialized } = useAuthStore();
   const { data, error, isError, isFetched } = useQuery({

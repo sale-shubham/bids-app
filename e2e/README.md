@@ -48,8 +48,8 @@ Only `localhost` / `127.0.0.1` targets are accepted.
 
 ## Specs
 
-`public` (home, browse filters + URL sync, detail SEO title), `auth` (signup + OTP, login, forgot/reset, unverified login),
+`public` (root redirect, guest shell + website links, browse filters + URL sync, detail SEO title, guest gating), `auth` (signup + OTP, login, forgot/reset, unverified login),
 `seller` (my auctions, edit, delete, create validation; the real-upload test is skipped unless `E2E_UPLOAD=1`),
 `bidding` (two contexts: live update, outbid toast, BID_TOO_LOW), `close-and-pay` (slow: ~2-3 min waiting for the
-close job, then winner result + seller pays commission in test mode), `admin`, `mobile` (Pixel 7).
+close job, then winner result + seller pays commission in test mode), `admin` (incl. the SUPER_ADMIN-only-/admin routing), `mobile` (Pixel 7, member + guest bottom nav).
 Specs run serially in one worker.

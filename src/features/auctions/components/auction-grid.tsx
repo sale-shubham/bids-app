@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import type { AuctionCard as AuctionCardData } from '../auctions.types';
 import { AuctionCard } from './auction-card';
 
-const GRID = 'grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4';
+const GRID = 'grid grid-cols-2 gap-3 @lg/content:gap-4 @2xl/content:grid-cols-3 @3xl/content:grid-cols-4';
 
 export function AuctionGrid({ auctions, className }: { auctions: AuctionCardData[]; className?: string }) {
   return (

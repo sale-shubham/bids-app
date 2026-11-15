@@ -31,7 +31,7 @@ export default function SellAuctionDetailPage() {
 
   if (isPending) return <Skeleton className="h-96 w-full" />;
   if (error || !auction) return <Notice text={auctionErrorMessage(error, 'Could not load this auction')} />;
-  if (member && member.id !== auction.seller.id && member.role !== 'SUPER_ADMIN') return <Notice text="You can only manage your own auctions." />;
+  if (member && member.id !== auction.seller.id) return <Notice text="You can only manage your own auctions." />;
 
   const closed = auction.status === 'ENDED' || auction.status === 'CANCELLED';
   const canManage = auction.bidCount === 0 && !closed;

@@ -10,7 +10,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   return (
     <div className="flex min-h-screen flex-col">
       <header className="flex h-16 shrink-0 items-center border-b bg-background px-6">
-        <Link href="/" className="text-2xl font-extrabold text-gradient">
+        <Link href="/auctions" className="text-2xl font-extrabold text-gradient">
           NobleBid
         </Link>
       </header>
