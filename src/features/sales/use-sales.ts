@@ -1,11 +1,12 @@
 'use client';
+import { useRef } from 'react';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ME_KEY } from '@/features/members/use-members';
 import { useRazorpayPayment } from '@/features/payments/use-razorpay-payment';
 import { nextPagedParam } from '@/lib/paged';
 import * as api from './sales.api';
 import { isStaleSaleError, salePaymentErrorMessage } from './sales.errors';
-import type { SaleListRole, SaleStatus, ShipSaleInput } from './sales.types';
+import type { SaleListRole, SaleStatus, ShipSaleInput, ShippingMethod } from './sales.types';
 
 export const saleKeys = {
   all: ['sales'] as const,
@@ -39,8 +40,10 @@ export function useInvalidateSales() {
 /** Pays one sale (Razorpay, or the stub confirm in test mode). `pay(saleId)` resolves true once verified. */
 export function useSalePayment(confirmStub: () => Promise<boolean>) {
   const qc = useQueryClient();
-  return useRazorpayPayment({
-    createCheckout: api.createSaleCheckout,
+  // The buyer's pick travels with the next `pay(id, delivery)` call into the checkout request.
+  const delivery = useRef<ShippingMethod | undefined>(undefined);
+  const base = useRazorpayPayment({
+    createCheckout: (id) => api.createSaleCheckout(id, delivery.current),
     isAlreadyPaid: async (id) => (await api.fetchSale(id)).status !== 'AWAITING_PAYMENT',
     invalidateKeys: [saleKeys.all, ['auction'], ['my-bids'], ['notifications'], ME_KEY],
     confirmStub,
@@ -50,6 +53,11 @@ export function useSalePayment(confirmStub: () => Promise<boolean>) {
       if (isStaleSaleError(err)) void qc.invalidateQueries({ queryKey: saleKeys.all });
     },
   });
+  const pay = (id: string, choice?: ShippingMethod) => {
+    delivery.current = choice;
+    return base.pay(id);
+  };
+  return { ...base, pay };
 }
 
 export function useShipSale(id: string) {

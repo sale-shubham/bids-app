@@ -1,4 +1,5 @@
 import type { OfferDTO } from '@/features/second-chance/second-chance.types';
+import type { ShippingOptions } from '@/features/auctions/auctions.types';
 
 export type SaleStatus =
   | 'AWAITING_PAYMENT'
@@ -27,8 +28,13 @@ export interface SaleDTO {
   auction: { id: string; title: string; coverImage: string | null };
   status: SaleStatus;
   itemPaise: number;
+  /** Reflects the buyer's delivery choice once checkout has started. */
   shippingFeePaise: number;
   amountPaise: number;
+  /** The buyer's pick when the auction offers both pickup and courier; null until chosen. */
+  deliveryChoice?: ShippingMethod | null;
+  /** What the auction offers (null on legacy sales). */
+  shippingOptions?: ShippingOptions | null;
   payBy: string | null;
   paidAt: string | null;
   shippingMethod: ShippingMethod | null;

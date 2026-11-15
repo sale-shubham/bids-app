@@ -80,13 +80,13 @@ Email + password login; email OTP only for signup verification and forgot passwo
 | `useDeleteAuction()` | mutation | `deleteAuction(id)` -> `DELETE /auctions/:id` | invalidates `['auctions']` + `['auction', id]` |
 | `useRepublishAuction()` | mutation | `republishAuction(id, { startTime, endTime })` -> `POST /auctions/:id/republish` | invalidates `['auctions']` + `['auction', id]` |
 
-`useImageUploader({ initialUrls, max = 8, onChange })` (`use-image-uploader.ts`) is the auction form's multi-image uploader: presign -> XHR PUT with per-file progress, JPG / PNG / WebP up to 5 MB, `{ items, addFiles, remove, move, uploading }`. `onChange(urls, uploading)` receives the uploaded URLs in display order (first = cover).
+`useImageUploader({ initialUrls, max = 8, onChange })` (`use-image-uploader.ts`) is the auction form's multi-image uploader: presign -> XHR PUT with per-file progress, JPG / PNG / WebP (originals up to 25 MB, resized client side to a 2000 px WebP before upload, result max 5 MB), `{ items, addFiles, remove, move, uploading }`. `onChange(urls, uploading)` receives the uploaded URLs in display order (first = cover).
 
 ## Uploads (`features/uploads/use-upload.ts`)
 
 | Hook | Type | Target | Behavior |
 |---|---|---|---|
-| `useUploadImage(folder)` | mutation | `presign` -> `POST /uploads/presign`, then `fetch` PUT to the presigned URL | validates type (`IMAGE_TYPES`) and size (`MAX_IMAGE_BYTES`, 5 MB); resolves with the public URL. `folder` is `'auctions' \| 'avatars'` (the Profile avatar uses `'avatars'`) |
+| `useUploadImage(folder)` | mutation | `presign` -> `POST /uploads/presign`, then `fetch` PUT to the presigned URL | validates type, resizes (`prepareImage` -> `resizeImage`), presigns with the resized type; resolves with the public URL. `folder` is `'auctions' \| 'avatars' \| 'auction-videos'` (the Profile avatar uses `'avatars'`) |
 
 ## Bids (`features/bids/use-bids.ts`)
 
@@ -206,3 +206,7 @@ Member-facing lists (auctions, my bids, watchlist, notifications, commissions) a
 - `src/features/*/*.api.ts`
 
 *Last updated: 2026-11-15 (rewritten against the current code: auth, members, auctions, uploads, bids, live, watchlist, commissions, notifications, push, legal and admin hooks with their real query keys)*
+
+## Packages added for listing quality
+- `yet-another-react-lightbox`: the detail gallery's zoomable lightbox (`auction-gallery.tsx`). `papaparse` (+ `@types/papaparse`): CSV template and parsing for `/sell/bulk` (`features/bulk/bulk.csv.ts`).
+- Hooks: `useVideoUpload(onDone)` (`features/uploads/use-video-upload.ts`, presign to `auction-videos` + XHR progress), `useBulkCreate()` / `useBulkImageUpload()` (`features/bulk/use-bulk.ts`), `useSimilarSold(id)` (`['auction-similar-sold', id]`, `features/auctions/use-auctions.ts`).

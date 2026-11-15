@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { parseSale, parseSalePage, parseSaleResponse } from './sales.parse';
 import { disputeSchema, shipSchema, toShipPayload } from './sales.schema';
 import { SALE_STATUSES, type SaleDTO, type SaleRole, type SaleStatus } from './sales.types';
-import { saleActions, saleTimeline } from './sales.utils';
+import { needsDeliveryChoice, saleActions, saleTimeline } from './sales.utils';
 
 const NOW = Date.parse('2026-11-15T12:00:00Z');
 const future = '2026-11-20T00:00:00Z';
@@ -118,5 +118,26 @@ describe('shipSchema', () => {
   it('payload omits empty / irrelevant fields', () => {
     expect(toShipPayload({ method: 'COURIER', courier: ' DTDC ', trackingNo: ' T1 ' })).toEqual({ method: 'COURIER', courier: 'DTDC', trackingNo: 'T1' });
     expect(toShipPayload({ method: 'PICKUP', courier: 'ignored', trackingNo: '' })).toEqual({ method: 'PICKUP' });
+  });
+});
+
+describe('delivery choice (sale DTO)', () => {
+  it('parses deliveryChoice and shippingOptions', () => {
+    const s = parseSale({
+      id: 's', status: 'AWAITING_PAYMENT', deliveryChoice: 'PICKUP',
+      shippingOptions: { pickup: true, pickupCity: 'Pune', courier: true, shippingFeePaise: 15000, shipsWithinDays: 2 },
+    });
+    expect(s.deliveryChoice).toBe('PICKUP');
+    expect(s.shippingOptions).toEqual({ pickup: true, pickupCity: 'Pune', courier: true, shippingFeePaise: 15000, shipsWithinDays: 2 });
+    const legacy = parseSale({ id: 's' });
+    expect(legacy.deliveryChoice).toBeNull();
+    expect(legacy.shippingOptions).toBeNull();
+  });
+  it('needsDeliveryChoice: unpaid and both options offered', () => {
+    const both = { pickup: true, courier: true };
+    expect(needsDeliveryChoice({ status: 'AWAITING_PAYMENT', shippingOptions: both })).toBe(true);
+    expect(needsDeliveryChoice({ status: 'PAID', shippingOptions: both })).toBe(false);
+    expect(needsDeliveryChoice({ status: 'AWAITING_PAYMENT', shippingOptions: { pickup: false, courier: true } })).toBe(false);
+    expect(needsDeliveryChoice({ status: 'AWAITING_PAYMENT', shippingOptions: null })).toBe(false);
   });
 });

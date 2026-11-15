@@ -13,8 +13,8 @@ import { useStubPaymentConfirm } from '@/features/payments/use-stub-payment-conf
 import { formatDate, formatINR } from '@/lib/utils';
 import { saleErrorMessage } from '../sales.errors';
 import { disputeSchema, type DisputeValues } from '../sales.schema';
-import type { SaleDTO } from '../sales.types';
-import { saleActions } from '../sales.utils';
+import type { SaleDTO, ShippingMethod } from '../sales.types';
+import { needsDeliveryChoice, saleActions } from '../sales.utils';
 import { useConfirmSale, useDisputeSale, useSalePayment } from '../use-sales';
 
 export function DisputeDialog({ saleId, open, onOpenChange }: { saleId: string; open: boolean; onOpenChange: (o: boolean) => void }) {
@@ -68,6 +68,11 @@ export function PurchaseActions({ sale }: { sale: SaleDTO }) {
   const [confirmOpen, setConfirmOpen] = React.useState(false);
   const [disputeOpen, setDisputeOpen] = React.useState(false);
   const a = saleActions(sale);
+  // Both pickup and courier offered: the buyer picks one before paying.
+  const needsChoice = needsDeliveryChoice(sale);
+  const [delivery, setDelivery] = React.useState<ShippingMethod | null>(sale.deliveryChoice ?? null);
+  const courierFee = sale.shippingOptions?.shippingFeePaise ?? 0;
+  const total = needsChoice && delivery ? sale.itemPaise + (delivery === 'COURIER' ? courierFee : 0) : sale.amountPaise;
 
   if (!a.canPay && !a.payWindowClosed && !a.canConfirm && !a.canDispute) return null;
 
@@ -83,14 +88,33 @@ export function PurchaseActions({ sale }: { sale: SaleDTO }) {
   return (
     <Card>
       <CardContent className="space-y-3 p-4">
+        {a.canPay && needsChoice && (
+          <fieldset className="space-y-2" aria-label="Delivery">
+            <legend className="text-sm font-medium">How would you like to receive it?</legend>
+            {(
+              [
+                { value: 'PICKUP', label: `Pickup${sale.shippingOptions?.pickupCity ? ` in ${sale.shippingOptions.pickupCity}` : ''}`, fee: 'Free' },
+                { value: 'COURIER', label: 'Courier', fee: courierFee > 0 ? formatINR(courierFee) : 'Free' },
+              ] as const
+            ).map((o) => (
+              <label key={o.value} className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border p-3 text-sm has-checked:border-primary has-checked:bg-primary/5">
+                <span className="flex items-center gap-2">
+                  <input type="radio" name="delivery" value={o.value} checked={delivery === o.value} onChange={() => setDelivery(o.value)} className="accent-primary" />
+                  {o.label}
+                </span>
+                <span className="tnum text-muted-foreground">{o.fee}</span>
+              </label>
+            ))}
+          </fieldset>
+        )}
         {a.canPay && (
           <div className="flex flex-col gap-2 @lg/content:flex-row @lg/content:items-center @lg/content:justify-between">
             <p className="text-sm text-muted-foreground">
               {sale.payBy ? `Pay by ${formatDate(sale.payBy)} to keep this item.` : 'Pay to complete your purchase.'}
             </p>
-            <Button onClick={() => void pay(sale.id)} disabled={payingId !== null}>
+            <Button onClick={() => void (needsChoice && delivery ? pay(sale.id, delivery) : pay(sale.id))} disabled={payingId !== null || (needsChoice && !delivery)}>
               {payingId === sale.id && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-              Pay {formatINR(sale.amountPaise)}
+              Pay {formatINR(total)}
             </Button>
           </div>
         )}

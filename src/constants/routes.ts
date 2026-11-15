@@ -13,7 +13,7 @@ export const AUTH_ROUTES = ['/login', '/signup', '/forgot-password', '/reset-pas
 
 // Public: reachable logged-in or logged-out, never redirected. They render in
 // the same app shell as the signed-in area (guest mode when logged out).
-export const PUBLIC_PREFIXES = ['/auctions', '/leaderboard', '/sellers', '/pages', '/suspended'];
+export const PUBLIC_PREFIXES = ['/auctions', '/sold', '/leaderboard', '/sellers', '/pages', '/suspended'];
 
 // Member area: BIDDER / AUCTIONEER only. SUPER_ADMIN is bounced to /admin (P2X
 // pattern: the admin lives only under /admin plus the public pages).
@@ -26,7 +26,7 @@ export const BIDDER_PREFIXES = ['/my-bids', '/purchases'];
 export const AUCTIONEER_PREFIX = '/sell';
 
 // Admin area: SUPER_ADMIN only (/admin, /admin/members, /admin/auctions, /admin/commissions,
-// /admin/payments, /admin/sales, /admin/reviews, /admin/reports, /admin/settings, /admin/profile).
+// /admin/payments, /admin/sales, /admin/categories, /admin/reviews, /admin/reports, /admin/settings, /admin/profile).
 export const ADMIN_PREFIX = '/admin';
 
 // Exact-match, or prefix followed by `/`.

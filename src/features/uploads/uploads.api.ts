@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { api } from '@/lib/api-client';
 
-export type UploadFolder = 'auctions' | 'avatars';
+export type UploadFolder = 'auctions' | 'avatars' | 'auction-videos';
 
 export interface Presigned {
   uploadUrl: string;

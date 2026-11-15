@@ -29,7 +29,10 @@ export function SaleBreakdown({ sale }: { sale: SaleDTO }) {
       <CardContent>
         <dl className="space-y-2">
           <Row label="Item" value={formatINR(sale.itemPaise)} />
-          <Row label="Shipping" value={sale.shippingFeePaise > 0 ? formatINR(sale.shippingFeePaise) : 'Free'} />
+          <Row
+            label={sale.deliveryChoice === 'PICKUP' ? 'Delivery (pickup)' : sale.deliveryChoice === 'COURIER' ? 'Delivery (courier)' : 'Shipping'}
+            value={sale.shippingFeePaise > 0 ? formatINR(sale.shippingFeePaise) : 'Free'}
+          />
           <div className="border-t pt-2">
             <Row label="Total" value={formatINR(sale.amountPaise)} strong />
           </div>

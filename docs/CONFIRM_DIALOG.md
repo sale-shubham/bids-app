@@ -23,6 +23,7 @@ Props: `open`, `onOpenChange`, `title`, `description?`, `confirmLabel?` (default
 | Place a bid | Yes (bids cannot be withdrawn) |
 | Buy It Now | Yes (ends the auction immediately) |
 | Delete an auction (owner) | Yes |
+| Delete a category (admin; disabled while it has auctions or subcategories) | Yes |
 | Cancel an auction (admin) | Yes |
 | Activate / deactivate a member (admin) | Yes |
 | Change a member's role (admin) | Yes |

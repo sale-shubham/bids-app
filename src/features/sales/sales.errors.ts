@@ -5,6 +5,7 @@ const MESSAGES: Record<string, string> = {
   SALE_NOT_FOUND: 'This sale no longer exists.',
   SALE_NOT_PAYABLE: 'This purchase can no longer be paid. The payment window may have closed.',
   PAYOUT_ACCOUNT_INACTIVE: 'The seller cannot receive payments yet. Please try again later.',
+  DELIVERY_CHOICE_REQUIRED: 'Choose pickup or courier before paying.',
   SALE_INVALID_STATE: 'This sale has changed since you opened it. Refreshing.',
 };
 
