@@ -7,18 +7,15 @@ import { useAuthStore, type AuthMember } from '@/store/auth-store';
 import * as api from '../notification-preferences.api';
 import type { NotificationPreferences } from '../notification-preferences.api';
 import { NotificationPreferencesCard } from './notification-preferences-card';
-import { WhatsappCard } from './whatsapp-card';
 
 const toast = vi.hoisted(() => Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn() }));
 vi.mock('sonner', () => ({ toast }));
 vi.mock('../notification-preferences.api');
 
 const prefs = (over: Partial<NotificationPreferences> = {}): NotificationPreferences => ({
-  whatsappOptIn: false,
-  phoneVerified: true,
   items: [
-    { type: 'outbid', label: 'Outbid', group: 'Bidding', email: true, push: true, whatsapp: false, emailLocked: false, whatsappCapable: true },
-    { type: 'payment-due', label: 'Payment due', group: 'Payments', email: true, push: false, whatsapp: false, emailLocked: true, whatsappCapable: false },
+    { type: 'outbid', label: 'Outbid', group: 'Bidding', email: true, push: true, emailLocked: false },
+    { type: 'payment-due', label: 'Payment due', group: 'Payments', email: true, push: false, emailLocked: true },
   ],
   ...over,
 });
@@ -38,30 +35,28 @@ beforeEach(() => {
 });
 
 describe('NotificationPreferencesCard', () => {
-  it('groups rows, locks mandatory email and disables WhatsApp until opted in', async () => {
+  it('groups rows, locks mandatory email', async () => {
     vi.mocked(api.fetchPreferences).mockResolvedValue(prefs());
     wrap(<NotificationPreferencesCard />);
     expect(await screen.findByRole('heading', { name: 'Bidding' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Payments' })).toBeInTheDocument();
     expect(screen.getByRole('switch', { name: 'Payment due email' })).toBeDisabled();
-    expect(screen.getByRole('switch', { name: 'Outbid WhatsApp' })).toBeDisabled();
-    expect(screen.queryByRole('switch', { name: 'Payment due WhatsApp' })).not.toBeInTheDocument();
+    expect(screen.queryByText('WhatsApp')).not.toBeInTheDocument();
   });
 
-  it('enables WhatsApp once opted in; Save is dirty-aware and sends every row in one PUT', async () => {
-    vi.mocked(api.fetchPreferences).mockResolvedValue(prefs({ whatsappOptIn: true }));
-    vi.mocked(api.savePreferences).mockResolvedValue(prefs({ whatsappOptIn: true }));
+  it('Save is dirty-aware and sends every row in one PUT', async () => {
+    vi.mocked(api.fetchPreferences).mockResolvedValue(prefs());
+    vi.mocked(api.savePreferences).mockResolvedValue(prefs());
     wrap(<NotificationPreferencesCard />);
     const save = await screen.findByRole('button', { name: 'Save preferences' });
     expect(save).toBeDisabled();
-    await userEvent.click(screen.getByRole('switch', { name: 'Outbid WhatsApp' }));
     await userEvent.click(screen.getByRole('switch', { name: 'Outbid Push' }));
     expect(save).toBeEnabled();
     await userEvent.click(save);
     await waitFor(() =>
       expect(api.savePreferences).toHaveBeenCalledWith([
-        { type: 'outbid', email: true, push: false, whatsapp: true },
-        { type: 'payment-due', email: true, push: false, whatsapp: false },
+        { type: 'outbid', email: true, push: false },
+        { type: 'payment-due', email: true, push: false },
       ]),
     );
     await waitFor(() => expect(toast.success).toHaveBeenCalled());
@@ -74,28 +69,5 @@ describe('NotificationPreferencesCard', () => {
     await userEvent.click(screen.getByRole('switch', { name: 'Outbid Push' }));
     await userEvent.click(screen.getByRole('switch', { name: 'Outbid Push' }));
     expect(save).toBeDisabled();
-  });
-});
-
-describe('WhatsappCard', () => {
-  it('links to Security when the phone is not verified', async () => {
-    vi.mocked(api.fetchPreferences).mockResolvedValue(prefs({ phoneVerified: false }));
-    wrap(<WhatsappCard />);
-    const link = await screen.findByRole('link', { name: /Verify in Security/ });
-    expect(link).toHaveAttribute('href', '/profile?tab=security');
-    expect(screen.queryByRole('switch')).not.toBeInTheDocument();
-  });
-
-  it('shows the consent text and opts in', async () => {
-    vi.mocked(api.fetchPreferences).mockResolvedValue(prefs());
-    vi.mocked(api.setWhatsappOptIn).mockResolvedValue(true);
-    wrap(<WhatsappCard />);
-    expect(await screen.findByText(/at \+91 •••••• 3210\. You can turn this off anytime\./)).toBeInTheDocument();
-    const sw = screen.getByRole('switch', { name: 'WhatsApp alerts' });
-    expect(sw).not.toBeChecked();
-    await userEvent.click(sw);
-    await waitFor(() => expect(api.setWhatsappOptIn).toHaveBeenCalledWith(true));
-    await waitFor(() => expect(screen.getByRole('switch', { name: 'WhatsApp alerts' })).toBeChecked());
-    expect(useAuthStore.getState().member?.whatsappOptIn).toBe(true);
   });
 });

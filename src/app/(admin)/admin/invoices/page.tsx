@@ -12,10 +12,10 @@ import { SearchInput } from '@/components/common/search-input';
 import { AdminList, PageHeader } from '@/features/admin/components/admin-list';
 import { useAdminList } from '@/features/admin/use-admin';
 import { useUrlState } from '@/features/admin/use-url-state';
+import { invoiceErrorMessage } from '@/features/invoices/invoices.errors';
 import { fetchAdminInvoices } from '@/features/invoices/invoices.api';
 import { INVOICE_TYPES, invoiceTypeLabel, type AdminInvoice } from '@/features/invoices/invoices.types';
 import { useDownloadInvoice } from '@/features/invoices/use-invoices';
-import { apiErrorMessage } from '@/lib/api-client';
 import { formatDate, formatINR } from '@/lib/utils';
 
 const DEFAULTS = { type: '', q: '' };
@@ -27,7 +27,7 @@ function InvoicesView() {
   const download = useDownloadInvoice();
 
   const onDownload = (id: string) =>
-    download.mutate(id, { onError: (e) => toast.error(apiErrorMessage(e, 'Could not download the invoice')) });
+    download.mutate(id, { onError: (e) => toast.error(invoiceErrorMessage(e)) });
 
   const action = (inv: AdminInvoice) => (
     <Button size="sm" variant="outline" onClick={() => onDownload(inv.id)} disabled={download.isPending} aria-label={`Download ${inv.number}`}>
@@ -35,7 +35,7 @@ function InvoicesView() {
     </Button>
   );
   const kind = (inv: AdminInvoice) => <Badge variant={inv.isTaxInvoice ? 'success' : 'secondary'}>{inv.isTaxInvoice ? 'Tax invoice' : 'Receipt'}</Badge>;
-  const who = (inv: AdminInvoice) => inv.member?.name || inv.member?.email || '-';
+  const who = (inv: AdminInvoice) => inv.buyerName || inv.buyerGstin || inv.memberId.slice(0, 8) || '-';
 
   return (
     <div className="space-y-6">

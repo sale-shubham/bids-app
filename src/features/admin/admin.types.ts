@@ -34,10 +34,8 @@ export interface AdminMember {
   unpaidCommissionPaise: number;
   auctionsWon: number;
   moneySpentPaise: number;
-  /** Verified-seller badge (revocable by an admin). */
+  /** Verified-seller badge: KYC'd (ACTIVE) payout account; revocable by an admin. */
   verified: boolean;
-  phoneVerifiedAt: string | null;
-  twoFactorEnabled: boolean;
   /** Seller payout account status; null when the member has none. */
   payoutStatus: string | null;
   /** Unpaid-purchase strikes still in force (not removed, not expired). */

@@ -11,13 +11,12 @@ import type { PreferenceInput, PreferenceItem } from '../notification-preference
 import { preferenceErrorMessage } from '../notification-preferences.errors';
 import { useNotificationPreferences, useSavePreferences } from '../use-notification-preferences';
 
-type Channel = 'email' | 'push' | 'whatsapp';
+type Channel = 'email' | 'push';
 type Edits = Record<string, Partial<Record<Channel, boolean>>>;
 
 const CHANNELS: { key: Channel; label: string }[] = [
   { key: 'email', label: 'Email' },
   { key: 'push', label: 'Push' },
-  { key: 'whatsapp', label: 'WhatsApp' },
 ];
 
 /** Items grouped by `group`, keeping the server's order of first appearance. */
@@ -27,7 +26,7 @@ function groupItems(items: PreferenceItem[]): [string, PreferenceItem[]][] {
   return [...map.entries()];
 }
 
-/** Notifications tab: per-type Email / Push / WhatsApp switches, saved with one PUT. */
+/** Notifications tab: per-type Email / Push switches, saved with one PUT. */
 export function NotificationPreferencesCard() {
   const prefs = useNotificationPreferences();
   const save = useSavePreferences();
@@ -42,7 +41,7 @@ export function NotificationPreferencesCard() {
 
   const onSave = () => {
     if (!data) return;
-    const items: PreferenceInput[] = data.items.map((i) => ({ type: i.type, email: value(i, 'email'), push: value(i, 'push'), whatsapp: value(i, 'whatsapp') }));
+    const items: PreferenceInput[] = data.items.map((i) => ({ type: i.type, email: value(i, 'email'), push: value(i, 'push') }));
     save.mutate(items, {
       onSuccess: () => {
         setEdits({});
@@ -72,7 +71,7 @@ export function NotificationPreferencesCard() {
           )
         ) : (
           <>
-            <div className="hidden grid-cols-[1fr_repeat(3,5rem)] items-center gap-2 px-3 text-xs font-medium text-muted-foreground @lg/content:grid">
+            <div className="hidden grid-cols-[1fr_repeat(2,5rem)] items-center gap-2 px-3 text-xs font-medium text-muted-foreground @lg/content:grid">
               <span />
               {CHANNELS.map((c) => (
                 <span key={c.key} className="text-center">
@@ -85,16 +84,12 @@ export function NotificationPreferencesCard() {
                 <h3 className="px-3 text-sm font-semibold">{group}</h3>
                 <ul className="divide-y rounded-lg border">
                   {items.map((i) => (
-                    <li key={i.type} className="grid grid-cols-3 items-center gap-2 p-3 @lg/content:grid-cols-[1fr_repeat(3,5rem)]">
-                      <span className="col-span-3 text-sm @lg/content:col-span-1">{i.label}</span>
+                    <li key={i.type} className="grid grid-cols-2 items-center gap-2 p-3 @lg/content:grid-cols-[1fr_repeat(2,5rem)]">
+                      <span className="col-span-2 text-sm @lg/content:col-span-1">{i.label}</span>
                       {CHANNELS.map(({ key, label }) => (
                         <div key={key} className="flex items-center gap-2 @lg/content:justify-center">
                           <span className="text-xs text-muted-foreground @lg/content:sr-only">{label}</span>
-                          {key === 'whatsapp' && !i.whatsappCapable ? (
-                            <span className="text-xs text-muted-foreground" aria-hidden>
-                              {'—'}
-                            </span>
-                          ) : key === 'email' && i.emailLocked ? (
+                          {key === 'email' && i.emailLocked ? (
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <span tabIndex={0} className="inline-flex items-center gap-1">
@@ -108,7 +103,7 @@ export function NotificationPreferencesCard() {
                             <Switch
                               aria-label={`${i.label} ${label}`}
                               checked={value(i, key)}
-                              disabled={(key === 'whatsapp' && !data.whatsappOptIn) || save.isPending}
+                              disabled={save.isPending}
                               onCheckedChange={(on) => set(i.type, key, on)}
                             />
                           )}

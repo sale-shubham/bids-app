@@ -23,16 +23,8 @@ export interface AuthMember {
   // This account's concurrent-session cap.
   deviceLimit: number;
   // Trust (Phase D). Optional: login / older responses may omit them until `['me']` refetches.
-  phoneVerifiedAt?: string | null;
-  twoFactorEnabled?: boolean;
-  /** Verified-seller badge. */
+  /** Verified-seller badge: the member has a KYC'd (ACTIVE) payout account. */
   verified?: boolean;
-  /** SUPER_ADMIN only: the server requires admin 2FA and it is not set up yet. */
-  twoFactorSetupRequired?: boolean;
-  /** Opted in to WhatsApp alerts (needs a verified phone). */
-  whatsappOptIn?: boolean;
-  /** Raw timestamp login / signup-verify responses carry instead of `whatsappOptIn`. */
-  whatsappOptInAt?: string | null;
   /** Unpaid-purchase strikes in force (Phase E). */
   activeStrikes?: number;
   /** Billing details for GST invoices (Phase G). */
@@ -55,9 +47,3 @@ export const useAuthStore = create<AuthState>((set) => ({
   setInitialized: (initialized) => set({ initialized }),
   clear: () => set({ member: null }),
 }));
-
-/** Opt-in flag for a member from any response shape: `GET /members/me` has the boolean, login / signup-verify only `whatsappOptInAt`. */
-export function isWhatsappOptedIn(m: Pick<AuthMember, 'whatsappOptIn' | 'whatsappOptInAt'> | null | undefined): boolean {
-  if (!m) return false;
-  return m.whatsappOptIn ?? !!m.whatsappOptInAt;
-}

@@ -68,8 +68,6 @@ function parseMember(raw: unknown): AdminMember {
     auctionsWon: num(m.auctionsWon),
     moneySpentPaise: num(m.moneySpentPaise),
     verified: m.verified === true,
-    phoneVerifiedAt: strOrNull(m.phoneVerifiedAt),
-    twoFactorEnabled: m.twoFactorEnabled === true,
     payoutStatus: strOrNull(m.payoutStatus),
     activeStrikes: num(m.activeStrikes),
     creditBalancePaise: num(m.creditBalancePaise),

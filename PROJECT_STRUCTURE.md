@@ -49,14 +49,14 @@ src/
     risk/                            risk.api/parse/types/utils/errors, use-risk (admin queue)
     featured/                        featured.api/types/errors, use-featured (promote, promoted), components/{promote-card,promoted-strip}
     referrals/                       referral-code (?ref= capture), referrals.api/types, use-referrals, components/{refer-card,credit-ledger}
-    invoices/                        invoices.api/types/schema, use-invoices, components/invoices-card
+    invoices/                        invoices.api/types/schema/errors, use-invoices, components/invoices-card
     reports/                         reports.api/types/constants/schema/errors, use-reports, components/{report-dialog,report-button}
     questions/                       questions.api/types/schema/errors, use-questions, components/questions-section
     follows/                         follows.api/errors, use-follows, components/{follow-button,following-card}
-    notification-preferences/        .api/.errors, use-notification-preferences, components/{notification-preferences-card,whatsapp-card}
+    notification-preferences/        .api/.errors, use-notification-preferences, components/notification-preferences-card
     analytics/                       analytics.api, use-analytics (view beacon), components/{seller-analytics-page,auction-analytics-section,analytics-charts,days-switch}
     follows/                         follows.api/errors, use-follows, components/{follow-button,following-card}
-    notification-preferences/        .api/.errors, use-notification-preferences, components/{notification-preferences-card,whatsapp-card}
+    notification-preferences/        .api/.errors, use-notification-preferences, components/notification-preferences-card
     analytics/                       analytics.api, use-analytics (view beacon), components/{seller-analytics-page,auction-analytics-section,analytics-charts,days-switch}
     saved-searches/                  saved-searches.api/types/schema/errors/utils, use-saved-searches, components/{save-search-button,alerts-card}
     leaderboard/                     leaderboard.server, components/leaderboard-view (podium, table)

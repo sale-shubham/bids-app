@@ -100,7 +100,7 @@ Exported. `true` when an error says nothing about whether the member is signed i
 
 ### Phase D additions
 
-`/auth/2fa/verify` is in `NO_REFRESH_URL` (its 401 `TWO_FACTOR_CHALLENGE_INVALID` is an answer, not an expired token). The response interceptor handles `TWO_FACTOR_SETUP_REQUIRED` (403) by setting `member.twoFactorSetupRequired` in the auth store, and `apiErrorMessage` returns a friendly line for that code. `qrcode` is the only new package (2FA QR, see `flows/auth.md`).
+`NO_REFRESH_URL` covers login, signup, refresh and password forgot/reset only (their 401s are answers, not an expired token). There is no 2FA handling in the interceptor and no `qrcode` package any more.
 
 ### `apiErrorCode(err)` / `apiErrorDetails(err)`
 

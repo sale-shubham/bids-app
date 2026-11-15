@@ -10,8 +10,13 @@ export interface InvoiceDTO {
   issuedAt: string;
 }
 
+/** `GET /admin/invoices` row: the member's id plus the buyer snapshot printed on the invoice. */
 export interface AdminInvoice extends InvoiceDTO {
-  member?: { id?: string; name?: string; email?: string } | null;
+  memberId: string;
+  /** Buyer name as invoiced (snapshot at issue time). */
+  buyerName: string | null;
+  buyerGstin: string | null;
+  taxablePaise: number;
 }
 
 export const INVOICE_TYPES: { value: InvoiceType; label: string }[] = [

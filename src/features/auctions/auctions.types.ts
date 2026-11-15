@@ -49,7 +49,7 @@ export interface AuctionSeller {
   /** Average seller rating; absent on snapshots saved before ratings existed. */
   ratingAvg?: number | null;
   ratingCount?: number;
-  /** Verified seller (phone verified + good standing). Absent on older snapshots. */
+  /** Verified seller (KYC'd payout account). Absent on older snapshots. */
   verified?: boolean;
 }
 

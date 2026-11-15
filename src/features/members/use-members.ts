@@ -23,20 +23,3 @@ export function useUpdateMe() {
     },
   });
 }
-
-export function useSendPhoneOtp() {
-  return useMutation({ mutationFn: membersApi.sendPhoneOtp });
-}
-
-export function useVerifyPhone() {
-  const qc = useQueryClient();
-  const setMember = useAuthStore((s) => s.setMember);
-  return useMutation({
-    mutationFn: membersApi.verifyPhone,
-    onSuccess: (updated) => {
-      const current = useAuthStore.getState().member;
-      if (current) setMember({ ...current, ...updated });
-      void qc.invalidateQueries({ queryKey: ME_KEY });
-    },
-  });
-}
