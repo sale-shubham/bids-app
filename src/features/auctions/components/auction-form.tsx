@@ -4,11 +4,12 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Controller, useForm, useWatch, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { AlertTriangle, ArrowLeft, ArrowRight, ImagePlus, Loader2, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ImagePlus, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { AssetImage } from '@/components/common/asset-image';
 import { DatePicker } from '@/components/common/date-picker';
 import { FormInput } from '@/components/common/form-input';
+import { Notice } from '@/components/common/notice';
 import { RichTextEditor } from '@/components/common/rich-text-editor';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -139,15 +140,9 @@ export function AuctionForm({ auction, relistFrom }: { auction?: AuctionDetail; 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="mx-auto max-w-3xl space-y-8" noValidate>
       {blocked && (
-        <div role="alert" className="flex items-start gap-3 rounded-xl border border-warning/40 bg-warning/10 p-4 text-sm">
-          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning" aria-hidden />
-          <p>
-            You have {formatINR(unpaid)} in unpaid commission. Pay it to create new auctions.{' '}
-            <Link href="/sell/commissions" className="font-medium text-primary hover:underline">
-              Go to commissions
-            </Link>
-          </p>
-        </div>
+        <Notice action={{ label: 'Go to commissions', href: '/sell/commissions' }}>
+          You have {formatINR(unpaid)} in unpaid commission. Pay it to create new auctions.
+        </Notice>
       )}
 
       <section className="space-y-4">

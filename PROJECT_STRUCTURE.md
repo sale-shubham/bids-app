@@ -12,15 +12,15 @@ src/
       pages/[slug]                   legal pages (server-rendered from GET /settings/legal/:slug)
       suspended/                     deactivated-account page
     (auth)/                          guest-only: /login, /signup (+ email OTP verify), /forgot-password, /reset-password
-    (member)/                        BIDDER / AUCTIONEER: /watchlist, /profile, /notifications
-    (bidder)/my-bids                 BIDDER only; tabs Winning / Outbid / Won / Lost
-    (bidder)/purchases, purchases/[id]  BIDDER only; checkout list + detail (pay, confirm received, report a problem)
-    (auctioneer)/                    AUCTIONEER only; /sell/* (auctions list, new, edit, bulk = CSV bulk upload, auctions/[id] = bids + result, commissions = pay via Razorpay, sales + sales/[id] = ship + payout amounts, payouts = payout account onboarding, analytics = seller analytics)
+    (member)/                        MEMBER (one account buys and sells; legacy BIDDER / AUCTIONEER count as MEMBER): layout = AuthGuard + shell + PushPermissionPrompt; /watchlist, /profile, /notifications
+    (member)/my-bids                 buying: tabs Winning / Outbid / Won / Lost (in `?tab=`)
+    (member)/purchases, purchases/[id], purchases/offers/[id]  buying: checkout list + detail (pay, confirm received, report a problem), Offers tab (second-chance offers)
+    (member)/sell/                   selling: layout.tsx adds UnpaidCommissionBanner; auctions list, new, edit, bulk = CSV bulk upload, auctions/[id] = bids + result, commissions = pay via Razorpay, sales + sales/[id] = ship + payout amounts, payouts = payout account onboarding, analytics = seller analytics
     (admin)/                         SUPER_ADMIN only: /admin (dashboard + charts), /admin/members, auctions, commissions, payments, sales (release / refund), invoices, reviews, reports, risk (shill-bid queue), settings (incl. checkout mode + bid deposits), profile
     sitemap.ts, robots.ts            SEO (app public pages + /auctions/sitemap, fail-soft); public/og-image.png = default OG image
   components/
     ui/                              shadcn/Radix primitives
-    common/                          generic app components (page-header, list-toolbar, row-actions-menu, confirm-dialog, auth-guard, countdown, responsive-list, infinite-scroll,
+    common/                          generic app components (page-header, list-toolbar, row-actions-menu, notice, figure, confirm-dialog, auth-guard, countdown, responsive-list, infinite-scroll,
                                      form-input, otp-*, pwa-*, push-permission-prompt, offline-banner, theme-toggle, profile-page (shared by /profile and /admin/profile), ...)
     layout/                          dashboard-shell (guest prop), public-shell (DashboardShell for the public pages, guest or member mode),
                                      shell-footer (website + legal links), mobile-bottom-nav, more-page, nav-items (member / admin / guest nav,

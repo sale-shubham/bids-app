@@ -38,7 +38,7 @@ Only `localhost` / `127.0.0.1` targets are accepted.
 
 - `global-setup.ts` checks both servers answer, then inserts four members straight into the DB
   (bcrypt cost 12, password `E2ePass123`, email `e2e+<run>-<role>@noblebid.test`): `admin` (SUPER_ADMIN),
-  `auctioneer`, `bidderA`, `bidderB`. Each is logged in through the API and the cookies are saved to
+  `auctioneer`, `bidderA`, `bidderB` (the last three are all MEMBERs; the names are personas: who lists, who bids). Each is logged in through the API and the cookies are saved to
   `.run/<role>.json` for specs (`storageStatePath`).
 - Specs create auctions via `lib/db.ts` (`createAuction(startsInSec, endsInSec, ...)`) and extra members the same way,
   or through the UI (signup). All carry the run id in the email.

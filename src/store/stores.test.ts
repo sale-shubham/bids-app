@@ -80,9 +80,21 @@ describe('live store', () => {
   });
 });
 
+describe('auth store: legacy roles', () => {
+  it('stores BIDDER / AUCTIONEER (one release) as MEMBER and leaves SUPER_ADMIN alone', () => {
+    for (const legacy of ['BIDDER', 'AUCTIONEER']) {
+      useAuthStore.getState().setMember({ id: 'u1', role: legacy } as unknown as AuthMember);
+      expect(useAuthStore.getState().member?.role).toBe('MEMBER');
+    }
+    useAuthStore.getState().setMember({ id: 'a1', role: 'SUPER_ADMIN' } as AuthMember);
+    expect(useAuthStore.getState().member?.role).toBe('SUPER_ADMIN');
+    useAuthStore.getState().clear();
+  });
+});
+
 describe('auth store', () => {
   it('set / clear member and initialized flag', () => {
-    const m = { id: 'u1', role: 'BIDDER' } as AuthMember;
+    const m = { id: 'u1', role: 'MEMBER' } as AuthMember;
     useAuthStore.getState().setMember(m);
     useAuthStore.getState().setInitialized(true);
     expect(useAuthStore.getState()).toMatchObject({ member: m, initialized: true });

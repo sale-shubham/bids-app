@@ -11,7 +11,7 @@ vi.mock('@/features/admin/components/admin-charts', () => ({
 }));
 
 const totals = {
-  members: 10, bidders: 6, auctioneers: 4, liveAuctions: 2, upcomingAuctions: 1, endedAuctions: 3,
+  members: 10, buyers: 6, sellers: 4, liveAuctions: 2, upcomingAuctions: 1, endedAuctions: 3,
   bidsToday: 7, commissionPaidPaise: 100000, commissionDuePaise: 5000,
 };
 
@@ -34,6 +34,10 @@ describe('AdminDashboardPage', () => {
     expect(await screen.findByRole('heading', { name: 'Admin dashboard' })).toBeInTheDocument();
     expect(screen.queryByText(/Platform activity at a glance/)).not.toBeInTheDocument();
     expect(await screen.findByRole('link', { name: /Members/ })).toHaveAttribute('href', '/admin/members');
+    expect(screen.getByText('Buyers')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Sellers/ })).toHaveAttribute('href', '/admin/members?seller=true');
+    expect(screen.queryByText('Bidders')).not.toBeInTheDocument();
+    expect(screen.queryByText('Auctioneers')).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Commission due/ })).toHaveAttribute('href', '/admin/commissions?status=due');
     expect(screen.getByRole('link', { name: /Live auctions/ })).toHaveAttribute('href', '/admin/auctions?status=live');
     expect(screen.getByText('No revenue yet')).toBeInTheDocument();

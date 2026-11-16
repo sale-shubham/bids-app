@@ -1,6 +1,6 @@
 # Winner checkout flow (frontend)
 
-Code: `src/features/sales/`, `src/features/payments/` (shared payment hook), pages `src/app/(bidder)/purchases/**`, `src/app/(auctioneer)/sell/sales/**`, `src/app/(admin)/admin/sales/page.tsx`. Backend: Razorpay Route (payment goes to the seller's linked account, the platform keeps the commission). Seller onboarding and the platform switch are in `payouts.md`; commission payments in `payments.md`.
+Code: `src/features/sales/`, `src/features/payments/` (shared payment hook), pages `src/app/(member)/purchases/**`, `src/app/(member)/sell/sales/**`, `src/app/(admin)/admin/sales/page.tsx`. Backend: Razorpay Route (payment goes to the seller's linked account, the platform keeps the commission). Seller onboarding and the platform switch are in `payouts.md`; commission payments in `payments.md`.
 
 ## Model
 When an auction sells and the seller has an ACTIVE payout account, the API creates a **Sale**. Statuses: `AWAITING_PAYMENT` -> `PAID` -> `SHIPPED` -> `DELIVERED` -> `RELEASED` (payout released), or `DISPUTED`, `REFUNDED`, `CANCELLED`. `SaleDTO.role` (`BUYER` / `SELLER` / `ADMIN`) is who is looking. Auction detail carries `sale: { id, status, payBy } | null`; `/my-bids` rows carry `saleId` / `saleStatus`. Legacy auctions (no sale) keep the old seller-contact flow.
@@ -8,13 +8,13 @@ When an auction sells and the seller has an ACTIVE payout account, the API creat
 ## Routes and entry points
 | Route | Who | Purpose |
 |---|---|---|
-| `/purchases` | BIDDER | `SaleList role="buyer"`: status tabs (All / Awaiting payment / Paid / Shipped / Completed / Disputed), infinite scroll (`SALES_PAGE_SIZE` 20) |
-| `/purchases/[id]` | BIDDER | `SaleDetailPage view="buyer"`: item, amount breakdown, progress timeline, seller contact once paid, delivery info, `PurchaseActions` |
-| `/sell/sales` | AUCTIONEER | `SaleList role="seller"`, same tabs; "Ship" shortcut on PAID rows |
-| `/sell/sales/[id]` | AUCTIONEER | Same detail view: buyer contact once paid, payout + commission rows, `ShipForm` when PAID |
+| `/purchases` | MEMBER (as buyer) | `PageHeader` + `ListToolbar` status tabs in the URL (`?tab=`: All / Awaiting payment / Paid / Shipped / Completed / Disputed / Offers) over `SaleListBody`, infinite scroll (`SALES_PAGE_SIZE` 20) |
+| `/purchases/[id]` | MEMBER (as buyer) | `SaleDetailPage view="buyer"` (`PageHeader` with back button): item, amount breakdown, progress timeline, seller contact once paid, delivery info, `PurchaseActions` |
+| `/sell/sales` | MEMBER (as seller) | `SaleList role="seller"`, same tabs; "Ship" shortcut on PAID rows |
+| `/sell/sales/[id]` | MEMBER (as seller) | Same detail view: buyer contact once paid, payout + commission rows, `ShipForm` when PAID |
 | `/admin/sales` | SUPER_ADMIN | Table / cards, status tabs + `q` search |
 
-Entry points: `AuctionResult` and `/my-bids` Won rows (`BuyerSaleEntry`: AWAITING_PAYMENT = "Pay now" + pay-by date, otherwise badge + "View purchase"); sellers get "View sale". Nav: Purchases (BIDDER), Sales + Payouts (AUCTIONEER), Sales (admin). Route gating is in `src/constants/routes.ts` (`BIDDER_PREFIXES` has `/purchases`; `/sell/*` and `/admin/*` already cover the rest).
+Entry points: `AuctionResult` and `/my-bids` Won rows (`BuyerSaleEntry`: AWAITING_PAYMENT = "Pay now" + pay-by date, otherwise badge + "View purchase"); sellers get "View sale". Nav: Purchases (Buying group), Sales + Payouts (Selling group), Sales (admin). Route gating is in `src/constants/routes.ts` (`MEMBER_PREFIXES` holds `/my-bids`, `/purchases` and `/sell`; `/admin/*` is separate).
 
 ## Buyer actions (`purchase-actions.tsx`, rules in `saleActions()` in `sales.utils.ts`)
 - **Pay ₹X**: AWAITING_PAYMENT and before `payBy` (afterwards "The payment window ... has closed"). `useSalePayment(confirmStub)` = `useRazorpayPayment` with `POST /sales/:id/checkout` (same payload as the commission checkout, `keyId === 'stub'` = test mode with the "Test mode" `ConfirmDialog` from `useStubPaymentConfirm`), then `POST /payments/verify` (returns `referenceType: 'SALE'`). Watcher asks `GET /sales/:id` whether the status left AWAITING_PAYMENT. Invalidates `['sales']`, `['auction']`, `['my-bids']`, `['notifications']`, `['me']`.
@@ -23,7 +23,7 @@ Entry points: `AuctionResult` and `/my-bids` Won rows (`BuyerSaleEntry`: AWAITIN
 
 ## Phase E additions
 - `POST /payments/verify` also returns `referenceType: 'DEPOSIT'` (bid deposits, `deposits.md`).
-- Seller view of a CANCELLED sale (`SaleDTO.secondChanceOffer`, `canOfferSecondChance`): `SellerOfferCard` offers the item to the runner-up; accepting creates a new AWAITING_PAYMENT sale the bidder pays at `/purchases/<newSaleId>`. `/purchases` starts with an Offers section and `/purchases/offers/[id]` is the offer page. See `strikes.md`.
+- Seller view of a CANCELLED sale (`SaleDTO.secondChanceOffer`, `canOfferSecondChance`): `SellerOfferCard` offers the item to the runner-up; accepting creates a new AWAITING_PAYMENT sale the bidder pays at `/purchases/<newSaleId>`. `/purchases` has an Offers tab and `/purchases/offers/[id]` is the offer page. See `strikes.md`.
 - `/purchases` shows the strike warning banner when `activeStrikes > 0`.
 
 ## Seller action (`ship-form.tsx`)

@@ -2,21 +2,23 @@ import { expect, test } from '@playwright/test';
 import { createAuction } from '../lib/db.ts';
 import { loadState, storageStatePath } from '../lib/run.ts';
 
-// Pixel 7 viewport, signed in as bidder A (the `mobile` project in playwright.config.ts).
+// Pixel 7 viewport, signed in as bidder A (a MEMBER) (the `mobile` project in playwright.config.ts).
 test.use({ storageState: storageStatePath('bidderA') });
 
 const bottomNav = (page: import('@playwright/test').Page) => page.locator('nav.fixed');
 
 // The bottom nav is part of the shell everywhere: the member pages and the public pages (guest mode).
-test('bottom nav shows the bidder tabs and navigates', async ({ page }) => {
+test('bottom nav shows the member tabs (Auctions, My bids, My auctions, Profile) and navigates', async ({ page }) => {
   await page.goto('/watchlist');
   const nav = bottomNav(page);
   await expect(nav).toBeVisible();
-  for (const name of ['Auctions', 'Watchlist', 'My bids', 'Profile']) {
+  for (const name of ['Auctions', 'My bids', 'My auctions', 'Profile']) {
     await expect(nav.getByRole('link', { name })).toBeVisible();
   }
-  await nav.getByRole('link', { name: 'Watchlist' }).click();
-  await expect(page).toHaveURL(/\/watchlist$/);
+  await nav.getByRole('link', { name: 'My bids' }).click();
+  await expect(page).toHaveURL(/\/my-bids$/);
+  await nav.getByRole('link', { name: 'My auctions' }).click();
+  await expect(page).toHaveURL(/\/sell\/auctions$/);
   await nav.getByRole('link', { name: 'Profile' }).click();
   await expect(page).toHaveURL(/\/profile$/);
 });

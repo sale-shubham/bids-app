@@ -9,8 +9,8 @@ import { useFollowState, useToggleFollow } from '../use-follows';
 
 interface FollowButtonProps {
   sellerId: string;
-  /** The target's role when known; anything but AUCTIONEER hides the button. */
-  sellerRole?: string;
+  /** Auctions the target has listed, when known (public seller profile); 0 hides the button (only sellers can be followed). Omitted on an auction page, where the seller has listed by definition. */
+  listedCount?: number;
   /** Server-rendered follower count, shown until the live state loads (and to guests). */
   initialFollowerCount?: number;
   /** Compact button (seller card on the auction page): no count, smaller. */
@@ -23,8 +23,8 @@ const plural = (n: number) => `${n.toLocaleString('en-IN')} ${n === 1 ? 'followe
 
 // Follow / Following toggle for a seller. Optimistic with rollback; guests are
 // sent to /login?next=<here>. Hidden on your own profile, for admins and for
-// targets that are not auctioneers.
-export function FollowButton({ sellerId, sellerRole, initialFollowerCount, compact = false, showCount = false }: FollowButtonProps) {
+// members who have not listed an auction (listedCount 0). A guest still sees it and is sent to login.
+export function FollowButton({ sellerId, listedCount, initialFollowerCount, compact = false, showCount = false }: FollowButtonProps) {
   const router = useRouter();
   const member = useAuthStore((s) => s.member);
   const initialized = useAuthStore((s) => s.initialized);
@@ -33,7 +33,7 @@ export function FollowButton({ sellerId, sellerRole, initialFollowerCount, compa
 
   const following = !!member && !!state.data?.following;
   const count = state.data?.followerCount ?? initialFollowerCount;
-  const eligible = (!sellerRole || sellerRole === 'AUCTIONEER') && member?.id !== sellerId && member?.role !== 'SUPER_ADMIN';
+  const eligible = (listedCount === undefined || listedCount > 0) && member?.id !== sellerId && member?.role !== 'SUPER_ADMIN';
 
   const onClick = () => {
     if (!member) {

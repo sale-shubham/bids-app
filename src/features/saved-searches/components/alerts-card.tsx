@@ -13,7 +13,7 @@ import type { SavedSearchDTO } from '../saved-searches.types';
 import { savedSearchHref, summarizeSavedSearch } from '../saved-searches.utils';
 import { useDeleteSavedSearch, useSavedSearches } from '../use-saved-searches';
 
-/** Profile > Alerts: the bidder's saved searches. */
+/** Profile > Alerts: the member's saved searches. */
 export function AlertsCard() {
   const list = useSavedSearches();
   const del = useDeleteSavedSearch();

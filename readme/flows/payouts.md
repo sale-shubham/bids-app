@@ -1,6 +1,6 @@
 # Seller payouts and checkout mode (frontend)
 
-Code: `src/features/payouts/`, page `src/app/(auctioneer)/sell/payouts/page.tsx`, gate in `src/features/auctions/components/new-auction.tsx`, setting in `src/features/admin/components/marketplace-settings.tsx`.
+Code: `src/features/payouts/`, page `src/app/(member)/sell/payouts/page.tsx`, gate in `src/features/auctions/components/new-auction.tsx`, setting in `src/features/admin/components/marketplace-settings.tsx`.
 
 ## Checkout mode
 Platform setting `checkoutMode`: `off` (winner and seller arrange payment themselves), `optional` (default; winners pay through the platform when the seller has an ACTIVE payout account), `required` (a seller needs an ACTIVE payout account to create auctions). Public settings (`usePublicSettings().data.checkoutMode`; missing = `optional`, `resolveCheckoutMode` in `settings.types.ts`) and admin settings GET / PUT carry it. Admin edits it in Settings > Marketplace > "Checkout" card (a select with help text per mode; the form schema `marketplaceSchema.checkoutMode`).

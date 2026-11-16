@@ -1,7 +1,6 @@
 'use client';
 import * as React from 'react';
 import Link from 'next/link';
-import { Gavel, Store } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
@@ -14,18 +13,11 @@ import { VerifyEmailStep } from '@/features/auth/components/verify-email-step';
 import { captureReferralCode, clearReferralCode, readReferralCode } from '@/features/referrals/referral-code';
 import { apiErrorCode } from '@/lib/api-client';
 import { legalPagePath } from '@/constants/legal';
-import { cn } from '@/lib/utils';
-
-const ROLES = [
-  { value: 'BIDDER', title: 'I want to bid', hint: 'Browse auctions and place bids.', icon: Gavel },
-  { value: 'AUCTIONEER', title: 'I want to sell', hint: 'List items and run auctions.', icon: Store },
-] as const;
 
 export default function SignupPage() {
   const signup = useSignup();
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
-    defaultValues: { role: 'BIDDER' },
   });
   const [verify, setVerify] = React.useState<{ email: string; resendAfterSec: number } | null>(null);
   const { errors } = form.formState;
@@ -41,7 +33,6 @@ export default function SignupPage() {
         name: values.name,
         email: values.email,
         password: values.password,
-        role: values.role,
         ...(readReferralCode() ? { referralCode: readReferralCode()! } : {}),
       },
       {
@@ -64,32 +55,9 @@ export default function SignupPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold">Create your account</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Join NobleBid to bid on or sell items.</p>
+      <p className="mt-1 text-sm text-muted-foreground">Join NobleBid to bid on and sell items with one account.</p>
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="mt-6 space-y-4" noValidate>
-        <fieldset className="space-y-2">
-          <legend className="text-sm font-medium">What would you like to do?</legend>
-          <div className="grid grid-cols-2 gap-3">
-            {ROLES.map(({ value, title, hint, icon: Icon }) => (
-              <label key={value} className="cursor-pointer">
-                <input type="radio" value={value} className="peer sr-only" {...form.register('role')} />
-                <span
-                  className={cn(
-                    'flex h-full flex-col gap-1 rounded-xl border-2 bg-card p-3 transition-colors',
-                    'hover:border-primary/50 peer-checked:border-primary peer-checked:bg-primary/5',
-                    'peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background',
-                  )}
-                >
-                  <Icon className="h-5 w-5 text-primary" />
-                  <span className="text-sm font-semibold">{title}</span>
-                  <span className="text-xs text-muted-foreground">{hint}</span>
-                </span>
-              </label>
-            ))}
-          </div>
-          {errors.role && <p className="text-xs text-destructive">{errors.role.message}</p>}
-        </fieldset>
-
         <FormInput
           label="Full name"
           autoComplete="name"

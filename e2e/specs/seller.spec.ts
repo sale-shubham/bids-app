@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { createAuction } from '../lib/db.ts';
 import { loadState, storageStatePath } from '../lib/run.ts';
 
-// Runs as the run's AUCTIONEER (storage state from global setup).
+// Runs as the run's seller persona (a MEMBER) (storage state from global setup).
 test.use({ storageState: storageStatePath('auctioneer') });
 
 const HOUR = 3600;
@@ -16,9 +16,10 @@ test('my auctions lists a seeded live auction with its actions', async ({ page }
   const row = page.getByRole('listitem').filter({ hasText: a.title });
   await expect(row).toBeVisible();
   await expect(row.getByText('Live', { exact: true })).toBeVisible();
-  await expect(row.getByRole('link', { name: 'Edit' })).toBeVisible();
-  await expect(row.getByRole('button', { name: 'Delete' })).toBeVisible();
-  await expect(row.getByRole('link', { name: 'Bids' })).toHaveAttribute('href', `/sell/auctions/${a.id}`);
+  await row.getByRole('button', { name: /^Actions for / }).click();
+  await expect(page.getByRole('menuitem', { name: 'Edit' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Delete' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Bids' })).toHaveAttribute('href', `/sell/auctions/${a.id}`);
 });
 
 test('edit an auction with 0 bids', async ({ page }) => {
@@ -41,7 +42,8 @@ test('delete an auction with 0 bids (confirm dialog)', async ({ page }) => {
   await page.goto('/sell/auctions');
   await page.getByRole('tab', { name: 'Upcoming' }).click();
   const row = page.getByRole('listitem').filter({ hasText: a.title });
-  await row.getByRole('button', { name: 'Delete' }).click();
+  await row.getByRole('button', { name: /^Actions for / }).click();
+  await page.getByRole('menuitem', { name: 'Delete' }).click();
 
   const dialog = page.getByRole('dialog');
   await expect(dialog.getByText('Delete this auction?')).toBeVisible();

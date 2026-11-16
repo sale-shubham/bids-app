@@ -23,7 +23,7 @@ const q = (over: Partial<QuestionDTO> = {}): QuestionDTO => ({
   isMine: false,
   ...over,
 });
-const signIn = (id: string | null, role: AuthMember['role'] = 'BIDDER') =>
+const signIn = (id: string | null, role: AuthMember['role'] = 'MEMBER') =>
   useAuthStore.setState({ member: id ? ({ id, role } as AuthMember) : null, initialized: true });
 
 function renderSection(ended = false) {
@@ -67,7 +67,7 @@ describe('QuestionsSection visibility', () => {
   });
 
   it('the seller cannot ask but can answer and hide', async () => {
-    signIn('seller1', 'AUCTIONEER');
+    signIn('seller1', 'MEMBER');
     vi.mocked(api.fetchQuestions).mockResolvedValue([q()]);
     renderSection();
     expect(await screen.findByLabelText('Your answer')).toBeInTheDocument();
@@ -97,8 +97,8 @@ describe('SUPER_ADMIN viewer', () => {
     await waitFor(() => expect(api.hideQuestion).toHaveBeenCalledWith('q1'));
   });
 
-  it('a bidder never sees Hide on someone else\'s question', async () => {
-    signIn('u2', 'BIDDER');
+  it('a member never sees Hide on someone else\'s question', async () => {
+    signIn('u2', 'MEMBER');
     vi.mocked(api.fetchQuestions).mockResolvedValue([q({ answer: 'Yes', answeredAt: new Date().toISOString() })]);
     renderSection();
     await screen.findByText('Yes');
@@ -128,7 +128,7 @@ describe('ask / answer / hide flows', () => {
   });
 
   it('seller answers', async () => {
-    signIn('seller1', 'AUCTIONEER');
+    signIn('seller1', 'MEMBER');
     vi.mocked(api.fetchQuestions).mockResolvedValue([q()]);
     vi.mocked(api.answerQuestion).mockResolvedValue(q({ answer: 'Yes' }));
     renderSection();
@@ -138,7 +138,7 @@ describe('ask / answer / hide flows', () => {
   });
 
   it('hide goes through a confirm dialog', async () => {
-    signIn('seller1', 'AUCTIONEER');
+    signIn('seller1', 'MEMBER');
     vi.mocked(api.fetchQuestions).mockResolvedValue([q()]);
     vi.mocked(api.hideQuestion).mockResolvedValue();
     renderSection();

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/common/empty-state';
-import { StatCard } from '@/components/common/stat-card';
+import { Figure, FigureStrip } from '@/components/common/figure';
 import { apiErrorMessage } from '@/lib/api-client';
 import type { AnalyticsDays } from '../analytics.api';
 import { useAuctionAnalytics } from '../use-analytics';
@@ -40,14 +40,14 @@ export function AuctionAnalyticsSection({ auctionId }: { auctionId: string }) {
         ) : empty ? (
           <EmptyState icon={BarChart3} title="No activity yet" description="Views, watchers and bids for this auction will show up here." />
         ) : (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 gap-4 @lg/content:grid-cols-2 @3xl/content:grid-cols-5">
-              <StatCard label="Views" value={n(data.totals.views)} icon={Eye} />
-              <StatCard label="Unique viewers" value={n(data.totals.uniqueViewers)} icon={Users} />
-              <StatCard label="Watchers" value={n(data.totals.watchers)} icon={Heart} />
-              <StatCard label="Bids" value={n(data.totals.bids)} icon={Gavel} />
-              <StatCard label="Bidders" value={n(data.totals.bidders)} icon={UserCheck} />
-            </div>
+          <div className="space-y-4">
+            <FigureStrip cols={5}>
+              <Figure label="Views" value={n(data.totals.views)} icon={Eye} />
+              <Figure label="Unique viewers" value={n(data.totals.uniqueViewers)} icon={Users} />
+              <Figure label="Watchers" value={n(data.totals.watchers)} icon={Heart} />
+              <Figure label="Bids" value={n(data.totals.bids)} icon={Gavel} />
+              <Figure label="Bidders" value={n(data.totals.bidders)} icon={UserCheck} />
+            </FigureStrip>
             <DailyChart data={data.daily} />
           </div>
         )}

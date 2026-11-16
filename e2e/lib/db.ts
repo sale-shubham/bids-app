@@ -26,7 +26,8 @@ export async function withDb<T>(fn: (db: pg.Client) => Promise<T>): Promise<T> {
 
 const cuidLike = (p = 'e2e') => p + Math.random().toString(36).slice(2, 12) + Date.now().toString(36);
 
-export type DbRole = 'BIDDER' | 'AUCTIONEER' | 'SUPER_ADMIN';
+// One member role: every non-admin account both bids and sells.
+export type DbRole = 'MEMBER' | 'SUPER_ADMIN';
 
 export interface NewMember {
   email: string;

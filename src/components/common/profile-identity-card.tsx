@@ -7,20 +7,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { MemberAvatar } from '@/components/common/member-avatar';
-import { useAuthStore, type Role } from '@/store/auth-store';
+import { useAuthStore } from '@/store/auth-store';
 import { useUpdateMe } from '@/features/members/use-members';
 import { IMAGE_TYPES, useUploadImage } from '@/features/uploads/use-upload';
 import { apiErrorMessage } from '@/lib/api-client';
 import { formatDate, formatINR } from '@/lib/utils';
 
-const ROLE_LABEL: Record<Role, string> = {
-  BIDDER: 'Bidder',
-  AUCTIONEER: 'Auctioneer',
-  SUPER_ADMIN: 'Super admin',
-};
-
 // Who is signed in: avatar (upload -> presign -> PUT -> PATCH /members/me),
-// name, email, role badge and account figures.
+// name, email, a Member badge and account figures (buying: won, spent; selling: unpaid commission when owed).
 export function ProfileIdentityCard() {
   const member = useAuthStore((s) => s.member);
   const fileRef = React.useRef<HTMLInputElement>(null);
@@ -43,20 +37,24 @@ export function ProfileIdentityCard() {
     }
   };
 
+  const isAdmin = member.role === 'SUPER_ADMIN';
   const details = [
-    ...(member.role === 'AUCTIONEER'
-      ? [
-          {
-            label: 'Unpaid commission',
-            value: formatINR(member.unpaidCommissionPaise),
-            warn: member.unpaidCommissionPaise > 0,
-            href: '/sell/commissions',
-          },
-        ]
+    ...(isAdmin
+      ? []
       : [
           { label: 'Auctions won', value: String(member.auctionsWon) },
           { label: 'Total spent', value: formatINR(member.moneySpentPaise) },
         ]),
+    ...(!isAdmin && member.unpaidCommissionPaise > 0
+      ? [
+          {
+            label: 'Unpaid commission',
+            value: formatINR(member.unpaidCommissionPaise),
+            warn: true,
+            href: '/sell/commissions',
+          },
+        ]
+      : []),
     { label: 'Member since', value: formatDate(member.createdAt) },
   ];
 
@@ -82,7 +80,7 @@ export function ProfileIdentityCard() {
           <div className="min-w-0 flex-1 space-y-1">
             <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
               <h2 className="wrap-break-word text-xl font-semibold">{member.name}</h2>
-              <Badge>{ROLE_LABEL[member.role]}</Badge>
+              <Badge>{member.role === 'SUPER_ADMIN' ? 'Super admin' : 'Member'}</Badge>
             </div>
             <p className="wrap-break-word text-sm text-muted-foreground">{member.email}</p>
             <input
@@ -107,7 +105,7 @@ export function ProfileIdentityCard() {
           </div>
         </div>
 
-        <dl className="grid gap-4 border-t pt-5 @lg/content:grid-cols-3">
+        <dl className="grid gap-4 border-t pt-5 @lg/content:grid-cols-2 @3xl/content:grid-cols-4">
           {details.map((d) => (
             <div key={d.label} className="min-w-0">
               <dt className="text-xs text-muted-foreground">{d.label}</dt>

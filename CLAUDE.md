@@ -6,7 +6,7 @@ Next.js 16 App Router PWA (React 19, TypeScript, Tailwind 4, Radix/shadcn UI). S
 
 ## Hard rules
 - **Never run a build** (`next build`, `npm run build`, `npm run preview`, `next start`) — it breaks the running dev server. Verify with `npm run check` (lint with zero warnings + `tsc --noEmit` + vitest).
-- Roles: `BIDDER`, `AUCTIONEER`, `SUPER_ADMIN`. Login = email + password; email OTP only for signup verification and forgot password.
+- Roles: `MEMBER` (one account bids and sells) and `SUPER_ADMIN`. The pre-MEMBER values `BIDDER` / `AUCTIONEER` are still accepted for one release and treated as `MEMBER` everywhere (`normalizeRole()` in `src/constants/routes.ts`). Login = email + password; email OTP only for signup verification and forgot password.
 - **App only, no marketing.** The landing page / About / How it works / Contact live in the separate `bids-website` repo (links via `NEXT_PUBLIC_WEBSITE_URL`, `src/constants/website.ts`). `/` is `redirect('/login')`. SUPER_ADMIN uses only `/admin/*` plus the public pages; member routes are root-level (`/auctions`, `/my-bids`, `/sell/*`, `/watchlist`, `/notifications`, `/profile`). Public pages render in the same shell (guest mode when logged out).
 - All backend calls go through `api` in `src/lib/api-client.ts`; errors via `apiErrorMessage`.
 - Route classes live only in `src/constants/routes.ts` (shared by `src/proxy.ts`, `AuthBootstrap`, `api-client.ts`).

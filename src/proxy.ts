@@ -5,6 +5,7 @@ import {
   gateFor,
   isAuthRoute,
   isGatedRoute,
+  type LegacyRole,
   type Role,
 } from "@/constants/routes";
 import { serverApiOrigin } from "@/constants/api";
@@ -14,13 +15,14 @@ import { serverApiOrigin } from "@/constants/api";
 // equal the backend's JWT_SECRET (server-only env var, never NEXT_PUBLIC_ — see
 // .env.example). No token is ever read/written by client JS.
 //
-// Areas (P2X pattern): public (no gate), member (BIDDER / AUCTIONEER),
-// bidder (/my-bids), auctioneer (/sell/*), admin (/admin/*, SUPER_ADMIN only).
+// Areas (P2X pattern): public (no gate), member (MEMBER: /my-bids, /purchases, /sell/*,
+// /watchlist, /profile, /notifications), admin (/admin/*, SUPER_ADMIN only). The legacy
+// BIDDER / AUCTIONEER token roles count as MEMBER (normalised in gateFor / destinationFor).
 // SUPER_ADMIN may only use /admin/* plus the public pages; the decision table is
 // gateFor() in src/constants/routes.ts (unit-tested).
 interface AccessPayload {
   sub: string;
-  role: Role;
+  role: Role | LegacyRole;
   sid: string;
 }
 

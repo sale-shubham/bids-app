@@ -3,7 +3,7 @@ import { parseCommissionPage } from '@/features/commissions/commissions.parse';
 import type { AuctionCard } from '@/features/auctions/auctions.types';
 import { resolveCheckoutMode } from '@/features/settings/settings.types';
 import { DEFAULT_MAX_PRICE_PAISE } from '@/features/settings/settings.utils';
-import type { Role } from '@/constants/routes';
+import { normalizeRole, type Role } from '@/constants/routes';
 import type {
   AdminAuction,
   AdminCommission,
@@ -33,8 +33,9 @@ export function parseDashboard(body: unknown): AdminDashboard {
   return {
     totals: {
       members: num(t.members),
-      bidders: num(t.bidders),
-      auctioneers: num(t.auctioneers),
+      // Old API (one release): bidders / auctioneers carried the same idea.
+      buyers: num(t.buyers, num(t.bidders)),
+      sellers: num(t.sellers, num(t.auctioneers)),
       liveAuctions: num(t.liveAuctions),
       upcomingAuctions: num(t.upcomingAuctions),
       endedAuctions: num(t.endedAuctions),
@@ -45,8 +46,7 @@ export function parseDashboard(body: unknown): AdminDashboard {
     revenueByMonth: arr(d.revenueByMonth).map((r) => ({ month: str(obj(r).month), paidPaise: num(obj(r).paidPaise) })),
     signupsByMonth: arr(d.signupsByMonth).map((r) => ({
       month: str(obj(r).month),
-      bidders: num(obj(r).bidders),
-      auctioneers: num(obj(r).auctioneers),
+      members: num(obj(r).members, num(obj(r).bidders) + num(obj(r).auctioneers)),
     })),
     recentAuctions: arr(d.recentAuctions) as AuctionCard[],
   };
@@ -54,7 +54,8 @@ export function parseDashboard(body: unknown): AdminDashboard {
 
 function parseMember(raw: unknown): AdminMember {
   const m = obj(raw);
-  const role: Role = m.role === 'AUCTIONEER' || m.role === 'SUPER_ADMIN' ? m.role : 'BIDDER';
+  // An unknown or legacy (BIDDER / AUCTIONEER) role is a MEMBER.
+  const role: Role = normalizeRole(str(m.role)) ?? 'MEMBER';
   return {
     id: str(m.id),
     name: str(m.name),
@@ -71,6 +72,7 @@ function parseMember(raw: unknown): AdminMember {
     payoutStatus: strOrNull(m.payoutStatus),
     activeStrikes: num(m.activeStrikes),
     creditBalancePaise: num(m.creditBalancePaise),
+    auctionsListed: num(m.auctionsListed),
   };
 }
 

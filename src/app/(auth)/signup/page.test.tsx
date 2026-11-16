@@ -33,6 +33,25 @@ beforeEach(() => {
   vi.mocked(authApi.signup).mockResolvedValue({ email: 'sam@example.com', resendAfterSec: 30 });
 });
 
+describe('Signup (one MEMBER role)', () => {
+  it('has no "I want to bid / sell" choice', () => {
+    setup();
+    expect(screen.queryByText('I want to bid')).not.toBeInTheDocument();
+    expect(screen.queryByText('I want to sell')).not.toBeInTheDocument();
+    expect(screen.queryByText('What would you like to do?')).not.toBeInTheDocument();
+    expect(screen.queryAllByRole('radio')).toHaveLength(0);
+  });
+
+  it('submits without a role field', async () => {
+    setup();
+    await fillAndSubmit();
+    await waitFor(() => expect(authApi.signup).toHaveBeenCalled());
+    const body = vi.mocked(authApi.signup).mock.calls[0][0];
+    expect(body).toEqual({ name: 'Sam Seller', email: 'sam@example.com', password: 'secret123' });
+    expect(body).not.toHaveProperty('role');
+  });
+});
+
 describe('Signup referral code', () => {
   it('captures ?ref= and sends it as referralCode', async () => {
     window.history.replaceState({}, '', '/signup?ref=NOBLE7');

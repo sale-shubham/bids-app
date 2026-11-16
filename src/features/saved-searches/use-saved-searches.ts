@@ -7,8 +7,8 @@ import type { SavedSearchPayload } from './saved-searches.types';
 export const savedSearchesKey = ['saved-searches'] as const;
 
 export function useSavedSearches() {
-  const isBidder = useAuthStore((s) => s.member?.role === 'BIDDER');
-  return useQuery({ queryKey: savedSearchesKey, queryFn: api.fetchSavedSearches, enabled: isBidder });
+  const isMember = useAuthStore((s) => s.member?.role === 'MEMBER');
+  return useQuery({ queryKey: savedSearchesKey, queryFn: api.fetchSavedSearches, enabled: isMember });
 }
 
 export function useCreateSavedSearch() {

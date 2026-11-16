@@ -14,7 +14,7 @@ vi.mock('sonner', () => ({ toast }));
 vi.mock('../follows.api');
 
 const signIn = (over: Partial<AuthMember> = {}) =>
-  useAuthStore.setState({ member: { id: 'me', role: 'BIDDER', ...over } as AuthMember, initialized: true });
+  useAuthStore.setState({ member: { id: 'me', role: 'MEMBER', ...over } as AuthMember, initialized: true });
 
 function wrap(ui: React.ReactNode) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -73,13 +73,25 @@ describe('FollowButton', () => {
     expect(screen.getByText('3 followers')).toBeInTheDocument();
   });
 
-  it('is hidden on your own profile and for non-auctioneers', () => {
+  it('is hidden on your own profile and for members who have not listed anything', () => {
     signIn({ id: 's1' });
     const { unmount } = wrap(<FollowButton sellerId="s1" />);
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
     unmount();
     signIn();
-    wrap(<FollowButton sellerId="s2" sellerRole="BIDDER" />);
+    wrap(<FollowButton sellerId="s2" listedCount={0} />);
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('shows for a seller who has listed auctions', () => {
+    signIn();
+    wrap(<FollowButton sellerId="s2" listedCount={3} />);
+    expect(screen.getByRole('button', { name: 'Follow' })).toBeInTheDocument();
+  });
+
+  it('is hidden for an admin viewer', () => {
+    signIn({ role: 'SUPER_ADMIN' });
+    wrap(<FollowButton sellerId="s2" listedCount={3} />);
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 });

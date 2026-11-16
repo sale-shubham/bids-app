@@ -8,7 +8,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/components/ui/table';
 import { EmptyState } from '@/components/common/empty-state';
 import { SortableTableHead } from '@/components/common/sortable-table-head';
-import { StatCard } from '@/components/common/stat-card';
+import { Figure, FigureStrip } from '@/components/common/figure';
+import { ListToolbar } from '@/components/common/list-toolbar';
+import { PageHeader } from '@/components/common/page-header';
 import { useSortedItems, useSortState } from '@/components/common/use-sortable-data';
 import { apiErrorMessage } from '@/lib/api-client';
 import { formatINR } from '@/lib/utils';
@@ -40,14 +42,10 @@ export function SellerAnalyticsPage() {
   const empty = !!data && data.totals.views === 0 && data.totals.bids === 0 && data.auctions.length === 0;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-3 @lg/content:flex-row @lg/content:items-end @lg/content:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Analytics</h1>
-          <p className="text-muted-foreground">How buyers find and respond to your auctions.</p>
-        </div>
-        <DaysSwitch value={days} onChange={setDays} />
-      </div>
+    <div className="space-y-4">
+      <PageHeader title="Analytics" />
+
+      <ListToolbar tabs={<DaysSwitch value={days} onChange={setDays} />} />
 
       {q.isError && !data ? (
         <Card>
@@ -60,10 +58,10 @@ export function SellerAnalyticsPage() {
           </CardContent>
         </Card>
       ) : !data ? (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 gap-4 @lg/content:grid-cols-2 @3xl/content:grid-cols-4">
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-2 @lg/content:grid-cols-3 @3xl/content:grid-cols-7">
             {Array.from({ length: 7 }).map((_, i) => (
-              <Skeleton key={i} className="h-28" />
+              <Skeleton key={i} className="h-14" />
             ))}
           </div>
           <Skeleton className="h-72" />
@@ -71,16 +69,16 @@ export function SellerAnalyticsPage() {
       ) : empty ? (
         <EmptyState icon={BarChart3} title="No activity yet" description="Views, watchers and bids show up here once your auctions get attention." actionLabel="Create an auction" actionHref="/sell/new" />
       ) : (
-        <>
-          <div className="grid grid-cols-1 gap-4 @lg/content:grid-cols-2 @3xl/content:grid-cols-4">
-            <StatCard label="Views" value={n(data.totals.views)} icon={Eye} />
-            <StatCard label="Unique viewers" value={n(data.totals.uniqueViewers)} icon={Users} />
-            <StatCard label="Watchers" value={n(data.totals.watchers)} icon={Heart} />
-            <StatCard label="Bids" value={n(data.totals.bids)} icon={Gavel} />
-            <StatCard label="Bidders" value={n(data.totals.bidders)} icon={UserCheck} />
-            <StatCard label="Sold" value={n(data.totals.sold)} icon={PackageCheck} tone="success" />
-            <StatCard label="Revenue" value={formatINR(data.totals.revenuePaise)} icon={Banknote} tone="success" />
-          </div>
+        <div className="space-y-4">
+          <FigureStrip cols={7}>
+            <Figure label="Views" value={n(data.totals.views)} icon={Eye} />
+            <Figure label="Unique viewers" value={n(data.totals.uniqueViewers)} icon={Users} />
+            <Figure label="Watchers" value={n(data.totals.watchers)} icon={Heart} />
+            <Figure label="Bids" value={n(data.totals.bids)} icon={Gavel} />
+            <Figure label="Bidders" value={n(data.totals.bidders)} icon={UserCheck} />
+            <Figure label="Sold" value={n(data.totals.sold)} icon={PackageCheck} tone="success" />
+            <Figure label="Revenue" value={formatINR(data.totals.revenuePaise)} icon={Banknote} tone="success" />
+          </FigureStrip>
 
           <Card>
             <CardHeader>
@@ -133,7 +131,7 @@ export function SellerAnalyticsPage() {
               )}
             </CardContent>
           </Card>
-        </>
+        </div>
       )}
     </div>
   );

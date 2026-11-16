@@ -32,7 +32,7 @@ function renderCard() {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  useAuthStore.setState({ member: { id: 'u1', role: 'BIDDER' } as AuthMember, initialized: true });
+  useAuthStore.setState({ member: { id: 'u1', role: 'MEMBER' } as AuthMember, initialized: true });
 });
 
 describe('AlertsCard', () => {

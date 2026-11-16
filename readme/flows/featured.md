@@ -1,6 +1,6 @@
 # Featured listings (paid promotion)
 
-Code: `src/features/featured/` (`featured.api/types/errors.ts`, `use-featured.ts`, `components/{promote-card,promoted-strip}.tsx`), badge in `features/auctions/components/auction-card.tsx`, strip mounted in `src/app/(public)/auctions/page.tsx`, card mounted in `src/app/(auctioneer)/sell/auctions/[id]/page.tsx`. Admin switch and prices: `readme/flows/admin.md`.
+Code: `src/features/featured/` (`featured.api/types/errors.ts`, `use-featured.ts`, `components/{promote-card,promoted-strip}.tsx`), badge in `features/auctions/components/auction-card.tsx`, strip mounted in `src/app/(public)/auctions/page.tsx`, card mounted in `src/app/(member)/sell/auctions/[id]/page.tsx`. Admin switch and prices: `readme/flows/admin.md`.
 
 ## Contract
 - Public settings: `featuredEnabled`, `featuredPrices { "1","3","7": paise }` (`settings.api.ts`, `PublicSettings`). Everything below is hidden when `featuredEnabled` is false.

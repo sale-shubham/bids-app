@@ -133,7 +133,7 @@ export function QuestionsSection({ auctionId, sellerId, ended }: QuestionsSectio
 
   const isSeller = !!member && member.id === sellerId;
   const canHide = isSeller || member?.role === 'SUPER_ADMIN';
-  const canAsk = !!member && member.role === 'BIDDER' && !isSeller && !ended;
+  const canAsk = !!member && member.role === 'MEMBER' && !isSeller && !ended;
   const items = questions.data ?? [];
 
   const confirmHide = () => {

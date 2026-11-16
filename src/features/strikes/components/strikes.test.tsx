@@ -15,7 +15,7 @@ vi.mock('../use-strikes', () => ({
 import { MemberStrikesDialog } from './member-strikes-dialog';
 import { StrikeBanner } from './strike-banner';
 
-const signIn = (strikes?: number) => useAuthStore.setState({ member: { id: 'me', role: 'BIDDER', activeStrikes: strikes } as AuthMember, initialized: true });
+const signIn = (strikes?: number) => useAuthStore.setState({ member: { id: 'me', role: 'MEMBER', activeStrikes: strikes } as AuthMember, initialized: true });
 
 describe('StrikeBanner', () => {
   it('renders nothing without strikes', () => {

@@ -6,19 +6,18 @@ How pages assemble. The app uses **Next.js 16 App Router route groups**: each pr
 
 | Group / folder | Routes | Chrome | Guard |
 |---|---|---|---|
-| `(member)` | `/watchlist`, `/profile`, `/notifications` | `DashboardShell`; also mounts `<PushPermissionPrompt>` | `AuthGuard allow={['BIDDER', 'AUCTIONEER']}` |
-| `(bidder)` | `/my-bids` | `DashboardShell` | `AuthGuard allow={['BIDDER']}` |
-| `(auctioneer)` | `/sell/auctions`, `/sell/new`, `/sell/auctions/[id]`, `/sell/auctions/[id]/edit`, `/sell/commissions` | `DashboardShell`, with `<UnpaidCommissionBanner>` above the page | `AuthGuard allow={['AUCTIONEER']}` |
+| `(member)` | `/my-bids`, `/purchases`, `/purchases/[id]`, `/purchases/offers/[id]`, `/sell/*`, `/watchlist`, `/profile`, `/notifications` | `DashboardShell`; also mounts `<PushPermissionPrompt>` | `AuthGuard allow={['MEMBER']}` (legacy `BIDDER` / `AUCTIONEER` count as MEMBER) |
+| `(member)/sell` | `/sell/auctions`, `/sell/new`, `/sell/auctions/[id]`, `/sell/auctions/[id]/edit`, `/sell/commissions`, `/sell/sales`, `/sell/payouts`, `/sell/analytics`, `/sell/bulk` | nested `sell/layout.tsx`: `<UnpaidCommissionBanner>` above the page (it hides itself on `/sell/commissions`, `/sell/new` and the edit page) | inherited from `(member)` |
 | `(admin)` | `/admin`, `/admin/members`, `/admin/auctions`, `/admin/commissions`, `/admin/payments`, `/admin/settings`, `/admin/profile` | `DashboardShell`; the sidebar (`ADMIN_NAV`) lists every admin page, so there is no separate sub-navigation | `AuthGuard allow={['SUPER_ADMIN']}` |
 | `(auth)` | `/login`, `/signup`, `/forgot-password`, `/reset-password` | header with the wordmark + a centred `max-w-md` column | none (guest-only at the edge) |
 | `(public)` | `/auctions`, `/auctions/[id]`, `/leaderboard`, `/sellers/[id]`, `/pages/[slug]` (Terms and Conditions, Privacy Policy, Refund Policy), `/suspended` | `PublicShell` (`(public)/layout.tsx`): `DashboardShell` in guest mode when logged out, the member's own nav when signed in; `<ShellFooter>` after the page | none (public; `/suspended` stays public so a suspended member with cookies is never bounced away) |
 | _(root)_ | `/` | `redirect('/login')`; guest-only at the edge (a signed-in visitor lands on their home) | none |
 
-Route classes live in `src/constants/routes.ts` (`AUTH_ROUTES`, `PUBLIC_PREFIXES`, `MEMBER_PREFIXES`, `BIDDER_PREFIXES`, `AUCTIONEER_PREFIX`, `ADMIN_PREFIX`, `homeFor`, `gateFor`, `destinationFor`), shared by `src/proxy.ts`, `AuthBootstrap` and `api-client.ts`.
+Route classes live in `src/constants/routes.ts` (`AUTH_ROUTES`, `PUBLIC_PREFIXES`, `MEMBER_PREFIXES`, `ADMIN_PREFIX`, `normalizeRole`, `homeFor`, `gateFor`, `destinationFor`), shared by `src/proxy.ts`, `AuthBootstrap` and `api-client.ts`.
 
 ### Route-segment loading fallbacks
 
-`loading.tsx` in `(member)`, `(bidder)`, `(auctioneer)` and `(admin)`: Next's route-segment fallback, rendered instantly while a page's own chunk or data is still resolving. Each is the shared `.app-loader` spinner (`globals.css`) centred in a `min-h-[50vh]` box. Without one that window renders nothing, which paints as a white screen between navigations; the `AuthGuard` spinner only covers the session check, not the segment load.
+`loading.tsx` in `(member)` and `(admin)`: Next's route-segment fallback, rendered instantly while a page's own chunk or data is still resolving. Each is the shared `.app-loader` spinner (`globals.css`) centred in a `min-h-[50vh]` box. Without one that window renders nothing, which paints as a white screen between navigations; the `AuthGuard` spinner only covers the session check, not the segment load.
 
 ### Root layout
 
@@ -59,15 +58,21 @@ export function isNavActive(pathname: string, href: string) {
 
 Three arrays, picked by session in `useNav()` and `PublicShell`. Array order is the desktop sidebar order.
 
-`MEMBER_NAV` (BIDDER / AUCTIONEER):
+`MEMBER_NAV` (MEMBER, one list; there is no per-role filtering any more). Items carry an optional `group` heading that the desktop sidebar renders above each run (`renderNavList` in `dashboard-shell.tsx`):
 
-| # | Label | Route | Icon | Roles | Flags |
+| # | Label | Route | Icon | Group | Flags |
 |---|---|---|---|---|---|
-| 1 | Auctions | `/auctions` | `Gavel` | all | — |
-| 2 | Watchlist | `/watchlist` | `Heart` | all | `badge` = active watch count (`useWatchlistActiveCount()`), attached by `useNav()` |
-| 3 | My bids | `/my-bids` | `Trophy` | `BIDDER` | — |
-| 4 | Sell | `/sell/auctions` | `Store` | `AUCTIONEER` | — |
-| 5 | Profile | `/profile` | `User` | all | `pinBottomDesktop`, `hideMobile` |
+| 1 | Auctions | `/auctions` | `Gavel` | — | `pinMobile` |
+| 2 | Watchlist | `/watchlist` | `Heart` | — | `badge` = active watch count (`useWatchlistActiveCount()`), attached by `useNav()` |
+| 3 | Sold | `/sold` | `Archive` | — | — |
+| 4 | My bids | `/my-bids` | `Trophy` | Buying | `pinMobile` |
+| 5 | Purchases | `/purchases` | `ShoppingBag` | Buying | — |
+| 6 | My auctions | `/sell/auctions` | `Store` | Selling | `pinMobile` |
+| 7 | Sales | `/sell/sales` | `Banknote` | Selling | — |
+| 8 | Analytics | `/sell/analytics` | `BarChart3` | Selling | — |
+| 9 | Payouts | `/sell/payouts` | `Landmark` | Selling | — |
+| 10 | Bulk upload | `/sell/bulk` | `FileUp` | Selling | — |
+| 11 | Profile | `/profile` | `User` | — | `pinBottomDesktop`, `hideMobile` |
 
 `ADMIN_NAV` (`SUPER_ADMIN`, who only uses `/admin/*` plus the public pages): Dashboard (`/admin`) · Members · Auctions · Commissions · Payments · Settings · Profile (`/admin/profile`, `pinBottomDesktop`, `hideMobile`).
 
@@ -76,7 +81,7 @@ Three arrays, picked by session in `useNav()` and `PublicShell`. Array order is 
 The 4th mobile tab comes from `useMoreTab()` (`/profile` for members, `/admin/profile` for `SUPER_ADMIN`) and, for guests, `guestMoreTab(loginHref)` (a **Log in** tab).
 
 - **Desktop:** every item except the `pinBottomDesktop` one fills the scrollable sidebar; Profile sits in the bottom group directly above Logout.
-- **Mobile bottom bar:** no item is `pinMobile`, so the bar is the first three items plus the 4th tab. A bidder gets Auctions · Watchlist · My bids and an auctioneer Auctions · Watchlist · Sell, so their Profile grid has no quick links. A super admin gets Dashboard · Members · Auctions, and Commissions · Payments · Settings land in the Profile page's quick-link grid. A guest gets Auctions · Leaderboard plus Log in. Profile itself is `hideMobile`, so it doesn't appear in its own grid.
+- **Mobile bottom bar:** a member's `pinMobile` items win the three slots (copied from the P2X app): Auctions · My bids · My auctions, then the 4th Profile tab. Watchlist, Sold, Purchases, Sales, Analytics, Payouts and Bulk upload land in the Profile page's tap grid (group headings are desktop only). A super admin has no `pinMobile` item, so the bar is the first three items (Dashboard · Members · Auctions) plus Profile, and Commissions · Payments · Settings land in the Profile grid. A guest gets Auctions · Leaderboard plus Log in. Profile itself is `hideMobile`, so it doesn't appear in its own grid.
 - Notifications has no nav item: it is reached from the `NotificationBell` dropdown (members only).
 
 ### Profile page (`/profile`, `/admin/profile`)
@@ -86,7 +91,7 @@ The 4th mobile tab comes from `useMoreTab()` (`/profile` for members, `/admin/pr
 - Title and description.
 - The tab strip. On a phone it is `w-full` with even, text-only triggers so every tab fits one row; from `@lg/content` it is `w-fit` with icons. `?tab=<value>` picks the opening tab (a starting value only; switching does not rewrite the URL; an unknown value opens the first tab). `useSearchParams()` sits behind a `<Suspense>` inside `MorePage`. Radix unmounts an inactive tab's content.
 - At the top of the **first** tab, a `grid-cols-3` tap grid of `getOverflowNavItems(nav)`, `md:hidden` (it stands in for the bottom bar; from `md` the sidebar lists the same items). Each cell is a `Card hover` link with icon and label, a `CountBadge` in its corner, and `border-primary/40 bg-primary/5` when active.
-- **Account** (`account`): `<ProfileIdentityCard>` (avatar upload, name, role badge, email, role-specific figures) and `<ProfileEditCard>` (name, phone, address).
+- **Account** (`account`): `<ProfileIdentityCard>` (avatar upload, name, a Member badge, email, buying figures Auctions won / Total spent and, when above 0, Unpaid commission) and `<ProfileEditCard>` (name, phone, address).
 - **Security** (`security`): `<ChangePasswordCard>`, `<MyDevicesCard limit={member.deviceLimit ?? 1}>`, `<SignOutCard>` (log out here or everywhere).
 - **App** (`app`, appended by `MorePage`): one "App settings" card holding a bordered `divide-y` list of rows (`SettingRow`: icon chip, title, state line, and the action on the right, or full width underneath it below `@lg/content`; a row passing `inline` keeps its control on the right at every width):
   - **Theme** — "Light mode"/"Dark mode" and a "Use dark mode"/"Use light mode" button (`next-themes` `setTheme`).
@@ -98,35 +103,33 @@ The 4th mobile tab comes from `useMoreTab()` (`/profile` for members, `/admin/pr
 
 ## How AuthGuard wraps
 
-Each private layout wraps the shell in `<AuthGuard>`:
+Each private layout wraps the shell in `<AuthGuard>` (the `(member)` one is shown; `(admin)` allows `SUPER_ADMIN`). The unpaid-commission banner is not in it any more: it lives in the nested `(member)/sell/layout.tsx`.
 
 ```tsx
-export default function AuctioneerLayout({ children }: { children: React.ReactNode }) {
+export default function MemberLayout({ children }: { children: React.ReactNode }) {
   const nav = useNav();
   const moreTab = useMoreTab();
   return (
-    <AuthGuard allow={['AUCTIONEER']}>
-      <DashboardShell nav={nav} moreTab={moreTab}>
-        <UnpaidCommissionBanner />
-        {children}
-      </DashboardShell>
+    <AuthGuard allow={['MEMBER']}>
+      <PushPermissionPrompt />
+      <DashboardShell nav={nav} moreTab={moreTab}>{children}</DashboardShell>
     </AuthGuard>
   );
 }
 ```
 
-`AuthGuard` (`src/components/common/auth-guard.tsx`) reads `useAuthStore()` (`member`, `initialized`). Until `initialized` (the session is still bootstrapping in `AuthBootstrap`), or while the role isn't allowed, it renders the full-screen `.app-loader` spinner, so the shell never flashes for an unauthorized user. Then it `router.replace()`s to `/login?next=<path + query>` (signed out) or `homeFor(role)` (wrong role). Pages must not roll their own redirect-to-login logic. The edge gate also runs first on every page load (below); the guard keeps client-side navigation and a mid-session logout safe.
+`AuthGuard` (`src/components/common/auth-guard.tsx`) reads `useAuthStore()` (`member`, `initialized`). Until `initialized` (the session is still bootstrapping in `AuthBootstrap`), or while the role isn't allowed, it renders the full-screen `.app-loader` spinner, so the shell never flashes for an unauthorized user. The role is read through `normalizeRole()`, so a legacy `BIDDER` / `AUCTIONEER` value passes as `MEMBER`. Then it `router.replace()`s to `/login?next=<path + query>` (signed out) or `homeFor(role)` (wrong role). Pages must not roll their own redirect-to-login logic. The edge gate also runs first on every page load (below); the guard keeps client-side navigation and a mid-session logout safe.
 
 ### The edge gate (`src/proxy.ts`)
 
-Runs before any React renders, only for guest-only (including `/`), member, bidder, auctioneer and admin routes (public routes pass straight through). It verifies the httpOnly `nb_at` JWT cookie (refreshing through `nb_rt` when it has expired), then applies the pure decision `gateFor(path, role)` from `src/constants/routes.ts`:
+Runs before any React renders, only for guest-only (including `/`), member and admin routes (public routes pass straight through). It verifies the httpOnly `nb_at` JWT cookie (refreshing through `nb_rt` when it has expired), then applies the pure decision `gateFor(path, role)` from `src/constants/routes.ts`:
 
-- a signed-in visitor on `/`, `/login`, `/signup`, `/forgot-password` or `/reset-password` is redirected by `destinationFor(role, next)`: to `?next=` (a safe same-origin path) for `BIDDER` / `AUCTIONEER`, else to `homeFor(role)`. `?next=` is ignored for `SUPER_ADMIN`;
+- a signed-in visitor on `/`, `/login`, `/signup`, `/forgot-password` or `/reset-password` is redirected by `destinationFor(role, next)`: to `?next=` (a safe same-origin path) for a member (`MEMBER`, or a legacy `BIDDER` / `AUCTIONEER`), else to `homeFor(role)`. `?next=` is ignored for `SUPER_ADMIN`;
 - a signed-out visitor on a private route is redirected to `/login?next=<path + query>`;
-- `/admin/*` without `SUPER_ADMIN`, `/sell/*` as a `BIDDER`, and `/my-bids` as an `AUCTIONEER` are redirected to `homeFor(role)`;
+- `/admin/*` without `SUPER_ADMIN` is redirected to `homeFor(role)`; every member route (`/my-bids`, `/purchases`, `/sell/*`, `/watchlist`, `/profile`, `/notifications`) is open to any member;
 - `SUPER_ADMIN` on any member route (`/watchlist`, `/profile`, `/notifications`, `/my-bids`, `/sell/*`) is bounced to `/admin`. It only uses `/admin/*` plus the public pages.
 
-`homeFor()` sends `SUPER_ADMIN` to `/admin`, `AUCTIONEER` to `/sell/auctions` and `BIDDER` to `/auctions`.
+`homeFor()` sends `SUPER_ADMIN` to `/admin` and every member (legacy roles included) to `/auctions`. `proxy.ts` types the JWT role as `Role | LegacyRole`; `gateFor` and `destinationFor` normalise it, so tokens issued before the single-role migration keep working for one release.
 
 ## Public chrome
 
@@ -168,7 +171,7 @@ To check a change: fix the window at ~940px and collapse/expand the sidebar with
 
 - **Chrome belongs to the route-group layout**, not to pages. A private or public page renders content only; the shell, nav and guard come from `layout.tsx`.
 - **One `AuthGuard` per private group**, at the layout level; pages never re-guard.
-- **Nav is data**: to add a sidebar link, add a `NavItem` (with `roles` if it is role-specific) to `MEMBER_NAV`, `ADMIN_NAV` or `GUEST_NAV` in `src/components/layout/nav-items.ts`. `DashboardShell`, `MobileBottomNav` and `MorePage` all read the same filtered array, so one edit updates the sidebar, the bottom bar and the Profile grid together. Live counts go on `badge` in `useNav()`, never in the array.
+- **Nav is data**: to add a sidebar link, add a `NavItem` (with a `group` for the Buying / Selling headings, `pinMobile` to put it on the phone bottom bar) to `MEMBER_NAV`, `ADMIN_NAV` or `GUEST_NAV` in `src/components/layout/nav-items.ts`. `DashboardShell`, `MobileBottomNav` and `MorePage` all read the same filtered array, so one edit updates the sidebar, the bottom bar and the Profile grid together. Live counts go on `badge` in `useNav()`, never in the array.
 - **`PageTransition key={pathname}`** drives the per-navigation enter animation; keep the `key` on the route so it re-fires.
 - **One page-header row.** A title beside an action (a button, a search box, a badge) uses `flex flex-col gap-4 @lg/content:flex-row @lg/content:items-center @lg/content:justify-between`: stacked until the content area has 512px, one row from there. The admin pages get it from the common `PageHeader` (`components/common/page-header.tsx`); `/sell/auctions` writes it inline, and `/sell/auctions/[id]` uses it with `@lg/content:items-start`. Never a bare `flex items-center justify-between`: it has no narrow layout, so with the sidebar open the action squeezes the title. See `docs/CONTAINER_QUERIES.md` §7.
 - **Grid and flex items need `min-w-0`** when they render text of untrusted length (names, emails, titles): an item defaults to `min-width: auto`, so an unbreakable string widens the track past its container even with `truncate` further down, and the page scrolls sideways on a phone. Add `min-w-0` on the item wrapper.
@@ -176,7 +179,7 @@ To check a change: fix the window at ~940px and collapse/expand the sidebar with
 ## Reference files
 
 - `src/app/layout.tsx` — root layout (font, metadata, viewport, providers, global prompts)
-- `src/app/(member)/layout.tsx`, `src/app/(bidder)/layout.tsx`, `src/app/(auctioneer)/layout.tsx`, `src/app/(admin)/layout.tsx` — guarded shell usage
+- `src/app/(member)/layout.tsx`, `src/app/(member)/sell/layout.tsx` (commission banner), `src/app/(admin)/layout.tsx` — guarded shell usage
 - `src/app/(public)/layout.tsx` — public pages in the shell; `src/app/(auth)/layout.tsx` — auth chrome
 - `src/components/layout/nav-items.ts` — `MEMBER_NAV` / `ADMIN_NAV` / `GUEST_NAV`, `useNav()`, `useMoreTab()`, `guestMoreTab()`
 - `src/components/layout/dashboard-shell.tsx` — the app shell (with `guest` mode), `NavItem`

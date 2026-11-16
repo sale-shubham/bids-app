@@ -33,7 +33,7 @@ The `GET /members/me` shape. The login / signup-verify bodies may carry a subset
 | `phone` | `string \| null` |
 | `avatarUrl` | `string \| null` |
 | `address` | `string \| null` |
-| `role` | `Role` = `'BIDDER' \| 'AUCTIONEER' \| 'SUPER_ADMIN'` (re-exported from `src/constants/routes.ts`) |
+| `role` | `Role` = `'MEMBER' \| 'SUPER_ADMIN'` (re-exported from `src/constants/routes.ts`). `setMember()` runs the value through `normalizeRole()`, so a legacy `'BIDDER'` / `'AUCTIONEER'` from the API is stored as `'MEMBER'` |
 | `isActive` | `boolean` |
 | `emailVerifiedAt` | `string \| null` |
 | `unpaidCommissionPaise` | `number` (drives `<UnpaidCommissionBanner>` and blocks creating an auction in `<AuctionForm>`) |
@@ -42,7 +42,7 @@ The `GET /members/me` shape. The login / signup-verify bodies may carry a subset
 | `createdAt` | `string` (ISO date) |
 | `deviceLimit` | `number` (this account's concurrent-session cap; the Profile page reads it) |
 
-`role` drives the post-login landing (`homeFor()`: `SUPER_ADMIN` -> `/admin`, `AUCTIONEER` -> `/sell/auctions`, `BIDDER` -> `/auctions`, with `?next=` honoured for non-admins) and `<AuthGuard allow={[...]}>`.
+`role` drives the post-login landing (`homeFor()`: `SUPER_ADMIN` -> `/admin`, `MEMBER` -> `/auctions`, with `?next=` honoured for non-admins) and `<AuthGuard allow={[...]}>`.
 
 ### Actions
 

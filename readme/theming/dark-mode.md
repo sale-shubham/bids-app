@@ -30,7 +30,7 @@ Theme mode = `light` | `dark` | `system`. The mechanism is **`next-themes`**: it
 - `attribute="class"` — next-themes writes `class="light"` or `class="dark"` on `<html>` (matches the `@custom-variant dark` in `globals.css`).
 - `defaultTheme="system"` + `enableSystem` — first load follows the OS `prefers-color-scheme` and tracks live changes.
 - `disableTransitionOnChange` — suppresses CSS transitions during the swap so colours don't animate when toggling.
-- `Providers` is mounted in the **root layout**, so theming covers every route: public pages, auth, and the member, bidder, auctioneer and admin areas.
+- `Providers` is mounted in the **root layout**, so theming covers every route: public pages, auth, and the member and admin areas.
 
 `<html suppressHydrationWarning>` in `src/app/layout.tsx` is required because next-themes sets the class on the client before React hydrates.
 

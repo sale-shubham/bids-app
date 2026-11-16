@@ -51,7 +51,7 @@ export default async function SellerPage({ params }: Props) {
               <Gavel className="h-4 w-4" aria-hidden /> {seller.activeAuctions} active
             </li>
           </ul>
-          <FollowButton sellerId={seller.id} sellerRole={seller.role} initialFollowerCount={seller.followerCount ?? 0} showCount />
+          <FollowButton sellerId={seller.id} listedCount={seller.listedCount} initialFollowerCount={seller.followerCount ?? 0} showCount />
           <ReportButton targetType="MEMBER" targetId={seller.id} subject="this seller" ownerId={seller.id} />
         </div>
       </section>
