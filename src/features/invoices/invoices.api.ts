@@ -1,4 +1,5 @@
 import { api } from '@/lib/api-client';
+import { fetchPdfBlob } from '@/lib/pdf';
 import { parsePaged, type Paged } from '@/lib/paged';
 import type { AdminInvoice, InvoiceDTO, InvoiceSettings } from './invoices.types';
 
@@ -12,11 +13,8 @@ export async function fetchMyInvoices(page: number): Promise<Paged<InvoiceDTO>> 
   return parsePaged<InvoiceDTO>(res.data);
 }
 
-/** Short-lived download URL for an invoice PDF. */
-export async function fetchInvoicePdfUrl(id: string): Promise<string> {
-  const res = await api.get(`/invoices/${encodeURIComponent(id)}/pdf`);
-  return String(res.data?.data?.url ?? '');
-}
+/** The invoice PDF bytes (the API renders it per request). */
+export const fetchInvoicePdf = (id: string) => fetchPdfBlob(`/invoices/${encodeURIComponent(id)}/pdf`);
 
 export async function fetchAdminInvoices(f: { type: string; q: string }, page: number, pageSize: number): Promise<Paged<AdminInvoice>> {
   const params: Record<string, string | number> = { page, pageSize };

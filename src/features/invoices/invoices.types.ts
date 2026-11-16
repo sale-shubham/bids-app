@@ -38,3 +38,6 @@ export interface InvoiceSettings {
   commissionInclusive: boolean;
   sacCode: string;
 }
+
+/** Download filename: the invoice number with every character outside A-Za-z0-9- replaced by "-" (matches the API's Content-Disposition). */
+export const invoicePdfFilename = (number: string) => `${number.replace(/[^A-Za-z0-9-]+/g, '-')}.pdf`;
