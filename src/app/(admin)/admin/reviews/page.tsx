@@ -2,15 +2,17 @@
 import * as React from 'react';
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { Star } from 'lucide-react';
+import { Eye, EyeOff, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
+import { ListToolbar } from '@/components/common/list-toolbar';
+import { PageHeader } from '@/components/common/page-header';
+import { RowActionsMenu } from '@/components/common/row-actions-menu';
 import { SearchInput } from '@/components/common/search-input';
-import { AdminList, PageHeader, StatusTabs } from '@/features/admin/components/admin-list';
+import { AdminList, StatusTabs } from '@/features/admin/components/admin-list';
 import { useUrlState } from '@/features/admin/use-url-state';
 import { StarDisplay } from '@/features/reviews/components/star-rating';
 import { reviewErrorMessage } from '@/features/reviews/reviews.errors';
@@ -48,19 +50,24 @@ function ReviewsView() {
   };
 
   const action = (r: AdminReview) => (
-    <Button size="sm" variant="outline" className={r.hiddenAt ? undefined : 'text-destructive'} onClick={() => setTarget(r)}>
-      {r.hiddenAt ? 'Unhide' : 'Hide'}
-    </Button>
+    <RowActionsMenu
+      name={`review by ${r.reviewer.name}`}
+      actions={[
+        r.hiddenAt
+          ? { label: 'Unhide', icon: Eye, onSelect: () => setTarget(r) }
+          : { label: 'Hide', icon: EyeOff, destructive: true, onSelect: () => setTarget(r) },
+      ]}
+    />
   );
 
   return (
-    <div className="space-y-6">
-      <PageHeader title="Reviews" description="Seller ratings left by auction winners. Hide the ones that break the rules." />
+    <div className="space-y-4">
+      <PageHeader title="Reviews" />
 
-      <div className="flex flex-col gap-3 @lg/content:flex-row @lg/content:items-center @lg/content:justify-between">
-        <StatusTabs value={visibility} tabs={TABS} onChange={(v) => update({ visibility: v })} />
-        <SearchInput className="w-full @lg/content:w-72" value={values.q} onChange={(q) => update({ q })} placeholder="Search comment or member" />
-      </div>
+      <ListToolbar
+        tabs={<StatusTabs value={visibility} tabs={TABS} onChange={(v) => update({ visibility: v })} />}
+        search={<SearchInput value={values.q} onChange={(q) => update({ q })} placeholder="Search comment or member" />}
+      />
 
       <AdminList<AdminReview>
         list={list}
@@ -79,7 +86,7 @@ function ReviewsView() {
                 <TableHead>Seller</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className="w-12"><span className="sr-only">Actions</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -105,7 +112,7 @@ function ReviewsView() {
                   </TableCell>
                   <TableCell className="whitespace-nowrap">{formatDate(r.createdAt)}</TableCell>
                   <TableCell>{r.hiddenAt ? <Badge variant="secondary">Hidden</Badge> : <Badge variant="success">Visible</Badge>}</TableCell>
-                  <TableCell>{action(r)}</TableCell>
+                  <TableCell className="text-right">{action(r)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -113,16 +120,18 @@ function ReviewsView() {
         )}
         renderCard={(r) => (
           <Card>
-            <CardContent className="space-y-3 p-4">
+            <CardContent className="space-y-2 p-4">
               <div className="flex items-start justify-between gap-2">
                 <StarDisplay rating={r.rating} />
-                {r.hiddenAt ? <Badge variant="secondary">Hidden</Badge> : <Badge variant="success">Visible</Badge>}
+                <div className="flex shrink-0 items-center gap-1">
+                  {r.hiddenAt ? <Badge variant="secondary">Hidden</Badge> : <Badge variant="success">Visible</Badge>}
+                  {action(r)}
+                </div>
               </div>
               <p className="wrap-break-word text-sm">{r.comment ?? <span className="text-muted-foreground">No comment</span>}</p>
               <p className="text-xs text-muted-foreground">
                 {r.reviewer.name} ({r.reviewer.email}) rated {r.seller.name} on {formatDate(r.createdAt)}
               </p>
-              {action(r)}
             </CardContent>
           </Card>
         )}

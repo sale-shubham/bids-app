@@ -34,6 +34,11 @@ const signal = (over: Partial<RiskSignal> = {}): RiskSignal => ({
 });
 const page = (s: RiskSignal) => ({ items: [s], meta: { total: 1, page: 1, pageSize: 10, totalPages: 1 } });
 
+async function pick(name: string) {
+  await userEvent.click(await screen.findByRole('button', { name: 'Actions for Brass Vase' }));
+  await userEvent.click(await screen.findByRole('menuitem', { name }));
+}
+
 function setup() {
   render(
     <QueryClientProvider client={new QueryClient()}>
@@ -62,6 +67,14 @@ describe('risk helpers', () => {
 });
 
 describe('AdminRiskPage', () => {
+  it('has a title-only header and Open/Reviewed tabs', async () => {
+    setup();
+    expect(await screen.findByRole('heading', { name: 'Shill-bid risk' })).toBeInTheDocument();
+    expect(screen.queryByText(/blocks nothing/)).not.toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Open' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Reviewed' })).toBeInTheDocument();
+  });
+
   it('requests the open queue and shows score, reasons and links', async () => {
     setup();
     expect(await screen.findByLabelText('Risk score 85')).toBeInTheDocument();
@@ -75,7 +88,7 @@ describe('AdminRiskPage', () => {
 
   it('Dismiss confirms first, then sends DISMISSED', async () => {
     setup();
-    await userEvent.click(await screen.findByRole('button', { name: 'Dismiss' }));
+    await pick('Dismiss');
     expect(riskApi.reviewRisk).not.toHaveBeenCalled();
     const dialog = await screen.findByRole('dialog');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Dismiss' }));
@@ -86,7 +99,7 @@ describe('AdminRiskPage', () => {
 
   it('Mark action taken sends the optional note', async () => {
     setup();
-    await userEvent.click(await screen.findByRole('button', { name: 'Mark action taken' }));
+    await pick('Mark action taken');
     const dialog = await screen.findByRole('dialog');
     await userEvent.type(within(dialog).getByLabelText('Note (optional)'), 'Cancelled the auction');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Mark action taken' }));
@@ -100,7 +113,7 @@ describe('AdminRiskPage', () => {
     err.response = { status: 409, data: { success: false, error: { code: 'RISK_ALREADY_REVIEWED', message: 'm' } } } as never;
     vi.mocked(riskApi.reviewRisk).mockRejectedValue(err);
     setup();
-    await userEvent.click(await screen.findByRole('button', { name: 'Dismiss' }));
+    await pick('Dismiss');
     await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Dismiss' }));
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith('This risk flag was already reviewed.'));
   });
@@ -112,6 +125,8 @@ describe('AdminRiskPage', () => {
     expect(await screen.findByText(/Action taken/)).toBeInTheDocument();
     expect(riskApi.fetchRisk).toHaveBeenCalledWith({ tab: 'reviewed' }, 1, 10);
     expect(screen.getByText(/Suspended bidder/)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Dismiss' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Actions for Brass Vase' }));
+    expect(await screen.findByRole('menuitem', { name: 'View auction' })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: 'Dismiss' })).not.toBeInTheDocument();
   });
 });

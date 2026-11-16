@@ -1,18 +1,20 @@
 'use client';
 import * as React from 'react';
 import { Suspense } from 'react';
-import { BadgeCheck, Coins, ShieldAlert, ShieldCheck, UserCog, Users } from 'lucide-react';
+import { BadgeCheck, Coins, ShieldAlert, ShieldCheck, UserCheck, UserCog, Users, UserX } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
+import { FilterSelect, ListToolbar } from '@/components/common/list-toolbar';
+import { PageHeader } from '@/components/common/page-header';
+import { RowActionsMenu, type RowAction } from '@/components/common/row-actions-menu';
 import { SearchInput } from '@/components/common/search-input';
 import { StatusBadge } from '@/components/common/status-badge';
 import { AdjustCreditsDialog } from '@/features/admin/components/adjust-credits-dialog';
-import { AdminList, PageHeader } from '@/features/admin/components/admin-list';
+import { AdminList } from '@/features/admin/components/admin-list';
 import { useAdminMembers, useUpdateMember } from '@/features/admin/use-admin';
 import { useUrlState } from '@/features/admin/use-url-state';
 import type { AdminMember, MemberRoleFilter, MemberStatusFilter } from '@/features/admin/admin.types';
@@ -22,6 +24,15 @@ import { MemberStrikesDialog } from '@/features/strikes/components/member-strike
 import { useAuthStore, type Role } from '@/store/auth-store';
 
 const DEFAULTS = { q: '', role: '', status: '' };
+// Super admin accounts are never listed (the API hides them and rejects role=SUPER_ADMIN), so never offer or send it.
+const ROLE_FILTERS = [
+  { value: 'BIDDER', label: 'Bidders' },
+  { value: 'AUCTIONEER', label: 'Auctioneers' },
+];
+const STATUS_FILTERS = [
+  { value: 'active', label: 'Active' },
+  { value: 'inactive', label: 'Inactive' },
+];
 const ROLE_LABEL: Record<Role, string> = { BIDDER: 'Bidder', AUCTIONEER: 'Auctioneer', SUPER_ADMIN: 'Super admin' };
 const ROLE_VARIANT: Record<Role, 'default' | 'warning' | 'destructive'> = {
   BIDDER: 'default',
@@ -60,7 +71,9 @@ function TrustBadges({ m }: { m: AdminMember }) {
 
 function MembersView() {
   const { values, page, pageSize, update } = useUrlState(DEFAULTS);
-  const filters = { q: values.q, role: values.role as MemberRoleFilter, status: values.status as MemberStatusFilter };
+  const status = STATUS_FILTERS.some((o) => o.value === values.status) ? values.status : '';
+  const role = ROLE_FILTERS.some((r) => r.value === values.role) ? values.role : '';
+  const filters = { q: values.q, role: role as MemberRoleFilter, status: status as MemberStatusFilter };
   const list = useAdminMembers(filters, page, pageSize);
   const mutate = useUpdateMember();
   const selfId = useAuthStore((s) => s.member?.id);
@@ -126,62 +139,31 @@ function MembersView() {
 
   const actions = (m: AdminMember) => {
     const isSelf = m.id === selfId;
-    return (
-      <div className="flex flex-wrap items-center gap-2">
-        <Button size="sm" variant="outline" disabled={isSelf} onClick={() => setStatusTarget(m)} title={isSelf ? 'You cannot modify your own account' : undefined}>
-          {m.isActive ? 'Deactivate' : 'Activate'}
-        </Button>
-        <Button size="sm" variant="outline" disabled={isSelf} onClick={() => openRole(m)} title={isSelf ? 'You cannot modify your own account' : undefined}>
-          <UserCog className="h-4 w-4" /> Role
-        </Button>
-        <Button size="sm" variant="outline" onClick={() => setStrikesTarget(m)}>
-          <ShieldAlert className="h-4 w-4" /> Strikes{m.activeStrikes > 0 ? ` (${m.activeStrikes})` : ''}
-        </Button>
-        <Button size="sm" variant="outline" onClick={() => setCreditsTarget(m)}>
-          <Coins className="h-4 w-4" /> Adjust credits
-        </Button>
-        {(m.verified || (m.role === 'AUCTIONEER' && m.payoutStatus === 'ACTIVE')) && (
-          <Button size="sm" variant="outline" onClick={() => setVerifyTarget(m)}>
-            <ShieldCheck className="h-4 w-4" /> {m.verified ? 'Revoke verification' : 'Restore verification'}
-          </Button>
-        )}
-      </div>
-    );
+    const selfHint = isSelf ? 'You cannot modify your own account' : undefined;
+    const list: RowAction[] = [
+      { label: m.isActive ? 'Deactivate' : 'Activate', icon: m.isActive ? UserX : UserCheck, onSelect: () => setStatusTarget(m), disabled: isSelf, hint: selfHint },
+      { label: 'Role', icon: UserCog, onSelect: () => openRole(m), disabled: isSelf, hint: selfHint },
+      { label: m.activeStrikes > 0 ? `Strikes (${m.activeStrikes})` : 'Strikes', icon: ShieldAlert, onSelect: () => setStrikesTarget(m) },
+      { label: 'Adjust credits', icon: Coins, onSelect: () => setCreditsTarget(m) },
+    ];
+    if (m.verified || (m.role === 'AUCTIONEER' && m.payoutStatus === 'ACTIVE')) {
+      list.push({ label: m.verified ? 'Revoke verification' : 'Restore verification', icon: ShieldCheck, onSelect: () => setVerifyTarget(m) });
+    }
+    return <RowActionsMenu name={m.name || m.email} actions={list} />;
   };
 
   return (
-    <div className="space-y-6">
-      <PageHeader title="Members" description="Search, activate and manage member roles." />
+    <div className="space-y-4">
+      <PageHeader title="Members" />
 
-      <div className="flex flex-col gap-3 @lg/content:flex-row">
-        <SearchInput
-          className="w-full @lg/content:w-72"
-          value={values.q}
-          onChange={(q) => update({ q })}
-          placeholder="Search name or email"
-        />
-        <Select value={values.role || 'all'} onValueChange={(v) => update({ role: v === 'all' ? '' : v })}>
-          <SelectTrigger className="w-full @lg/content:w-44" aria-label="Role">
-            <SelectValue placeholder="All roles" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All roles</SelectItem>
-            <SelectItem value="BIDDER">Bidders</SelectItem>
-            <SelectItem value="AUCTIONEER">Auctioneers</SelectItem>
-            <SelectItem value="SUPER_ADMIN">Super admins</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={values.status || 'all'} onValueChange={(v) => update({ status: v === 'all' ? '' : v })}>
-          <SelectTrigger className="w-full @lg/content:w-44" aria-label="Status">
-            <SelectValue placeholder="Any status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Any status</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="inactive">Inactive</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      <ListToolbar
+        search={<SearchInput value={values.q} onChange={(q) => update({ q })} placeholder="Search name, email or phone" />}
+        activeFilters={[role, status].filter(Boolean).length}
+        onClearFilters={() => update({ role: '', status: '' })}
+      >
+        <FilterSelect value={role} onChange={(v) => update({ role: v })} options={ROLE_FILTERS} allLabel="All roles" ariaLabel="Role" />
+        <FilterSelect value={status} onChange={(v) => update({ status: v })} options={STATUS_FILTERS} allLabel="Any status" ariaLabel="Status" />
+      </ListToolbar>
 
       <AdminList<AdminMember>
         list={list}
@@ -205,7 +187,7 @@ function MembersView() {
                 <TableHead className="text-right">Credits</TableHead>
                 <TableHead className="text-right">Wins</TableHead>
                 <TableHead className="text-right">Spent</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className="w-12"><span className="sr-only">Actions</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -232,7 +214,7 @@ function MembersView() {
                   <TableCell className="text-right tnum">{formatINR(m.creditBalancePaise)}</TableCell>
                   <TableCell className="text-right tnum">{m.auctionsWon}</TableCell>
                   <TableCell className="text-right tnum">{formatINR(m.moneySpentPaise)}</TableCell>
-                  <TableCell>{actions(m)}</TableCell>
+                  <TableCell className="text-right">{actions(m)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -240,7 +222,7 @@ function MembersView() {
         )}
         renderCard={(m) => (
           <Card>
-            <CardContent className="space-y-3 p-4">
+            <CardContent className="space-y-2 p-4">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="font-medium wrap-break-word">
@@ -248,7 +230,10 @@ function MembersView() {
                   </p>
                   <p className="truncate text-sm text-muted-foreground">{m.email}</p>
                 </div>
-                <StatusBadge status={m.isActive ? 'ACTIVE' : 'INACTIVE'} />
+                <div className="flex shrink-0 items-center gap-1">
+                  <StatusBadge status={m.isActive ? 'ACTIVE' : 'INACTIVE'} />
+                  {actions(m)}
+                </div>
               </div>
               <div className="flex flex-wrap items-center gap-2 text-sm">
                 <RoleBadge role={m.role} />
@@ -274,7 +259,6 @@ function MembersView() {
                   <dd className="tnum">{formatINR(m.moneySpentPaise)}</dd>
                 </div>
               </dl>
-              {actions(m)}
             </CardContent>
           </Card>
         )}
@@ -319,7 +303,6 @@ function MembersView() {
         title="Change role"
         description={roleTarget ? `Change the role of ${roleTarget.email}.` : undefined}
         confirmLabel="Change role"
-        variant={newRole === 'SUPER_ADMIN' ? 'destructive' : 'default'}
         loading={mutate.isPending}
         onConfirm={confirmRole}
       >
@@ -331,15 +314,8 @@ function MembersView() {
             <SelectContent>
               <SelectItem value="BIDDER">Bidder</SelectItem>
               <SelectItem value="AUCTIONEER">Auctioneer</SelectItem>
-              <SelectItem value="SUPER_ADMIN">Super admin</SelectItem>
             </SelectContent>
           </Select>
-          {newRole === 'SUPER_ADMIN' && (
-            <p className="flex items-start gap-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-              <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
-              Super admins have full access to every member, auction, payment and setting. Only grant this to people you trust.
-            </p>
-          )}
         </div>
       </ConfirmDialog>
     </div>

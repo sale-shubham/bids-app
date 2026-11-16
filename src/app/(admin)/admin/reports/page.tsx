@@ -2,18 +2,19 @@
 import * as React from 'react';
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { ExternalLink, Flag } from 'lucide-react';
+import { Ban, CheckCircle2, ExternalLink, EyeOff, Flag, UserCog, X, type LucideIcon } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
-import { AdminList, PageHeader, StatusTabs } from '@/features/admin/components/admin-list';
+import { FilterSelect, ListToolbar } from '@/components/common/list-toolbar';
+import { PageHeader } from '@/components/common/page-header';
+import { RowActionsMenu, type RowAction } from '@/components/common/row-actions-menu';
+import { AdminList, StatusTabs } from '@/features/admin/components/admin-list';
 import { useUrlState } from '@/features/admin/use-url-state';
 import { REPORT_REASON_LABEL, REPORT_TARGET_LABEL } from '@/features/reports/reports.constants';
 import { REPORT_NOTE_MAX } from '@/features/reports/reports.constants';
@@ -29,14 +30,20 @@ const TABS = [
   { value: 'resolved', label: 'Resolved' },
 ];
 const DEFAULTS = { tab: 'open', targetType: '', outcome: 'ACTION_TAKEN' };
+// Outcome select has no "all" option. Action taken is the default and is stored as no param.
+const OUTCOMES = [
+  { value: 'ACTION_TAKEN', label: 'Action taken' },
+  { value: 'DISMISSED', label: 'Dismissed' },
+];
+const TARGET_TYPES = REPORT_TARGET_TYPES.map((t) => ({ value: t as string, label: REPORT_TARGET_LABEL[t] }));
 
 // Existing moderation screens per target type (cancel auction, suspend member, hide review).
-// Questions are hidden in place (the "Hide question" button in `actions`).
-function moderationLink(r: AdminReport): { href: string; label: string } | null {
+// Questions are hidden in place (the "Hide question" entry in `actions`).
+function moderationLink(r: AdminReport): { href: string; label: string; icon: LucideIcon } | null {
   const q = encodeURIComponent(r.target.label);
-  if (r.targetType === 'AUCTION') return { href: `/admin/auctions?q=${q}`, label: 'Cancel auction' };
-  if (r.targetType === 'MEMBER') return { href: `/admin/members?q=${q}`, label: 'Manage member' };
-  if (r.targetType === 'REVIEW') return { href: '/admin/reviews', label: 'Hide review' };
+  if (r.targetType === 'AUCTION') return { href: `/admin/auctions?q=${q}`, label: 'Cancel auction', icon: Ban };
+  if (r.targetType === 'MEMBER') return { href: `/admin/members?q=${q}`, label: 'Manage member', icon: UserCog };
+  if (r.targetType === 'REVIEW') return { href: '/admin/reviews', label: 'Hide review', icon: EyeOff };
   return null;
 }
 
@@ -120,36 +127,18 @@ function ReportsView() {
 
   const actions = (r: AdminReport) => {
     const mod = moderationLink(r);
-    return (
-      <div className="flex flex-wrap items-center gap-2">
-        {mod && (
-          <Button asChild size="sm" variant="outline">
-            <Link href={mod.href}>{mod.label}</Link>
-          </Button>
-        )}
-        {r.targetType === 'QUESTION' && (
-          <Button size="sm" variant="outline" onClick={() => setHideTarget(r)}>
-            Hide question
-          </Button>
-        )}
-        {r.status === 'OPEN' ? (
-          <>
-            <Button size="sm" variant="outline" onClick={() => setDismissTarget(r)}>
-              Dismiss
-            </Button>
-            <Button size="sm" onClick={() => openAction(r)}>
-              Mark action taken
-            </Button>
-          </>
-        ) : (
-          <span className="text-xs text-muted-foreground">
-            {STATUS_LABEL[r.status]}
-            {r.resolvedAt ? ` · ${formatDate(r.resolvedAt)}` : ''}
-          </span>
-        )}
-      </div>
-    );
+    const items: RowAction[] = [];
+    if (r.status === 'OPEN') {
+      items.push({ label: 'Dismiss', icon: X, onSelect: () => setDismissTarget(r) });
+      items.push({ label: 'Mark action taken', icon: CheckCircle2, onSelect: () => openAction(r) });
+    }
+    if (mod) items.push({ label: mod.label, icon: mod.icon, href: mod.href, separated: items.length > 0 });
+    if (r.targetType === 'QUESTION') items.push({ label: 'Hide question', icon: EyeOff, destructive: true, separated: items.length > 0, onSelect: () => setHideTarget(r) });
+    return <RowActionsMenu name={`${REPORT_TARGET_LABEL[r.targetType]} ${r.target.label}`} actions={items} />;
   };
+
+  const statusText = (r: AdminReport) =>
+    r.status === 'OPEN' ? 'Open' : `${STATUS_LABEL[r.status]}${r.resolvedAt ? ` · ${formatDate(r.resolvedAt)}` : ''}`;
 
   const reasonCell = (r: AdminReport) => (
     <div className="space-y-1">
@@ -160,38 +149,25 @@ function ReportsView() {
   );
 
   return (
-    <div className="space-y-6">
-      <PageHeader title="Reports" description="Reports from members. Review the target, use the moderation actions, then resolve." />
+    <div className="space-y-4">
+      <PageHeader title="Reports" />
 
-      <div className="flex flex-col gap-3 @lg/content:flex-row @lg/content:items-center @lg/content:justify-between">
-        <StatusTabs value={tab} tabs={TABS} onChange={(v) => update({ tab: v })} />
-        <div className="flex flex-col gap-3 @lg/content:flex-row">
-          {tab === 'resolved' && (
-            <Select value={outcome} onValueChange={(v) => update({ outcome: v })}>
-              <SelectTrigger className="w-full @lg/content:w-44" aria-label="Outcome">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ACTION_TAKEN">Action taken</SelectItem>
-                <SelectItem value="DISMISSED">Dismissed</SelectItem>
-              </SelectContent>
-            </Select>
-          )}
-          <Select value={targetType || 'all'} onValueChange={(v) => update({ targetType: v === 'all' ? '' : v })}>
-            <SelectTrigger className="w-full @lg/content:w-44" aria-label="Target type">
-              <SelectValue placeholder="All types" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All types</SelectItem>
-              {REPORT_TARGET_TYPES.map((t) => (
-                <SelectItem key={t} value={t}>
-                  {REPORT_TARGET_LABEL[t]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+      <ListToolbar
+        tabs={<StatusTabs value={tab} tabs={TABS} onChange={(v) => update({ tab: v })} />}
+        activeFilters={[tab === 'resolved' && outcome !== 'ACTION_TAKEN', targetType].filter(Boolean).length}
+        onClearFilters={() => update({ targetType: '', outcome: '' })}
+      >
+        {tab === 'resolved' && (
+          <FilterSelect
+            value={outcome}
+            onChange={(v) => update({ outcome: v === 'DISMISSED' ? 'DISMISSED' : '' })}
+            options={OUTCOMES}
+            includeAll={false}
+            ariaLabel="Outcome"
+          />
+        )}
+        <FilterSelect value={targetType} onChange={(v) => update({ targetType: v })} options={TARGET_TYPES} allLabel="All types" ariaLabel="Target type" />
+      </ListToolbar>
 
       <AdminList<AdminReport>
         list={list}
@@ -210,7 +186,8 @@ function ReportsView() {
                 <TableHead>Reporter</TableHead>
                 <TableHead className="text-right">Open reports</TableHead>
                 <TableHead>Filed</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="w-12"><span className="sr-only">Actions</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -230,7 +207,8 @@ function ReportsView() {
                   </TableCell>
                   <TableCell className="text-right tnum">{r.openCountForTarget}</TableCell>
                   <TableCell className="whitespace-nowrap">{formatDate(r.createdAt)}</TableCell>
-                  <TableCell>{actions(r)}</TableCell>
+                  <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{statusText(r)}</TableCell>
+                  <TableCell className="text-right">{actions(r)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -238,19 +216,22 @@ function ReportsView() {
         )}
         renderCard={(r) => (
           <Card>
-            <CardContent className="space-y-3 p-4">
+            <CardContent className="space-y-2 p-4">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="text-xs text-muted-foreground">{REPORT_TARGET_LABEL[r.targetType]}</p>
                   <TargetLink r={r} />
                 </div>
-                <PriorityBadge priority={r.priority} />
+                <div className="flex shrink-0 items-center gap-1">
+                  <PriorityBadge priority={r.priority} />
+                  {actions(r)}
+                </div>
               </div>
               {reasonCell(r)}
               <p className="text-xs text-muted-foreground">
                 By {r.reporter.name} ({r.reporter.email}) · {formatDate(r.createdAt)} · {r.openCountForTarget} open for this target
               </p>
-              {actions(r)}
+              {r.status !== 'OPEN' && <p className="text-xs text-muted-foreground">{statusText(r)}</p>}
             </CardContent>
           </Card>
         )}

@@ -76,5 +76,5 @@ export function ProfilePage() {
     ...(isBidder ? [{ value: 'alerts', label: 'Alerts', icon: BellRing, content: <AlertsCard /> }] : []),
   ];
 
-  return <MorePage nav={nav} title="Profile" description="Manage your account, security and devices." tabs={tabs} />;
+  return <MorePage nav={nav} title="Profile" tabs={tabs} />;
 }

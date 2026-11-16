@@ -1,15 +1,16 @@
 'use client';
 import * as React from 'react';
 import { Suspense } from 'react';
-import { Download, FileText } from 'lucide-react';
+import { Download, FileText, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { FilterSelect, ListToolbar } from '@/components/common/list-toolbar';
+import { PageHeader } from '@/components/common/page-header';
 import { SearchInput } from '@/components/common/search-input';
-import { AdminList, PageHeader } from '@/features/admin/components/admin-list';
+import { AdminList } from '@/features/admin/components/admin-list';
 import { useAdminList } from '@/features/admin/use-admin';
 import { useUrlState } from '@/features/admin/use-url-state';
 import { invoiceErrorMessage } from '@/features/invoices/invoices.errors';
@@ -26,37 +27,29 @@ function InvoicesView() {
   const list = useAdminList('invoices', { type, q: values.q }, page, pageSize, fetchAdminInvoices);
   const download = useDownloadInvoice();
 
-  const onDownload = (id: string) =>
-    download.mutate(id, { onError: (e) => toast.error(invoiceErrorMessage(e)) });
+  const onDownload = (inv: AdminInvoice) =>
+    download.download(inv, { onError: (e) => toast.error(invoiceErrorMessage(e)) });
 
   const action = (inv: AdminInvoice) => (
-    <Button size="sm" variant="outline" onClick={() => onDownload(inv.id)} disabled={download.isPending} aria-label={`Download ${inv.number}`}>
-      <Download className="h-4 w-4" /> Download
+    <Button size="sm" variant="outline" onClick={() => onDownload(inv)} disabled={download.isPending} aria-label={`Download ${inv.number}`}>
+      {download.pendingId === inv.id ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Download className="h-4 w-4" aria-hidden />}
+      {download.pendingId === inv.id ? 'Preparing…' : 'Download'}
     </Button>
   );
   const kind = (inv: AdminInvoice) => <Badge variant={inv.isTaxInvoice ? 'success' : 'secondary'}>{inv.isTaxInvoice ? 'Tax invoice' : 'Receipt'}</Badge>;
   const who = (inv: AdminInvoice) => inv.buyerName || inv.buyerGstin || inv.memberId.slice(0, 8) || '-';
 
   return (
-    <div className="space-y-6">
-      <PageHeader title="Invoices" description="GST invoices and receipts issued to members." />
+    <div className="space-y-4">
+      <PageHeader title="Invoices" />
 
-      <div className="flex flex-col gap-3 @lg/content:flex-row">
-        <SearchInput className="w-full @lg/content:w-72" value={values.q} onChange={(q) => update({ q })} placeholder="Search invoice number or member" />
-        <Select value={type || 'all'} onValueChange={(v) => update({ type: v === 'all' ? '' : v })}>
-          <SelectTrigger className="w-full @lg/content:w-52" aria-label="Type">
-            <SelectValue placeholder="All types" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All types</SelectItem>
-            {INVOICE_TYPES.map((t) => (
-              <SelectItem key={t.value} value={t.value}>
-                {t.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <ListToolbar
+        search={<SearchInput value={values.q} onChange={(q) => update({ q })} placeholder="Search invoice number or member" />}
+        activeFilters={type ? 1 : 0}
+        onClearFilters={() => update({ type: '' })}
+      >
+        <FilterSelect value={type} onChange={(v) => update({ type: v })} options={INVOICE_TYPES} allLabel="All types" ariaLabel="Type" />
+      </ListToolbar>
 
       <AdminList<AdminInvoice>
         list={list}
@@ -75,7 +68,7 @@ function InvoicesView() {
                 <TableHead>Kind</TableHead>
                 <TableHead className="text-right">Total</TableHead>
                 <TableHead>Issued</TableHead>
-                <TableHead />
+                <TableHead className="w-32"><span className="sr-only">Actions</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -87,7 +80,7 @@ function InvoicesView() {
                   <TableCell>{kind(i)}</TableCell>
                   <TableCell className="text-right tnum">{formatINR(i.totalPaise)}</TableCell>
                   <TableCell className="whitespace-nowrap">{formatDate(i.issuedAt)}</TableCell>
-                  <TableCell>{action(i)}</TableCell>
+                  <TableCell className="text-right">{action(i)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

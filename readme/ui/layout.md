@@ -81,7 +81,7 @@ The 4th mobile tab comes from `useMoreTab()` (`/profile` for members, `/admin/pr
 
 ### Profile page (`/profile`, `/admin/profile`)
 
-`<ProfilePage>` (`src/components/common/profile-page.tsx`) is shared by `src/app/(member)/profile/page.tsx` and `src/app/(admin)/admin/profile/page.tsx`. It renders `<MorePage nav={useNav()} title="Profile" description="Manage your account, security and devices." tabs={…}>` (`src/components/layout/more-page.tsx`) for every signed-in role. Content, top to bottom:
+`<ProfilePage>` (`src/components/common/profile-page.tsx`) is shared by `src/app/(member)/profile/page.tsx` and `src/app/(admin)/admin/profile/page.tsx`. It renders `<MorePage nav={useNav()} title="Profile" tabs={…}>` (`src/components/layout/more-page.tsx`) for every signed-in role. Content, top to bottom:
 
 - Title and description.
 - The tab strip. On a phone it is `w-full` with even, text-only triggers so every tab fits one row; from `@lg/content` it is `w-fit` with icons. `?tab=<value>` picks the opening tab (a starting value only; switching does not rewrite the URL; an unknown value opens the first tab). `useSearchParams()` sits behind a `<Suspense>` inside `MorePage`. Radix unmounts an inactive tab's content.
@@ -170,7 +170,7 @@ To check a change: fix the window at ~940px and collapse/expand the sidebar with
 - **One `AuthGuard` per private group**, at the layout level; pages never re-guard.
 - **Nav is data**: to add a sidebar link, add a `NavItem` (with `roles` if it is role-specific) to `MEMBER_NAV`, `ADMIN_NAV` or `GUEST_NAV` in `src/components/layout/nav-items.ts`. `DashboardShell`, `MobileBottomNav` and `MorePage` all read the same filtered array, so one edit updates the sidebar, the bottom bar and the Profile grid together. Live counts go on `badge` in `useNav()`, never in the array.
 - **`PageTransition key={pathname}`** drives the per-navigation enter animation; keep the `key` on the route so it re-fires.
-- **One page-header row.** A title beside an action (a button, a search box, a badge) uses `flex flex-col gap-4 @lg/content:flex-row @lg/content:items-center @lg/content:justify-between`: stacked until the content area has 512px, one row from there. The admin pages get it from `PageHeader` (`features/admin/components/admin-list.tsx`); `/sell/auctions` writes it inline, and `/sell/auctions/[id]` uses it with `@lg/content:items-start`. Never a bare `flex items-center justify-between`: it has no narrow layout, so with the sidebar open the action squeezes the title. See `docs/CONTAINER_QUERIES.md` §7.
+- **One page-header row.** A title beside an action (a button, a search box, a badge) uses `flex flex-col gap-4 @lg/content:flex-row @lg/content:items-center @lg/content:justify-between`: stacked until the content area has 512px, one row from there. The admin pages get it from the common `PageHeader` (`components/common/page-header.tsx`); `/sell/auctions` writes it inline, and `/sell/auctions/[id]` uses it with `@lg/content:items-start`. Never a bare `flex items-center justify-between`: it has no narrow layout, so with the sidebar open the action squeezes the title. See `docs/CONTAINER_QUERIES.md` §7.
 - **Grid and flex items need `min-w-0`** when they render text of untrusted length (names, emails, titles): an item defaults to `min-width: auto`, so an unbreakable string widens the track past its container even with `truncate` further down, and the page scrolls sideways on a phone. Add `min-w-0` on the item wrapper.
 
 ## Reference files

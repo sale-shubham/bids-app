@@ -9,7 +9,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { EmptyState } from '@/components/common/empty-state';
-import { PageHeader } from '@/features/admin/components/admin-list';
+import { PageHeader } from '@/components/common/page-header';
+import { RowActionsMenu } from '@/components/common/row-actions-menu';
 import { apiErrorMessage } from '@/lib/api-client';
 import { categoryErrorMessage } from '../categories.errors';
 import type { AdminCategory } from '../categories.types';
@@ -52,12 +53,15 @@ export function AdminCategories() {
   };
 
   return (
-    <div className="space-y-6">
-      <PageHeader title="Categories" description="The category tree sellers list in and bidders browse by, with the attributes of each.">
-        <Button onClick={() => setDialog({})}>
-          <Plus className="h-4 w-4" /> New category
-        </Button>
-      </PageHeader>
+    <div className="space-y-4">
+      <PageHeader
+        title="Categories"
+        action={
+          <Button onClick={() => setDialog({})}>
+            <Plus className="h-4 w-4" /> New category
+          </Button>
+        }
+      />
 
       {error && !data ? (
         <Card>
@@ -72,7 +76,7 @@ export function AdminCategories() {
       ) : isPending ? (
         <Skeleton className="h-64" />
       ) : tree.length === 0 ? (
-        <EmptyState icon={FolderTree} title="No categories yet" description="Create the first category to let sellers list items." actionLabel="New category" onAction={() => setDialog({})} />
+        <EmptyState icon={FolderTree} title="No categories yet" description="Create the first category to let sellers list items." />
       ) : (
         <Card>
           <ul className="divide-y" aria-label="Categories">
@@ -92,24 +96,14 @@ export function AdminCategories() {
                   </div>
                   <div className="flex items-center gap-1">
                     <Switch checked={node.isActive} onCheckedChange={(v) => toggle(node, v)} aria-label={`${node.isActive ? 'Deactivate' : 'Activate'} ${node.name}`} disabled={update.isPending} />
-                    <Button type="button" size="icon" variant="ghost" className="h-8 w-8" aria-label={`Add subcategory to ${node.name}`} onClick={() => setDialog({ parentId: node.id })}>
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                    <Button type="button" size="icon" variant="ghost" className="h-8 w-8" aria-label={`Edit ${node.name}`} onClick={() => setDialog({ category: node })}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      className="h-8 w-8 text-destructive"
-                      aria-label={`Delete ${node.name}`}
-                      title={blocked ?? undefined}
-                      disabled={!!blocked}
-                      onClick={() => setToDelete(node)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <RowActionsMenu
+                      name={node.name}
+                      actions={[
+                        { label: 'Add subcategory', icon: Plus, onSelect: () => setDialog({ parentId: node.id }) },
+                        { label: 'Edit', icon: Pencil, onSelect: () => setDialog({ category: node }) },
+                        { label: 'Delete', icon: Trash2, destructive: true, separated: true, disabled: !!blocked, hint: blocked ?? undefined, onSelect: () => setToDelete(node) },
+                      ]}
+                    />
                   </div>
                 </li>
               );

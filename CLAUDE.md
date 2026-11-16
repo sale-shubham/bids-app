@@ -27,7 +27,7 @@ Feature-complete and merged into `dev`: auth (login, signup + email OTP, forgot/
 | `AGENTS.md` | Agent notes |
 | `PROJECT_STRUCTURE.md` | Current file layout |
 | `readme/ARCHITECTURE.md` | Rendering, app vs website, route areas + role homes, auth, state, live, PWA, deploy |
-| `readme/methods/*.md` | api-client (+ env vars), hooks, stores, zod-validation, testing |
+| `readme/methods/*.md` | api-client (+ env vars), hooks, stores, zod-validation, testing, admin-pages (how to build an admin list page) |
 | `readme/ui/*.md`, `readme/theming/*.md` | components, layout; tokens, dark mode |
 | `docs/*.md` | CONFIRM_DIALOG, CONTAINER_QUERIES, CRUD_PATTERN, PAGINATION, GUIDELINES, DOC_SYNC |
 

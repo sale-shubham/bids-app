@@ -3,8 +3,10 @@ import { Suspense } from 'react';
 import { CreditCard } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ListToolbar } from '@/components/common/list-toolbar';
+import { PageHeader } from '@/components/common/page-header';
 import { StatusBadge } from '@/components/common/status-badge';
-import { AdminList, PageHeader, StatusTabs } from '@/features/admin/components/admin-list';
+import { AdminList, StatusTabs } from '@/features/admin/components/admin-list';
 import { CopyableId } from '@/features/admin/components/copy-button';
 import { useAdminPayments } from '@/features/admin/use-admin';
 import { useUrlState } from '@/features/admin/use-url-state';
@@ -28,9 +30,9 @@ function PaymentsView() {
   const list = useAdminPayments({ status }, page, pageSize);
 
   return (
-    <div className="space-y-6">
-      <PageHeader title="Payments" description="Gateway payments, including commission settlements." />
-      <StatusTabs value={status} tabs={TABS} onChange={(v) => update({ status: v })} />
+    <div className="space-y-4">
+      <PageHeader title="Payments" />
+      <ListToolbar tabs={<StatusTabs value={status} tabs={TABS} onChange={(v) => update({ status: v })} />} />
 
       <AdminList<AdminPayment>
         list={list}
@@ -78,7 +80,7 @@ function PaymentsView() {
         )}
         renderCard={(p) => (
           <Card>
-            <CardContent className="space-y-3 p-4">
+            <CardContent className="space-y-2 p-4">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="font-medium">{p.member.name}</p>

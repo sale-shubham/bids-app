@@ -2,7 +2,8 @@
 import * as React from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
-export const ADMIN_PAGE_SIZES = [10, 25, 50];
+// Must match the choices ListPagination offers (DEFAULT_PAGE_SIZE_OPTIONS), or a pick silently falls back to 10.
+export const ADMIN_PAGE_SIZES = [10, 25, 50, 75, 100];
 
 /**
  * URL-synced filter state. `defaults` lists every string filter and its default;
