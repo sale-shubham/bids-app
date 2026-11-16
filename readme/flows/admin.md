@@ -6,15 +6,15 @@ SUPER_ADMIN only. Routes live in `src/app/(admin)/admin/**`, guarded by `AuthGua
 | --- | --- |
 | `/admin` | Stat cards, revenue bar chart (INR), signups line chart, recent auctions |
 | `/admin/members` | Search, role + status filters, trust badges (Verified = KYC'd payout account, payout status, strikes, credit balance), **Revoke / Restore verification** (`PATCH /admin/members/:id { verified }`, ConfirmDialog; Restore shows for an unverified AUCTIONEER whose payout is ACTIVE, the API re-applies the rule), activate/deactivate, change role (SUPER_ADMIN gets an extra warning); strike count badge + **Strikes** dialog with Remove (ConfirmDialog + optional note), see `strikes.md`. The signed-in admin's own row actions are disabled (API also returns 409 `CANNOT_MODIFY_SELF`) |
-| `/admin/auctions` | Status tabs + search; cancel (`DELETE /auctions/:id`) with a bid-count warning; **Set deposit** on LIVE / SCHEDULED rows (`SetDepositDialog`, `PATCH /admin/auctions/:id/deposit`, rupee input or "No deposit"; Deposit column); see `deposits.md` |
-| `/admin/commissions` | Status tabs; waive due commissions (reason field is a client-side note only) |
+| `/admin/auctions` | Status tabs + search; cancel (`DELETE /auctions/:id`) with a bid-count warning; the API then notifies bidders, deposit holders (deposits refunded automatically) and the seller (`auction-cancelled`); **Set deposit** on LIVE / SCHEDULED rows (`SetDepositDialog`, `PATCH /admin/auctions/:id/deposit`, rupee input or "No deposit"; Deposit column); see `deposits.md` |
+| `/admin/commissions` | Status tabs; waive due commissions (optional reason, 3 to 200 chars, saved as `waivedNote` and shown under the status on WAIVED rows in the Waived and All tabs) |
 | `/admin/payments` | Status tabs; gateway ids with copy buttons |
 | `/admin/sales` | Status tabs + search (`q`); table / cards. Per row `AdminSaleActions`: **Release** (pay the seller now) and **Refund** (optional note, max 500) for PAID / SHIPPED / DELIVERED / DISPUTED sales, both through `<ConfirmDialog>`; see `checkout.md` |
 | `/admin/reviews` | Visible / hidden / all tabs + search; Hide / Unhide through `<ConfirmDialog>` (`PATCH /admin/reviews/:id`); see `reviews.md` |
 | `/admin/reports` | Open / Resolved tabs + target-type filter; Dismiss and Mark action taken (note + apply to all open for the target) through `<ConfirmDialog>`; see `reports.md` |
 | `/admin/risk` | Open / Reviewed tabs; shill-bid flags with score badge, readable reasons, auction / bidder / seller links; Dismiss and Mark action taken (optional note) through `<ConfirmDialog>`; see `risk.md` |
 | `/admin/profile` | The shared profile view (`components/common/profile-page.tsx`, same cards as `/profile`): Account, Security (password, devices, sign out) and App tabs |
-| `/admin/settings` | Tab `marketplace` (commission %, min increment INR, anti-sniping, maximum price INR (`maxPricePaise`, ₹1,000 to ₹1,000 crore), categories editor, **Checkout mode** select off / optional / required with help text, `checkoutMode`; see `payouts.md`; **Bid deposits** card: deposit threshold INR (`depositThresholdPaise`, 0 = off) and deposit rate % (`depositRateBps`, 1 to 50 %); see `deposits.md`) and tab `legal` (slug select + rich text) |
+| `/admin/settings` | Tab `marketplace` (commission %, min increment INR, anti-sniping, maximum price INR (`maxPricePaise`, ₹1,000 to ₹1,000 crore), link to `/admin/categories` (no editor here), **Checkout mode** select off / optional / required with help text, `checkoutMode`; see `payouts.md`; **Bid deposits** card: deposit threshold INR (`depositThresholdPaise`, 0 = off) and deposit rate % (`depositRateBps`, 1 to 50 %); see `deposits.md`) and tab `legal` (slug select + rich text) |
 
 ## Code map (`src/features/admin/`)
 - `admin.api.ts` - axios calls. `admin.parse.ts` - the ONLY place response keys are mapped (change it if the backend renames fields). `admin.types.ts`, `admin.schema.ts` (settings form <-> API: % <-> bps, rupees <-> paise).
@@ -23,7 +23,7 @@ SUPER_ADMIN only. Routes live in `src/app/(admin)/admin/**`, guarded by `AuthGua
 - `components/` - `AdminList` (ResponsiveList + error/retry), `StatusTabs`, `PageHeader`, `CopyButton`, charts, settings forms.
 
 ## Notes
-- `TwoFactorSetupBanner` (admin layout) shows while `member.twoFactorSetupRequired`; a `TWO_FACTOR_SETUP_REQUIRED` API error sets it (see `auth.md`).
+- 2FA was removed (decision D16); there is no setup banner.
 - Destructive actions use `ConfirmDialog`; results are sonner toasts; errors via `apiErrorMessage` (`commissionErrorMessage` for waive).
 - Saving settings refreshes the `['auctions','categories']` cache.
 - Legal pages are read from the public `GET /settings/legal/:slug`, saved with `PUT /admin/settings/legal/:slug`.

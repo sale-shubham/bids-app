@@ -65,7 +65,9 @@ export async function fetchAdminCommissions(
   return parseCommissionAdminPage(res.data);
 }
 
-export const waiveCommission = (id: string) => api.post(`/admin/commissions/${id}/waive`).then((r) => r.data.data);
+/** `note` (3-200 chars) is saved with the commission; omitted when empty. */
+export const waiveCommission = (id: string, note?: string) =>
+  api.post(`/admin/commissions/${id}/waive`, note ? { note } : {}).then((r) => r.data.data);
 
 export async function fetchAdminPayments(
   f: { status: string },

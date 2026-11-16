@@ -79,10 +79,11 @@ interface QuestionItemProps {
   q: QuestionDTO;
   auctionId: string;
   isSeller: boolean;
+  canHide: boolean;
   onHide: (q: QuestionDTO) => void;
 }
 
-function QuestionItem({ q, auctionId, isSeller, onHide }: QuestionItemProps) {
+function QuestionItem({ q, auctionId, isSeller, canHide, onHide }: QuestionItemProps) {
   return (
     <li className="space-y-2 rounded-xl border p-4">
       <div className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
@@ -104,7 +105,7 @@ function QuestionItem({ q, auctionId, isSeller, onHide }: QuestionItemProps) {
         </>
       )}
       <div className="flex flex-wrap items-center gap-2">
-        {isSeller && (
+        {canHide && (
           <Button type="button" variant="ghost" size="sm" className="text-destructive" onClick={() => onHide(q)}>
             Hide
           </Button>
@@ -131,6 +132,7 @@ export function QuestionsSection({ auctionId, sellerId, ended }: QuestionsSectio
   const [target, setTarget] = React.useState<QuestionDTO | null>(null);
 
   const isSeller = !!member && member.id === sellerId;
+  const canHide = isSeller || member?.role === 'SUPER_ADMIN';
   const canAsk = !!member && member.role === 'BIDDER' && !isSeller && !ended;
   const items = questions.data ?? [];
 
@@ -168,7 +170,7 @@ export function QuestionsSection({ auctionId, sellerId, ended }: QuestionsSectio
       ) : (
         <ul className="space-y-3">
           {items.map((q) => (
-            <QuestionItem key={q.id} q={q} auctionId={auctionId} isSeller={isSeller} onHide={setTarget} />
+            <QuestionItem key={q.id} q={q} auctionId={auctionId} isSeller={isSeller} canHide={canHide} onHide={setTarget} />
           ))}
         </ul>
       )}

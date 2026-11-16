@@ -159,7 +159,7 @@ function AuctionsView() {
         open={!!target}
         onOpenChange={(o) => !o && setTarget(null)}
         title="Cancel this auction?"
-        description={target ? `"${target.title}" will be cancelled and removed from public listings.` : undefined}
+        description={target ? `"${target.title}" will be cancelled and removed from public listings. Its bidders and anyone holding a deposit are notified, held deposits are refunded automatically, and the seller is notified too.` : undefined}
         confirmLabel="Cancel auction"
         variant="destructive"
         loading={cancel.isPending}
@@ -167,7 +167,7 @@ function AuctionsView() {
       >
         {target && target.bidCount > 0 && (
           <p className="rounded-md bg-warning/10 p-3 text-sm text-warning">
-            Warning: this auction already has {target.bidCount} {target.bidCount === 1 ? 'bid' : 'bids'}. Cancelling it discards them and bidders will be notified.
+            Warning: this auction already has {target.bidCount} {target.bidCount === 1 ? 'bid' : 'bids'}. Cancelling it discards them and its bidders will be notified.
           </p>
         )}
       </ConfirmDialog>

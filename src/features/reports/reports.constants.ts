@@ -18,3 +18,5 @@ export const REPORT_TARGET_LABEL: Record<ReportTargetType, string> = {
 };
 
 export const REPORT_DETAILS_MAX = 1000;
+/** Admin resolution note; the API rejects more than 500. */
+export const REPORT_NOTE_MAX = 500;

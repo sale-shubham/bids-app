@@ -21,6 +21,8 @@ A sold auction creates a 5% commission (DUE). While `me.unpaidCommissionPaise > 
 - Codes in `commissions.errors.ts`: `COMMISSION_NOT_FOUND`, `COMMISSION_NOT_DUE` (also refetches), `ORDER_NOT_FOUND`, `INVALID_SIGNATURE`, `PAYMENT_NOT_CAPTURED`, `AMOUNT_MISMATCH`.
 
 ## Queries
+Admin waive: see `admin.md` (optional `note`, saved as `waivedNote`, admin-only; sellers never see it).
+
 `['commissions', tab]` infinite (tabs due/paid/waived/all, page size 20), `['commissions','summary']`, `['me']`.
 
 ## Credits and promotions (Phase G part 2)

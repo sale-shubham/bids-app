@@ -56,6 +56,10 @@ describe('admin.parse', () => {
     expect(items.map((i) => i.sellerEmail)).toEqual(['s@x.y', '']);
   });
 
+  it('parseCommissionAdminPage carries waivedNote (null when absent)', () => {
+    const { items } = parseCommissionAdminPage(page([{ id: 'c1', status: 'WAIVED', waivedNote: 'Goodwill' }, { id: 'c2', status: 'PAID' }]));
+    expect(items.map((i) => i.waivedNote)).toEqual(['Goodwill', null]);
+  });
   it('parseCommissionAdminPage keeps seller info per row', () => {
     const { items, meta } = parseCommissionAdminPage(page([{ id: 'c1', status: 'PAID', seller: { id: 's', name: 'S', email: 'e' } }, { id: 'c2' }]));
     expect(meta.total).toBe(2);

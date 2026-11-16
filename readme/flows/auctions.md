@@ -18,7 +18,7 @@ There is no Home page in the app: the landing page, About, How it works and Cont
 - Parts: `AuctionGallery` (+ `ImageLightbox`), `Countdown`, bid panel and history (`bidding.md`), `WatchButton` (`watchlist.md`), `ShareButtons`, the seller card with `RatingSummary` ("4.6 (12)" or "No ratings yet", `reviews.md`) and `QuestionsSection` under the description (`questions.md`).
 - `ShareButtons`: Copy link (clipboard), WhatsApp (`wa.me/?text=`), and the native share sheet when `navigator.share` exists.
 - The seller page (`/sellers/[id]`) shows the rating summary in the header and a paginated reviews list with seller replies (`reviews.md`).
-- Owner tools on the detail page (shown to the auction's own seller only; SUPER_ADMIN manages auctions under `/admin/auctions`): edit / delete only while `bidCount === 0` and the auction is not ENDED / CANCELLED. Delete uses `<ConfirmDialog>`.
+- Owner tools on the detail page (shown to the auction's own seller only; SUPER_ADMIN manages auctions under `/admin/auctions`): edit / delete only while `bidCount === 0` and the auction is not ENDED / CANCELLED. Delete uses `<ConfirmDialog>`. When an admin cancels an auction from `/admin/auctions`, the API sends `auction-cancelled` notifications (bidders, deposit holders with an automatic-refund line, and the seller); the dialog says so.
 - Recently viewed: each visit adds an `AuctionCard` snapshot to `recently-viewed-store` (shown by `RecentlyViewed` on `/auctions`; zustand `persist`, localStorage key `nb-recently-viewed`, newest first, max 10, `skipHydration` + `rehydrate()` after mount to avoid a hydration mismatch; storage errors fall back to memory).
 
 ## Selling (`/sell/*`, AUCTIONEER only)
