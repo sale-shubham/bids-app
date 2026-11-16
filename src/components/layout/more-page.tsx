@@ -33,6 +33,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { CountBadge } from '@/components/common/count-badge';
+import { PageHeader } from '@/components/common/page-header';
 import { apiErrorMessage } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 import {
@@ -74,7 +75,7 @@ export interface ProfileTab {
 //
 // `?tab=<value>` picks the opening tab. A starting value only — switching
 // tabs does not rewrite the URL. An unknown value opens the first tab.
-export function MorePage(props: { nav: NavItem[]; title: string; description: string; tabs: ProfileTab[] }) {
+export function MorePage(props: { nav: NavItem[]; title: string; tabs: ProfileTab[] }) {
   // useSearchParams() needs a Suspense boundary; nothing above it reads the
   // query, so the fallback is never seen.
   return (
@@ -87,12 +88,10 @@ export function MorePage(props: { nav: NavItem[]; title: string; description: st
 function ProfileTabs({
   nav,
   title,
-  description,
   tabs,
 }: {
   nav: NavItem[];
   title: string;
-  description: string;
   tabs: ProfileTab[];
 }) {
   const pathname = usePathname();
@@ -137,11 +136,8 @@ function ProfileTabs({
   );
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-        <p className="text-muted-foreground">{description}</p>
-      </div>
+    <div className="space-y-4">
+      <PageHeader title={title} />
 
       <Tabs value={active} onValueChange={setPicked}>
         {/* A phone gets an even, text-only strip so every tab (App holds

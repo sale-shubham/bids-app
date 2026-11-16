@@ -219,7 +219,7 @@ grep -A2 "@container\\\\/content" /tmp/cq.css
       (as `useAdminList()` does)
 - [ ] A page header with an action (button, search, badge) is the shared row —
       `flex flex-col gap-4 @lg/content:flex-row @lg/content:items-center @lg/content:justify-between`
-      (admin pages: `PageHeader` in `features/admin/components/admin-list.tsx`) — never a bare
+      (admin pages: the common `PageHeader`) — never a bare
       `flex items-center justify-between`, which has no narrow layout at all and squeezes the title
       once the sidebar is open
 - [ ] A sub-container gets its **own** name (`@container/results`), never a bare `@container`
@@ -236,5 +236,5 @@ grep -A2 "@container\\\\/content" /tmp/cq.css
 - `src/components/common/responsive-list.tsx` — table/cards at `@3xl/content`
 - `src/hooks/use-is-narrow-content.ts` — the same box and width, in JS
 - `src/features/admin/use-admin.ts` — `useAdminList()`, which gates the two list queries on it
-- `src/features/admin/components/admin-list.tsx` — `PageHeader`, the shared header row
+- `src/components/common/page-header.tsx` — `PageHeader`, the shared header row
 - `readme/ui/layout.md`, `readme/ui/components.md` — where this is applied

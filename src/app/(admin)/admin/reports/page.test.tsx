@@ -35,6 +35,11 @@ const report: AdminReport = {
   priority: 'HIGH',
 };
 
+async function pick(name: string, target = 'Auction Brass Vase') {
+  await userEvent.click(await screen.findByRole('button', { name: `Actions for ${target}` }));
+  await userEvent.click(await screen.findByRole('menuitem', { name }));
+}
+
 function setup() {
   render(
     <QueryClientProvider client={new QueryClient()}>
@@ -50,6 +55,14 @@ beforeEach(() => {
 });
 
 describe('AdminReportsPage', () => {
+  it('renders a title with no description and the Open/Resolved tabs', async () => {
+    setup();
+    expect(await screen.findByRole('heading', { name: 'Reports' })).toBeInTheDocument();
+    expect(screen.queryByText(/Reports from members/)).not.toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Resolved' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Filters' })).toBeInTheDocument();
+  });
+
   it('lists the report with priority, target link, reporter, reason, details and moderation link', async () => {
     setup();
     expect(await screen.findByRole('link', { name: /Brass Vase/ })).toHaveAttribute('href', '/auctions/a1');
@@ -57,12 +70,13 @@ describe('AdminReportsPage', () => {
     expect(screen.getByText('Fake or counterfeit item')).toBeInTheDocument();
     expect(screen.getByText('Looks fake')).toBeInTheDocument();
     expect(screen.getByText('ravi@example.com')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Cancel auction' })).toHaveAttribute('href', '/admin/auctions?q=Brass%20Vase');
+    await userEvent.click(screen.getByRole('button', { name: 'Actions for Auction Brass Vase' }));
+    expect(await screen.findByRole('menuitem', { name: 'Cancel auction' })).toHaveAttribute('href', '/admin/auctions?q=Brass%20Vase');
   });
 
   it('dismisses only after confirming', async () => {
     setup();
-    await userEvent.click(await screen.findByRole('button', { name: 'Dismiss' }));
+    await pick('Dismiss');
     expect(api.resolveReport).not.toHaveBeenCalled();
     const dialog = await screen.findByRole('dialog');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Dismiss' }));
@@ -74,7 +88,7 @@ describe('AdminReportsPage', () => {
     expect(resolveReportSchema.safeParse({ note: 'x'.repeat(500), applyToAll: false }).success).toBe(true);
     expect(resolveReportSchema.safeParse({ note: 'x'.repeat(501), applyToAll: false }).success).toBe(false);
     setup();
-    await userEvent.click(await screen.findByRole('button', { name: 'Mark action taken' }));
+    await pick('Mark action taken');
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByLabelText(/Note/)).toHaveAttribute('maxlength', '500');
     expect(within(dialog).getByText('0/500')).toBeInTheDocument();
@@ -85,7 +99,7 @@ describe('AdminReportsPage', () => {
     vi.mocked(api.fetchAdminReports).mockResolvedValue({ items: [qReport], meta: { total: 1, page: 1, pageSize: 10, totalPages: 1 } });
     vi.mocked(questionsApi.hideQuestion).mockResolvedValue(undefined);
     setup();
-    await userEvent.click(await screen.findByRole('button', { name: 'Hide question' }));
+    await pick('Hide question', 'Question Is it real?');
     expect(questionsApi.hideQuestion).not.toHaveBeenCalled();
     const dialog = await screen.findByRole('dialog');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Hide question' }));
@@ -97,13 +111,15 @@ describe('AdminReportsPage', () => {
   it('AUCTION reports have no Hide question button', async () => {
     setup();
     await screen.findByRole('link', { name: /Brass Vase/ });
-    expect(screen.queryByRole('button', { name: 'Hide question' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Actions for Auction Brass Vase' }));
+    await screen.findByRole('menuitem', { name: 'Dismiss' });
+    expect(screen.queryByRole('menuitem', { name: 'Hide question' })).not.toBeInTheDocument();
   });
 
   it('mark action taken sends the note and apply-to-all', async () => {
     vi.mocked(api.resolveReport).mockResolvedValue({ resolvedCount: 3 });
     setup();
-    await userEvent.click(await screen.findByRole('button', { name: 'Mark action taken' }));
+    await pick('Mark action taken');
     const dialog = await screen.findByRole('dialog');
     await userEvent.type(within(dialog).getByLabelText(/Note/), 'Auction cancelled');
     await userEvent.click(within(dialog).getByLabelText(/Apply to all open reports/));

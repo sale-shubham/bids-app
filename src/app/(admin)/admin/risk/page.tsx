@@ -2,16 +2,18 @@
 import * as React from 'react';
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { ShieldAlert } from 'lucide-react';
+import { Ban, Eye, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
-import { AdminList, PageHeader, StatusTabs } from '@/features/admin/components/admin-list';
+import { ListToolbar } from '@/components/common/list-toolbar';
+import { PageHeader } from '@/components/common/page-header';
+import { RowActionsMenu, type RowAction } from '@/components/common/row-actions-menu';
+import { AdminList, StatusTabs } from '@/features/admin/components/admin-list';
 import { useUrlState } from '@/features/admin/use-url-state';
 import { isStaleRiskError, riskErrorMessage } from '@/features/risk/risk.errors';
 import type { RiskOutcome, RiskSignal, RiskTab } from '@/features/risk/risk.types';
@@ -52,6 +54,11 @@ function Reasons({ r }: { r: RiskSignal }) {
       {r.reasons.map((x) => (
         <li key={x}>{riskReasonLabel(x)}</li>
       ))}
+      {r.reviewedAt && (
+        <li className="text-xs text-muted-foreground">
+          {r.outcome ? OUTCOME_LABEL[r.outcome] : 'Reviewed'} · {formatDate(r.reviewedAt)}
+        </li>
+      )}
       {r.note && <li className="text-xs italic text-muted-foreground">Admin note: {r.note}</li>}
     </ul>
   );
@@ -89,27 +96,16 @@ function RiskView() {
     else setActionTarget(r);
   };
 
-  const actions = (r: RiskSignal) => (
-    <div className="flex flex-wrap items-center gap-2">
-      <Button asChild size="sm" variant="outline">
-        <Link href={`/auctions/${r.auction.id}`}>View auction</Link>
-      </Button>
-      {r.reviewedAt ? (
-        <span className="text-xs text-muted-foreground">
-          {r.outcome ? OUTCOME_LABEL[r.outcome] : 'Reviewed'} · {formatDate(r.reviewedAt)}
-        </span>
-      ) : (
-        <>
-          <Button size="sm" variant="outline" onClick={() => openDialog('dismiss', r)}>
-            Dismiss
-          </Button>
-          <Button size="sm" onClick={() => openDialog('action', r)}>
-            Mark action taken
-          </Button>
-        </>
-      )}
-    </div>
-  );
+  const actions = (r: RiskSignal) => {
+    const list: RowAction[] = [{ label: 'View auction', icon: Eye, href: `/auctions/${r.auction.id}` }];
+    if (!r.reviewedAt) {
+      list.push(
+        { label: 'Dismiss', icon: Ban, onSelect: () => openDialog('dismiss', r) },
+        { label: 'Mark action taken', icon: ShieldCheck, onSelect: () => openDialog('action', r) },
+      );
+    }
+    return <RowActionsMenu name={r.auction.title} actions={list} />;
+  };
 
   const noteField = (
     <div className="space-y-1.5">
@@ -119,13 +115,10 @@ function RiskView() {
   );
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Shill-bid risk"
-        description="Automatic flags for suspicious bidding. A flag blocks nothing: review it, cancel the auction or suspend the member if needed, then record the outcome."
-      />
+    <div className="space-y-4">
+      <PageHeader title="Shill-bid risk" />
 
-      <StatusTabs value={tab} tabs={TABS} onChange={(v) => update({ tab: v })} />
+      <ListToolbar tabs={<StatusTabs value={tab} tabs={TABS} onChange={(v) => update({ tab: v })} />} />
 
       <AdminList<RiskSignal>
         list={list}
@@ -144,7 +137,7 @@ function RiskView() {
                 <TableHead>Seller</TableHead>
                 <TableHead>Why it was flagged</TableHead>
                 <TableHead>Flagged</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className="w-12"><span className="sr-only">Actions</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -168,7 +161,7 @@ function RiskView() {
                     <Reasons r={r} />
                   </TableCell>
                   <TableCell className="whitespace-nowrap">{formatDate(r.updatedAt || r.createdAt)}</TableCell>
-                  <TableCell>{actions(r)}</TableCell>
+                  <TableCell className="text-right">{actions(r)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -176,12 +169,15 @@ function RiskView() {
         )}
         renderCard={(r) => (
           <Card>
-            <CardContent className="space-y-3 p-4">
+            <CardContent className="space-y-2 p-4">
               <div className="flex items-start justify-between gap-2">
                 <Link href={`/auctions/${r.auction.id}`} className="min-w-0 font-medium wrap-break-word hover:underline">
                   {r.auction.title}
                 </Link>
-                <ScoreBadge score={r.score} />
+                <div className="flex shrink-0 items-center gap-1">
+                  <ScoreBadge score={r.score} />
+                  {actions(r)}
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <Person p={r.bidder} label="Bidder" />
@@ -189,7 +185,6 @@ function RiskView() {
               </div>
               <Reasons r={r} />
               <p className="text-xs text-muted-foreground">Flagged {formatDate(r.updatedAt || r.createdAt)}</p>
-              {actions(r)}
             </CardContent>
           </Card>
         )}

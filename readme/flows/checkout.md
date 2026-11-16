@@ -12,7 +12,7 @@ When an auction sells and the seller has an ACTIVE payout account, the API creat
 | `/purchases/[id]` | BIDDER | `SaleDetailPage view="buyer"`: item, amount breakdown, progress timeline, seller contact once paid, delivery info, `PurchaseActions` |
 | `/sell/sales` | AUCTIONEER | `SaleList role="seller"`, same tabs; "Ship" shortcut on PAID rows |
 | `/sell/sales/[id]` | AUCTIONEER | Same detail view: buyer contact once paid, payout + commission rows, `ShipForm` when PAID |
-| `/admin/sales` | SUPER_ADMIN | Table / cards, status tabs + `q` search, `AdminSaleActions` |
+| `/admin/sales` | SUPER_ADMIN | Table / cards, status tabs + `q` search |
 
 Entry points: `AuctionResult` and `/my-bids` Won rows (`BuyerSaleEntry`: AWAITING_PAYMENT = "Pay now" + pay-by date, otherwise badge + "View purchase"); sellers get "View sale". Nav: Purchases (BIDDER), Sales + Payouts (AUCTIONEER), Sales (admin). Route gating is in `src/constants/routes.ts` (`BIDDER_PREFIXES` has `/purchases`; `/sell/*` and `/admin/*` already cover the rest).
 
@@ -29,7 +29,7 @@ Entry points: `AuctionResult` and `/my-bids` Won rows (`BuyerSaleEntry`: AWAITIN
 ## Seller action (`ship-form.tsx`)
 PAID only. Delivery method radio COURIER / PICKUP; courier required for COURIER (max 60), tracking number optional (max 60) -> `POST /sales/:id/ship` (`toShipPayload` omits empty fields; PICKUP sends no courier).
 
-## Admin actions (`admin-sale-actions.tsx`)
+## Admin actions (admin sales page)
 PAID / SHIPPED / DELIVERED / DISPUTED: **Release** (`POST /admin/sales/:id/release`) and **Refund** (`POST /admin/sales/:id/refund`, optional note max 500) through `<ConfirmDialog>`. Both invalidate `['admin']` and `['sales']`.
 
 ## Form validation (zod, `sales.schema.ts`)

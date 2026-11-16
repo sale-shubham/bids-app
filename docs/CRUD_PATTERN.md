@@ -33,7 +33,7 @@ The header row and every filter row are container-query rows, never a bare
 </div>
 ```
 
-Admin pages get the same row from `PageHeader` (`src/features/admin/components/admin-list.tsx`).
+Admin pages get the same row from the common `PageHeader` (`src/components/common/page-header.tsx`).
 Controls inside a filter row are `w-full @lg/content:w-<n>`. See `docs/CONTAINER_QUERIES.md`.
 
 ## Create route

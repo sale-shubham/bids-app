@@ -19,8 +19,8 @@ export function InvoicesCard() {
   const download = useDownloadInvoice();
   const items = list.data?.pages.flatMap((p) => p.items) ?? [];
 
-  const onDownload = (id: string) =>
-    download.mutate(id, { onError: (e) => toast.error(invoiceErrorMessage(e)) });
+  const onDownload = (inv: { id: string; number: string }) =>
+    download.download(inv, { onError: (e) => toast.error(invoiceErrorMessage(e)) });
 
   return (
     <Card>
@@ -55,9 +55,9 @@ export function InvoicesCard() {
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="font-semibold tnum">{formatINR(inv.totalPaise)}</span>
-                    <Button variant="outline" size="sm" onClick={() => onDownload(inv.id)} disabled={download.isPending} aria-label={`Download ${inv.number}`}>
-                      {download.isPending && download.variables === inv.id ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Download className="h-4 w-4" aria-hidden />}
-                      Download
+                    <Button variant="outline" size="sm" onClick={() => onDownload(inv)} disabled={download.isPending} aria-label={`Download ${inv.number}`}>
+                      {download.pendingId === inv.id ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Download className="h-4 w-4" aria-hidden />}
+                      {download.pendingId === inv.id ? 'Preparing…' : 'Download'}
                     </Button>
                   </div>
                 </li>

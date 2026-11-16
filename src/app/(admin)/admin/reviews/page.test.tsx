@@ -47,7 +47,11 @@ describe('AdminReviewsPage', () => {
     );
     expect(await screen.findByText('Rude buyer')).toBeInTheDocument();
     expect(api.fetchAdminReviews).toHaveBeenCalledWith({ visibility: 'visible', q: '' }, 1, 10);
-    await userEvent.click(screen.getByRole('button', { name: 'Hide' }));
+    expect(screen.getByRole('heading', { name: 'Reviews' })).toBeInTheDocument();
+    expect(screen.queryByText(/Seller ratings left by/)).not.toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Filters' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Actions for review by Ravi' }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Hide' }));
     expect(api.setReviewHidden).not.toHaveBeenCalled();
     const dialog = await screen.findByRole('dialog');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Hide review' }));

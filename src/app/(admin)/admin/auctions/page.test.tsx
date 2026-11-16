@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as adminApi from '@/features/admin/admin.api';
@@ -35,6 +35,11 @@ const auction = {
   depositPaise: null,
 } as unknown as AdminAuction;
 
+async function pick(name: string) {
+  await userEvent.click(await screen.findByRole('button', { name: 'Actions for Brass Vase' }));
+  await userEvent.click(await screen.findByRole('menuitem', { name }));
+}
+
 function setup() {
   render(
     <QueryClientProvider client={new QueryClient()}>
@@ -52,7 +57,7 @@ beforeEach(() => {
 describe('AdminAuctionsPage deposit action', () => {
   it('Set deposit opens a dialog and PATCHes paise', async () => {
     setup();
-    await userEvent.click(await screen.findByRole('button', { name: 'Set deposit' }));
+    await pick('Set deposit');
     await userEvent.type(await screen.findByLabelText('Deposit (₹)'), '2500');
     await userEvent.click(screen.getByRole('button', { name: 'Save deposit' }));
     await waitFor(() => expect(depositsApi.setAuctionDeposit).toHaveBeenCalledWith('a1', 250_000));
@@ -60,9 +65,28 @@ describe('AdminAuctionsPage deposit action', () => {
 
   it('No deposit clears it (null)', async () => {
     setup();
-    await userEvent.click(await screen.findByRole('button', { name: 'Set deposit' }));
+    await pick('Set deposit');
     await userEvent.click(await screen.findByLabelText('No deposit'));
     await userEvent.click(screen.getByRole('button', { name: 'Save deposit' }));
     await waitFor(() => expect(depositsApi.setAuctionDeposit).toHaveBeenCalledWith('a1', null));
+  });
+});
+
+describe('AdminAuctionsPage layout and cancel', () => {
+  it('shows the header, status tabs and search in one filters group', async () => {
+    setup();
+    expect(await screen.findByRole('heading', { name: 'Auctions' })).toBeInTheDocument();
+    const group = screen.getByRole('group', { name: 'Filters' });
+    expect(within(group).getAllByRole('tab')).toHaveLength(5);
+    expect(within(group).getByLabelText('Search')).toBeInTheDocument();
+  });
+
+  it('cancels only after confirming', async () => {
+    vi.mocked(adminApi.cancelAuction).mockResolvedValue({} as never);
+    setup();
+    await pick('Cancel');
+    expect(adminApi.cancelAuction).not.toHaveBeenCalled();
+    await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Cancel auction' }));
+    await waitFor(() => expect(adminApi.cancelAuction).toHaveBeenCalledWith('a1'));
   });
 });

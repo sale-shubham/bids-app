@@ -37,9 +37,14 @@ const member: AdminMember = {
 };
 const page = (m: AdminMember) => ({ items: [m], meta: { total: 1, page: 1, pageSize: 10, totalPages: 1 } });
 
+async function pick(name: RegExp | string) {
+  await userEvent.click(await screen.findByRole('button', { name: 'Actions for Sam Seller' }));
+  await userEvent.click(await screen.findByRole('menuitem', { name }));
+}
+
 function setup() {
   render(
-    <QueryClientProvider client={new QueryClient()}>
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
       <AdminMembersPage />
     </QueryClientProvider>,
   );
@@ -61,7 +66,7 @@ describe('AdminMembersPage verification', () => {
 
   it('revokes verification only after confirming', async () => {
     setup();
-    await userEvent.click(await screen.findByRole('button', { name: /Revoke verification/ }));
+    await pick(/Revoke verification/);
     expect(adminApi.updateMember).not.toHaveBeenCalled();
     const dialog = await screen.findByRole('dialog');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Revoke' }));
@@ -72,7 +77,7 @@ describe('AdminMembersPage verification', () => {
   it('restores verification for an unverified auctioneer with an ACTIVE payout account', async () => {
     vi.mocked(adminApi.fetchMembers).mockResolvedValue(page({ ...member, verified: false }));
     setup();
-    await userEvent.click(await screen.findByRole('button', { name: /Restore verification/ }));
+    await pick(/Restore verification/);
     await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Restore' }));
     await waitFor(() => expect(adminApi.updateMember).toHaveBeenCalledWith('m1', { verified: true }));
   });
@@ -86,7 +91,7 @@ describe('AdminMembersPage strikes', () => {
     ]);
     setup();
     expect(await screen.findByText('2 strikes')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: /Strikes \(2\)/ }));
+    await pick(/Strikes \(2\)/);
     expect(strikesApi.fetchMemberStrikes).toHaveBeenCalledWith('m1');
     expect(await screen.findByText('Brass Vase')).toBeInTheDocument();
   });
@@ -98,12 +103,65 @@ describe('AdminMembersPage strikes', () => {
     ]);
     vi.mocked(strikesApi.removeStrike).mockResolvedValue({});
     setup();
-    await userEvent.click(await screen.findByRole('button', { name: /Strikes \(1\)/ }));
+    await pick(/Strikes \(1\)/);
     await userEvent.click(await screen.findByRole('button', { name: 'Remove' }));
     expect(strikesApi.removeStrike).not.toHaveBeenCalled();
     const dialogs = await screen.findAllByRole('dialog');
     await userEvent.click(within(dialogs.at(-1)!).getByRole('button', { name: 'Remove strike' }));
     await waitFor(() => expect(strikesApi.removeStrike).toHaveBeenCalledWith('k1', undefined));
     await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Strike removed'));
+  });
+});
+
+describe('AdminMembersPage layout and filters', () => {
+  it('renders only the header, filters and list, with a header title and no description', async () => {
+    setup();
+    expect(await screen.findByRole('heading', { name: 'Members' })).toBeInTheDocument();
+    expect(screen.queryByText(/Search, activate and manage/)).not.toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Filters' })).toBeInTheDocument();
+  });
+
+  it('never offers Super admins in the role filter and never sends role=SUPER_ADMIN', async () => {
+    setup();
+    await screen.findByText('Sam Seller');
+    await userEvent.click(screen.getByRole('button', { name: /Filters/ }));
+    await userEvent.click(screen.getByRole('combobox', { name: 'Role' }));
+    expect(await screen.findByText('Bidders')).toBeInTheDocument();
+    expect(screen.getByText('Auctioneers')).toBeInTheDocument();
+    expect(screen.queryByText('Super admins')).not.toBeInTheDocument();
+    for (const call of vi.mocked(adminApi.fetchMembers).mock.calls) expect(call[0].role).not.toBe('SUPER_ADMIN');
+  });
+
+  it('change role dialog offers only Bidder and Auctioneer', async () => {
+    setup();
+    await pick('Role');
+    const dialog = await screen.findByRole('dialog');
+    await userEvent.click(within(dialog).getByRole('combobox', { name: 'New role' }));
+    expect(await screen.findByRole('option', { name: 'Bidder' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Auctioneer' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Super admin' })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('option')).toHaveLength(2);
+  });
+
+  it('lists the existing actions in the row menu, with Deactivate and Adjust credits', async () => {
+    setup();
+    await userEvent.click(await screen.findByRole('button', { name: 'Actions for Sam Seller' }));
+    for (const n of ['Deactivate', 'Role', 'Strikes', 'Adjust credits', 'Revoke verification'])
+      expect(await screen.findByRole('menuitem', { name: n })).toBeInTheDocument();
+  });
+
+  it('deactivates only after confirming', async () => {
+    setup();
+    await pick('Deactivate');
+    expect(adminApi.updateMember).not.toHaveBeenCalled();
+    await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Deactivate' }));
+    await waitFor(() => expect(adminApi.updateMember).toHaveBeenCalledWith('m1', { isActive: false }));
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Member deactivated'));
+  });
+
+  it('shows Try again when the list fails', async () => {
+    vi.mocked(adminApi.fetchMembers).mockRejectedValue(new Error('boom'));
+    setup();
+    expect(await screen.findByRole('button', { name: 'Try again' })).toBeInTheDocument();
   });
 });

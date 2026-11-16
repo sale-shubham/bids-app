@@ -2,6 +2,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { toast } from 'sonner';
+import * as pdf from '@/lib/pdf';
 import * as invoicesApi from '../invoices.api';
 import { InvoicesCard } from './invoices-card';
 
@@ -37,13 +39,44 @@ describe('InvoicesCard', () => {
     expect(screen.getByText('₹590')).toBeInTheDocument();
   });
 
-  it('Download fetches the PDF link and opens it in a new tab', async () => {
-    vi.mocked(invoicesApi.fetchInvoicePdfUrl).mockResolvedValue('https://files.example.com/inv.pdf');
-    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+  it('Download opens the tab first, shows the fetched PDF in it and names the file after the invoice', async () => {
+    const blob = new Blob(['%PDF'], { type: 'application/pdf' });
+    vi.mocked(invoicesApi.fetchInvoicePdf).mockResolvedValue(blob);
+    const tab = { document: { title: '', body: { textContent: '' } }, location: { href: '' }, close: vi.fn() } as unknown as Window;
+    const open = vi.spyOn(window, 'open').mockReturnValue(tab);
+    const show = vi.spyOn(pdf, 'showPdf').mockImplementation(() => undefined);
     setup();
     await userEvent.click(await screen.findByRole('button', { name: 'Download NB/2026/0002' }));
-    await waitFor(() => expect(open).toHaveBeenCalledWith('https://files.example.com/inv.pdf', '_blank', 'noopener,noreferrer'));
-    expect(invoicesApi.fetchInvoicePdfUrl).toHaveBeenCalledWith('i2');
+    expect(open).toHaveBeenCalledWith('', '_blank');
+    await waitFor(() => expect(show).toHaveBeenCalledWith(blob, tab, 'NB-2026-0002.pdf'));
+    expect(invoicesApi.fetchInvoicePdf).toHaveBeenCalledWith('i2');
+    open.mockRestore();
+    show.mockRestore();
+  });
+
+  it('shows Preparing... while loading', async () => {
+    let resolve!: (b: Blob) => void;
+    vi.mocked(invoicesApi.fetchInvoicePdf).mockReturnValue(new Promise<Blob>((r) => (resolve = r)));
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+    const show = vi.spyOn(pdf, 'showPdf').mockImplementation(() => undefined);
+    setup();
+    await userEvent.click(await screen.findByRole('button', { name: 'Download NB/2026/0001' }));
+    expect(await screen.findByText('Preparing…')).toBeInTheDocument();
+    resolve(new Blob(['%PDF']));
+    await waitFor(() => expect(screen.queryByText('Preparing…')).not.toBeInTheDocument());
+    open.mockRestore();
+    show.mockRestore();
+  });
+
+  it('on failure closes the pre-opened tab and toasts the mapped message', async () => {
+    const err = Object.assign(new Error('nf'), { isAxiosError: true, response: { status: 404, data: { success: false, error: { code: 'INVOICE_NOT_FOUND', message: 'nope' } } } });
+    vi.mocked(invoicesApi.fetchInvoicePdf).mockRejectedValue(err);
+    const tab = { document: { title: '', body: { textContent: '' } }, close: vi.fn() } as unknown as Window;
+    const open = vi.spyOn(window, 'open').mockReturnValue(tab);
+    setup();
+    await userEvent.click(await screen.findByRole('button', { name: 'Download NB/2026/0001' }));
+    await waitFor(() => expect(tab.close).toHaveBeenCalled());
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('This invoice could not be found.'));
     open.mockRestore();
   });
 });

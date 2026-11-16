@@ -2,14 +2,16 @@
 import * as React from 'react';
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { Gavel } from 'lucide-react';
+import { Gavel, Wallet, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
+import { ListToolbar } from '@/components/common/list-toolbar';
+import { PageHeader } from '@/components/common/page-header';
+import { RowActionsMenu, type RowAction } from '@/components/common/row-actions-menu';
 import { SearchInput } from '@/components/common/search-input';
-import { AdminList, PageHeader, StatusTabs } from '@/features/admin/components/admin-list';
+import { AdminList, StatusTabs } from '@/features/admin/components/admin-list';
 import { useAdminAuctions, useCancelAdminAuction } from '@/features/admin/use-admin';
 import { useUrlState } from '@/features/admin/use-url-state';
 import type { AdminAuction } from '@/features/admin/admin.types';
@@ -53,32 +55,21 @@ function AuctionsView() {
     });
   };
 
-  const depositBtn = (a: AdminAuction) =>
-    a.status === 'LIVE' || a.status === 'SCHEDULED' ? (
-      <Button size="sm" variant="outline" onClick={() => setDepositTarget(a)}>
-        Set deposit
-      </Button>
-    ) : null;
-
-  const actionButtons = (a: AdminAuction) => (
-    <div className="flex flex-wrap items-center gap-2">
-      {depositBtn(a)}
-      {canCancel(a) && (
-        <Button size="sm" variant="outline" className="text-destructive" onClick={() => setTarget(a)}>
-          Cancel
-        </Button>
-      )}
-    </div>
-  );
+  const actions = (a: AdminAuction) => {
+    const list: RowAction[] = [];
+    if (a.status === 'LIVE' || a.status === 'SCHEDULED') list.push({ label: 'Set deposit', icon: Wallet, onSelect: () => setDepositTarget(a) });
+    if (canCancel(a)) list.push({ label: 'Cancel', icon: XCircle, onSelect: () => setTarget(a), destructive: true, separated: true });
+    return <RowActionsMenu name={a.title} actions={list} />;
+  };
 
   return (
-    <div className="space-y-6">
-      <PageHeader title="Auctions" description="Review every auction and cancel those that break the rules." />
+    <div className="space-y-4">
+      <PageHeader title="Auctions" />
 
-      <div className="flex flex-col gap-3 @lg/content:flex-row @lg/content:items-center @lg/content:justify-between">
-        <StatusTabs value={status} tabs={TABS} onChange={(v) => update({ status: v })} />
-        <SearchInput className="w-full @lg/content:w-72" value={values.q} onChange={(q) => update({ q })} placeholder="Search title" />
-      </div>
+      <ListToolbar
+        tabs={<StatusTabs value={status} tabs={TABS} onChange={(v) => update({ status: v })} />}
+        search={<SearchInput value={values.q} onChange={(q) => update({ q })} placeholder="Search title" />}
+      />
 
       <AdminList<AdminAuction>
         list={list}
@@ -99,7 +90,7 @@ function AuctionsView() {
                 <TableHead className="text-right">Deposit</TableHead>
                 <TableHead className="text-right">Bids</TableHead>
                 <TableHead>Ends / ended</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className="w-12"><span className="sr-only">Actions</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -123,7 +114,7 @@ function AuctionsView() {
                   <TableCell className="text-right tnum">{a.depositPaise ? formatINR(a.depositPaise) : '-'}</TableCell>
                   <TableCell className="text-right tnum">{a.bidCount}</TableCell>
                   <TableCell className="whitespace-nowrap">{formatDate(a.endTime)}</TableCell>
-                  <TableCell>{actionButtons(a)}</TableCell>
+                  <TableCell className="text-right">{actions(a)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -131,13 +122,16 @@ function AuctionsView() {
         )}
         renderCard={(a) => (
           <Card>
-            <CardContent className="space-y-3 p-4">
-              <Link href={`/auctions/${a.id}`} className="flex items-center gap-3 hover:underline">
-                <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-md bg-muted">
-                  <CoverImage src={a.coverImage} alt={a.title} sizes="56px" />
-                </div>
-                <span className="min-w-0 font-medium wrap-break-word">{a.title}</span>
-              </Link>
+            <CardContent className="space-y-2 p-4">
+              <div className="flex items-center gap-3">
+                <Link href={`/auctions/${a.id}`} className="flex min-w-0 grow items-center gap-3 hover:underline">
+                  <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-md bg-muted">
+                    <CoverImage src={a.coverImage} alt={a.title} sizes="56px" />
+                  </div>
+                  <span className="min-w-0 font-medium wrap-break-word">{a.title}</span>
+                </Link>
+                {actions(a)}
+              </div>
               <div className="flex flex-wrap items-center gap-2 text-sm">
                 <AuctionStatusBadge status={a.status} />
                 <span className="text-muted-foreground">{whenLabel(a)}</span>
@@ -147,7 +141,6 @@ function AuctionsView() {
                 {price(a)} · {a.bidCount} {a.bidCount === 1 ? 'bid' : 'bids'}
               </p>
               {typeof a.depositPaise === 'number' && a.depositPaise > 0 && <p className="text-sm text-muted-foreground">Deposit {formatINR(a.depositPaise)}</p>}
-              {actionButtons(a)}
             </CardContent>
           </Card>
         )}

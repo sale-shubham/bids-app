@@ -130,7 +130,6 @@ onClick={() => setToDelete(auction)}
 | `src/app/(admin)/admin/auctions/page.tsx` | Cancel auction (admin, destructive) |
 | `src/app/(admin)/admin/members/page.tsx` | Activate / deactivate member (destructive when deactivating); change role (destructive when granting `SUPER_ADMIN`, with the role `Select` as `children`) |
 | `src/features/sales/components/purchase-actions.tsx` | Confirm received; Report a problem (destructive, reason `Textarea` as `children`); Razorpay stub "Test mode" via `useStubPaymentConfirm` |
-| `src/features/sales/components/admin-sale-actions.tsx` | Release payment; Refund buyer (destructive, optional note as `children`) |
 | `src/features/second-chance/components/seller-offer-card.tsx` | Offer to the runner-up (seller) |
 | `src/features/second-chance/components/offer-detail-page.tsx` | Accept ("You agree to buy this for ₹X. Pay within 3 days.") / Decline (destructive) a second-chance offer |
 | `src/features/strikes/components/member-strikes-dialog.tsx` | Remove a strike (admin, destructive, optional note as `children`) |

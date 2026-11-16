@@ -20,7 +20,7 @@ src/
     sitemap.ts, robots.ts            SEO (app public pages + /auctions/sitemap, fail-soft); public/og-image.png = default OG image
   components/
     ui/                              shadcn/Radix primitives
-    common/                          generic app components (confirm-dialog, auth-guard, countdown, responsive-list, infinite-scroll,
+    common/                          generic app components (page-header, list-toolbar, row-actions-menu, confirm-dialog, auth-guard, countdown, responsive-list, infinite-scroll,
                                      form-input, otp-*, pwa-*, push-permission-prompt, offline-banner, theme-toggle, profile-page (shared by /profile and /admin/profile), ...)
     layout/                          dashboard-shell (guest prop), public-shell (DashboardShell for the public pages, guest or member mode),
                                      shell-footer (website + legal links), mobile-bottom-nav, more-page, nav-items (member / admin / guest nav,
@@ -37,7 +37,7 @@ src/
     live/                            live-socket (WS client), live-socket-provider, use-auction-live, live.reducers/types/api, components/live-indicator
     commissions/                     commissions.api/parse/types/errors, use-commissions, use-pay-commission, components/unpaid-commission-banner
     payments/                        payments.api (POST /payments/verify), payments.types, use-razorpay-payment (generic), use-stub-payment-confirm; checkout loader in lib/razorpay.ts
-    sales/                           sales.api/parse/types/schema/utils/errors, use-sales, components/{sale-status-badge,sale-list,sale-detail,sale-detail-page,purchase-actions,ship-form,buyer-sale-entry,admin-sale-actions}
+    sales/                           sales.api/parse/types/schema/utils/errors, use-sales, components/{sale-status-badge,sale-list,sale-detail,sale-detail-page,purchase-actions,ship-form,buyer-sale-entry}
     payouts/                         payouts.api/parse/types/schema/errors, use-payouts, components/{payout-account-panel,payout-status-card,payout-form,payout-required-gate}
     notifications/                   api, use-notifications, components/{notification-bell,notification-item}
     push/                            push.api, use-push (Web Push subscribe / unsubscribe)
@@ -66,7 +66,7 @@ src/
     admin/                           admin.api/parse/schema/types, use-admin, use-url-state,
                                      components/{admin-list,admin-charts,marketplace-settings,legal-settings,copy-button}
   hooks/                             use-client-state, use-login-href (login/signup URL with ?next=), use-is-mobile, use-is-narrow-content, use-resend-cooldown
-  lib/                               api-client, server-api, query-client, paged + pagination, site (SITE_URL), pwa, push, razorpay,
+  lib/                               api-client, server-api, query-client, paged + pagination, site (SITE_URL), pwa, push, razorpay, pdf (fetchPdfBlob, openPdfTab, showPdf),
                                      engagement, assets, device-info, utils (cn, formatINR, dates), zod
   providers/                         Providers (Query + theme + tooltip + toaster), AuthBootstrap
   store/                             zustand: auth-store, live-store (socket status), recently-viewed-store (persisted)

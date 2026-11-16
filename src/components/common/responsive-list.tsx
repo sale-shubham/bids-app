@@ -64,31 +64,35 @@ export function ResponsiveList<T>({ desktop, mobile, empty, getKey }: Responsive
   return (
     <>
       {/* Desktop: offset-paginated table */}
-      <Card className="hidden @3xl/content:block">
-        {desktop.isLoading ? (
-          <div className="space-y-2 p-6">
-            {Array.from({ length: desktop.skeletonRows ?? 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-12" />
-            ))}
-          </div>
-        ) : !desktop.items.length ? (
-          <div className="p-6">{emptyState}</div>
+      <div className="hidden @3xl/content:block">
+        {!desktop.isLoading && !desktop.items.length ? (
+          emptyState
         ) : (
-          desktop.renderTable(desktop.items)
+          <Card>
+            {desktop.isLoading ? (
+              <div className="space-y-2 p-6">
+                {Array.from({ length: desktop.skeletonRows ?? 5 }).map((_, i) => (
+                  <Skeleton key={i} className="h-12" />
+                ))}
+              </div>
+            ) : (
+              desktop.renderTable(desktop.items)
+            )}
+            {!desktop.isLoading && desktop.meta && (
+              <div className="border-t p-4">
+                <ListPagination
+                  total={desktop.meta.total}
+                  currentPage={desktop.meta.page}
+                  pageSize={desktop.meta.pageSize}
+                  onPageChange={desktop.onPageChange}
+                  onPageSizeChange={desktop.onPageSizeChange}
+                  hideOnSinglePage
+                />
+              </div>
+            )}
+          </Card>
         )}
-        {!desktop.isLoading && !!desktop.items.length && desktop.meta && (
-          <div className="border-t p-4">
-            <ListPagination
-              total={desktop.meta.total}
-              currentPage={desktop.meta.page}
-              pageSize={desktop.meta.pageSize}
-              onPageChange={desktop.onPageChange}
-              onPageSizeChange={desktop.onPageSizeChange}
-              hideOnSinglePage
-            />
-          </div>
-        )}
-      </Card>
+      </div>
 
       {/* Mobile: infinite-scroll cards */}
       <div className="@3xl/content:hidden">

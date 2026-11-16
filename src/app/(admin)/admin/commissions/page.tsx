@@ -2,17 +2,19 @@
 import * as React from 'react';
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { Receipt } from 'lucide-react';
+import { HandCoins, Receipt } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
+import { ListToolbar } from '@/components/common/list-toolbar';
+import { PageHeader } from '@/components/common/page-header';
+import { RowActionsMenu } from '@/components/common/row-actions-menu';
 import { StatusBadge } from '@/components/common/status-badge';
-import { AdminList, PageHeader, StatusTabs } from '@/features/admin/components/admin-list';
+import { AdminList, StatusTabs } from '@/features/admin/components/admin-list';
 import { useAdminCommissions, useWaiveCommission } from '@/features/admin/use-admin';
 import { useUrlState } from '@/features/admin/use-url-state';
 import type { AdminCommission } from '@/features/admin/admin.types';
@@ -75,17 +77,15 @@ function CommissionsView() {
     });
   };
 
-  const waiveBtn = (c: AdminCommission) =>
+  const actions = (c: AdminCommission) =>
     c.status === 'DUE' ? (
-      <Button size="sm" variant="outline" onClick={() => setTarget(c)}>
-        Waive
-      </Button>
+      <RowActionsMenu name={c.auction.title} actions={[{ label: 'Waive', icon: HandCoins, destructive: true, onSelect: () => setTarget(c) }]} />
     ) : null;
 
   return (
-    <div className="space-y-6">
-      <PageHeader title="Commissions" description="Commission owed by auctioneers on sold auctions." />
-      <StatusTabs value={status} tabs={TABS} onChange={(v) => update({ status: v })} />
+    <div className="space-y-4">
+      <PageHeader title="Commissions" />
+      <ListToolbar tabs={<StatusTabs value={status} tabs={TABS} onChange={(v) => update({ status: v })} />} />
 
       <AdminList<AdminCommission>
         list={list}
@@ -105,7 +105,7 @@ function CommissionsView() {
                 <TableHead>Due date</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Paid on</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className="w-12"><span className="sr-only">Actions</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -130,7 +130,7 @@ function CommissionsView() {
                     <WaivedNote c={c} />
                   </TableCell>
                   <TableCell className="whitespace-nowrap">{c.paidAt ? formatDate(c.paidAt) : '-'}</TableCell>
-                  <TableCell>{waiveBtn(c)}</TableCell>
+                  <TableCell className="text-right">{actions(c)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -138,12 +138,15 @@ function CommissionsView() {
         )}
         renderCard={(c) => (
           <Card>
-            <CardContent className="space-y-3 p-4">
+            <CardContent className="space-y-2 p-4">
               <div className="flex items-start justify-between gap-2">
                 <Link href={`/auctions/${c.auction.id}`} className="min-w-0 font-medium wrap-break-word hover:underline">
                   {c.auction.title}
                 </Link>
-                <StatusBadge status={c.status} />
+                <div className="flex shrink-0 items-center gap-1">
+                  <StatusBadge status={c.status} />
+                  {actions(c)}
+                </div>
               </div>
               <WaivedNote c={c} />
               <p className="truncate text-sm text-muted-foreground">
@@ -159,7 +162,6 @@ function CommissionsView() {
                   <dd>{c.paidAt ? formatDate(c.paidAt) : <DueCell c={c} />}</dd>
                 </div>
               </dl>
-              {waiveBtn(c)}
             </CardContent>
           </Card>
         )}
