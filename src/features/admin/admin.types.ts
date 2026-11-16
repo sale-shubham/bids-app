@@ -56,7 +56,11 @@ export type AdminAuctionTab = 'live' | 'upcoming' | 'ended' | 'cancelled' | 'all
 export type AdminAuction = AuctionCard & { sellerEmail: string; /** Bid deposit in paise; null/absent = none. */ depositPaise?: number | null };
 
 export type AdminCommissionTab = 'due' | 'paid' | 'waived' | 'all';
-export type AdminCommission = CommissionDTO & { seller: { id: string; name: string; email: string } };
+export type AdminCommission = CommissionDTO & {
+  /** Admin reason saved when the commission was waived; null otherwise. */
+  waivedNote: string | null;
+  seller: { id: string; name: string; email: string };
+};
 
 export type PaymentStatus = 'created' | 'paid' | 'failed';
 export type AdminPaymentTab = PaymentStatus | 'all';

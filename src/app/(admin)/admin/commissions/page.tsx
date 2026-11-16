@@ -27,6 +27,9 @@ const TABS = [
 ];
 const DEFAULTS = { status: 'due' };
 
+const WAIVE_NOTE_MIN = 3;
+const WAIVE_NOTE_MAX = 200;
+
 const rate = (bps: number) => `${(bps / 100).toFixed(2)}%`;
 
 function DueCell({ c }: { c: AdminCommission }) {
@@ -39,14 +42,20 @@ function DueCell({ c }: { c: AdminCommission }) {
   );
 }
 
+function WaivedNote({ c }: { c: AdminCommission }) {
+  if (c.status !== 'WAIVED' || !c.waivedNote) return null;
+  return <p className="mt-1 max-w-56 text-xs text-muted-foreground wrap-break-word">Waived: {c.waivedNote}</p>;
+}
+
 function CommissionsView() {
   const { values, page, pageSize, update } = useUrlState(DEFAULTS);
   const status = TABS.some((t) => t.value === values.status) ? values.status : 'due';
   const list = useAdminCommissions({ status }, page, pageSize);
   const waive = useWaiveCommission();
   const [target, setTarget] = React.useState<AdminCommission | null>(null);
-  // Client-side note only: the API does not store a waive reason yet.
   const [reason, setReason] = React.useState('');
+
+  const reasonTooShort = reason.trim().length > 0 && reason.trim().length < WAIVE_NOTE_MIN;
 
   const close = () => {
     setTarget(null);
@@ -55,7 +64,9 @@ function CommissionsView() {
 
   const confirm = () => {
     if (!target) return;
-    waive.mutate(target.id, {
+    const note = reason.trim();
+    if (note && note.length < WAIVE_NOTE_MIN) return;
+    waive.mutate(note ? { id: target.id, note } : { id: target.id }, {
       onSuccess: () => {
         toast.success('Commission waived');
         close();
@@ -116,6 +127,7 @@ function CommissionsView() {
                   </TableCell>
                   <TableCell>
                     <StatusBadge status={c.status} />
+                    <WaivedNote c={c} />
                   </TableCell>
                   <TableCell className="whitespace-nowrap">{c.paidAt ? formatDate(c.paidAt) : '-'}</TableCell>
                   <TableCell>{waiveBtn(c)}</TableCell>
@@ -133,6 +145,7 @@ function CommissionsView() {
                 </Link>
                 <StatusBadge status={c.status} />
               </div>
+              <WaivedNote c={c} />
               <p className="truncate text-sm text-muted-foreground">
                 {c.seller.name} · {c.seller.email}
               </p>
@@ -163,9 +176,20 @@ function CommissionsView() {
         onConfirm={confirm}
       >
         <div className="space-y-2">
-          <Label htmlFor="waive-reason">Reason (for your own notes)</Label>
-          <Input id="waive-reason" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={200} placeholder="e.g. goodwill after a dispute" />
-          <p className="text-xs text-muted-foreground">Not sent to the server; the waiver itself is recorded.</p>
+          <Label htmlFor="waive-reason">Reason (saved with the commission)</Label>
+          <Input
+            id="waive-reason"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            maxLength={WAIVE_NOTE_MAX}
+            placeholder="e.g. goodwill after a dispute"
+            aria-invalid={reasonTooShort}
+          />
+          {reasonTooShort ? (
+            <p className="text-xs text-destructive">Use at least {WAIVE_NOTE_MIN} characters, or leave it empty.</p>
+          ) : (
+            <p className="text-xs text-muted-foreground">Optional. Saved for admins only; the seller does not see it.</p>
+          )}
         </div>
       </ConfirmDialog>
     </div>

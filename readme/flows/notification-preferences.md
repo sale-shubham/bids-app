@@ -4,7 +4,7 @@ Profile > Notifications (`?tab=notifications`), every signed-in role. Channels a
 
 ## API
 - `GET /members/me/notification-preferences` -> `{ items: [{ type, label, group, email, push, emailLocked }] }`.
-- `PUT` same path, body `{ items: [{ type, email, push }] }` (all rows, one call) -> the same shape. The PUT silently forces email=true for mandatory types; the response replaces the cache.
+- `PUT` same path, body `{ items: [{ type, email, push }] }` (all rows, one call) -> the same shape. The app keeps no type map of its own: labels and groups come from the API catalogue, so the new `auction-cancelled` type (group Bidding, email can be switched off) appears automatically. The PUT silently forces email=true for mandatory types; the response replaces the cache.
 
 ## Code (`src/features/notification-preferences/`)
 - `notification-preferences.api.ts`, `.errors.ts` (`preferenceErrorMessage`, falls through to `apiErrorMessage`), `use-notification-preferences.ts` (key `['notification-preferences']`).

@@ -3,12 +3,15 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as api from '@/features/reports/reports.api';
+import * as questionsApi from '@/features/questions/questions.api';
+import { resolveReportSchema } from '@/features/reports/reports.schema';
 import type { AdminReport } from '@/features/reports/reports.types';
 import AdminReportsPage from './page';
 
 const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock('sonner', () => ({ toast }));
 vi.mock('@/features/reports/reports.api');
+vi.mock('@/features/questions/questions.api');
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace: vi.fn() }),
   usePathname: () => '/admin/reports',
@@ -65,6 +68,36 @@ describe('AdminReportsPage', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: 'Dismiss' }));
     await waitFor(() => expect(api.resolveReport).toHaveBeenCalledWith({ id: 'r1', status: 'DISMISSED' }, expect.anything()));
     await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Report dismissed'));
+  });
+
+  it('note field and schema cap at 500 characters (the API limit)', async () => {
+    expect(resolveReportSchema.safeParse({ note: 'x'.repeat(500), applyToAll: false }).success).toBe(true);
+    expect(resolveReportSchema.safeParse({ note: 'x'.repeat(501), applyToAll: false }).success).toBe(false);
+    setup();
+    await userEvent.click(await screen.findByRole('button', { name: 'Mark action taken' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByLabelText(/Note/)).toHaveAttribute('maxlength', '500');
+    expect(within(dialog).getByText('0/500')).toBeInTheDocument();
+  });
+
+  it('QUESTION reports get a Hide question shortcut behind a confirm, then refresh the list', async () => {
+    const qReport: AdminReport = { ...report, id: 'r2', targetType: 'QUESTION', targetId: 'q9', target: { label: 'Is it real?', url: '/auctions/a1' } };
+    vi.mocked(api.fetchAdminReports).mockResolvedValue({ items: [qReport], meta: { total: 1, page: 1, pageSize: 10, totalPages: 1 } });
+    vi.mocked(questionsApi.hideQuestion).mockResolvedValue(undefined);
+    setup();
+    await userEvent.click(await screen.findByRole('button', { name: 'Hide question' }));
+    expect(questionsApi.hideQuestion).not.toHaveBeenCalled();
+    const dialog = await screen.findByRole('dialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Hide question' }));
+    await waitFor(() => expect(questionsApi.hideQuestion).toHaveBeenCalledWith('q9'));
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Question hidden'));
+    await waitFor(() => expect(vi.mocked(api.fetchAdminReports).mock.calls.length).toBeGreaterThan(1));
+  });
+
+  it('AUCTION reports have no Hide question button', async () => {
+    setup();
+    await screen.findByRole('link', { name: /Brass Vase/ });
+    expect(screen.queryByRole('button', { name: 'Hide question' })).not.toBeInTheDocument();
   });
 
   it('mark action taken sends the note and apply-to-all', async () => {

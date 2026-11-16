@@ -76,6 +76,36 @@ describe('QuestionsSection visibility', () => {
   });
 });
 
+describe('SUPER_ADMIN viewer', () => {
+  it('sees Hide (also on pending questions) but cannot ask or answer', async () => {
+    signIn('adm', 'SUPER_ADMIN');
+    vi.mocked(api.fetchQuestions).mockResolvedValue([q()]);
+    renderSection();
+    expect(await screen.findByRole('button', { name: 'Hide' })).toBeInTheDocument();
+    expect(screen.queryByLabelText('Your question')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Your answer')).not.toBeInTheDocument();
+  });
+
+  it('hiding as admin confirms, then calls the hide endpoint', async () => {
+    signIn('adm', 'SUPER_ADMIN');
+    vi.mocked(api.fetchQuestions).mockResolvedValue([q()]);
+    vi.mocked(api.hideQuestion).mockResolvedValue(undefined);
+    renderSection();
+    await userEvent.click(await screen.findByRole('button', { name: 'Hide' }));
+    const dialog = await screen.findByRole('dialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Hide' }));
+    await waitFor(() => expect(api.hideQuestion).toHaveBeenCalledWith('q1'));
+  });
+
+  it('a bidder never sees Hide on someone else\'s question', async () => {
+    signIn('u2', 'BIDDER');
+    vi.mocked(api.fetchQuestions).mockResolvedValue([q({ answer: 'Yes', answeredAt: new Date().toISOString() })]);
+    renderSection();
+    await screen.findByText('Yes');
+    expect(screen.queryByRole('button', { name: 'Hide' })).not.toBeInTheDocument();
+  });
+});
+
 describe('ask / answer / hide flows', () => {
   it('asking posts the question and clears the box', async () => {
     signIn('u1');

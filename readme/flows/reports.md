@@ -10,8 +10,8 @@ Code: `src/features/reports/` (`reports.{api,types,constants,schema,errors}.ts`,
 
 ## Admin `/admin/reports`
 - Tabs Open / Resolved (Resolved has an outcome select: Action taken / Dismissed, because the API filters one status at a time) and a target-type filter; state lives in the URL via `useUrlState`. The API returns newest first; HIGH priority rows are floated to the top of each page client-side.
-- Each row: priority badge, target link (`target.url`), reporter, reason, details, `openCountForTarget`, and a quick link to the existing moderation screen (auction -> `/admin/auctions?q=`, member -> `/admin/members?q=`, review -> `/admin/reviews`; questions are hidden by the seller on the auction page).
-- **Dismiss** (ConfirmDialog) and **Mark action taken** (ConfirmDialog with optional note and "Apply to all open reports for this target") call `PATCH /admin/reports/:id { status, note?, applyToAllOpenForTarget? }`; the toast shows `resolvedCount` when more than one was resolved.
+- Each row: priority badge, target link (`target.url`), reporter, reason, details, `openCountForTarget`, and a quick link to the existing moderation screen (auction -> `/admin/auctions?q=`, member -> `/admin/members?q=`, review -> `/admin/reviews`; for QUESTION targets a **Hide question** button (ConfirmDialog, `POST /questions/:id/hide`, then refreshes `['admin','reports']`; it does not resolve the report).
+- **Dismiss** (ConfirmDialog) and **Mark action taken** (ConfirmDialog with optional note, max 500 chars (`REPORT_NOTE_MAX`, matches the API; textarea `maxLength` plus a `n/500` counter and the zod `resolveReportSchema`), and "Apply to all open reports for this target") call `PATCH /admin/reports/:id { status, note?, applyToAllOpenForTarget? }`; the toast shows `resolvedCount` when more than one was resolved.
 
 ## Notes
 - `report-filed` notifications use the generic notification rendering.

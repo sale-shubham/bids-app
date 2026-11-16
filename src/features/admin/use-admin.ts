@@ -116,7 +116,7 @@ export function useCancelAdminAuction() {
 export function useWaiveCommission() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => api.waiveCommission(id),
+    mutationFn: ({ id, note }: { id: string; note?: string }) => api.waiveCommission(id, note),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: adminKeys.all });
       void qc.invalidateQueries({ queryKey: ['commissions'] });

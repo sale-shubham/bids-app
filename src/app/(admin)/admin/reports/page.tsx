@@ -3,6 +3,7 @@ import * as React from 'react';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { ExternalLink, Flag } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,7 +16,10 @@ import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { AdminList, PageHeader, StatusTabs } from '@/features/admin/components/admin-list';
 import { useUrlState } from '@/features/admin/use-url-state';
 import { REPORT_REASON_LABEL, REPORT_TARGET_LABEL } from '@/features/reports/reports.constants';
+import { REPORT_NOTE_MAX } from '@/features/reports/reports.constants';
 import { reportErrorMessage } from '@/features/reports/reports.errors';
+import { questionErrorMessage } from '@/features/questions/questions.errors';
+import { hideQuestion } from '@/features/questions/questions.api';
 import { REPORT_TARGET_TYPES, type AdminReport, type ReportStatus } from '@/features/reports/reports.types';
 import { useAdminReports, useResolveReport } from '@/features/reports/use-reports';
 import { formatDate } from '@/lib/utils';
@@ -27,7 +31,7 @@ const TABS = [
 const DEFAULTS = { tab: 'open', targetType: '', outcome: 'ACTION_TAKEN' };
 
 // Existing moderation screens per target type (cancel auction, suspend member, hide review).
-// Questions have no admin screen: the seller hides them from the auction page.
+// Questions are hidden in place (the "Hide question" button in `actions`).
 function moderationLink(r: AdminReport): { href: string; label: string } | null {
   const q = encodeURIComponent(r.target.label);
   if (r.targetType === 'AUCTION') return { href: `/admin/auctions?q=${q}`, label: 'Cancel auction' };
@@ -59,7 +63,16 @@ function ReportsView() {
   const targetType = (REPORT_TARGET_TYPES as readonly string[]).includes(values.targetType) ? values.targetType : '';
   const list = useAdminReports({ tab, targetType, outcome }, page, pageSize);
   const resolve = useResolveReport();
+  const qc = useQueryClient();
+  const hide = useMutation({
+    mutationFn: (questionId: string) => hideQuestion(questionId),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['admin', 'reports'] });
+      void qc.invalidateQueries({ queryKey: ['questions'] });
+    },
+  });
 
+  const [hideTarget, setHideTarget] = React.useState<AdminReport | null>(null);
   const [dismissTarget, setDismissTarget] = React.useState<AdminReport | null>(null);
   const [actionTarget, setActionTarget] = React.useState<AdminReport | null>(null);
   const [note, setNote] = React.useState('');
@@ -86,6 +99,20 @@ function ReportsView() {
       },
     );
 
+  const confirmHideQuestion = () => {
+    if (!hideTarget) return;
+    hide.mutate(hideTarget.targetId, {
+      onSuccess: () => {
+        toast.success('Question hidden');
+        setHideTarget(null);
+      },
+      onError: (e) => {
+        toast.error(questionErrorMessage(e, 'Could not hide the question'));
+        setHideTarget(null);
+      },
+    });
+  };
+
   const confirmDismiss = () => dismissTarget && run(dismissTarget, 'DISMISSED', {}, () => setDismissTarget(null));
   const confirmAction = () =>
     actionTarget &&
@@ -98,6 +125,11 @@ function ReportsView() {
         {mod && (
           <Button asChild size="sm" variant="outline">
             <Link href={mod.href}>{mod.label}</Link>
+          </Button>
+        )}
+        {r.targetType === 'QUESTION' && (
+          <Button size="sm" variant="outline" onClick={() => setHideTarget(r)}>
+            Hide question
           </Button>
         )}
         {r.status === 'OPEN' ? (
@@ -225,6 +257,17 @@ function ReportsView() {
       />
 
       <ConfirmDialog
+        open={!!hideTarget}
+        onOpenChange={(o) => !o && setHideTarget(null)}
+        title="Hide this question?"
+        description="It will no longer be shown to anyone on the auction. This does not resolve the report."
+        confirmLabel="Hide question"
+        variant="destructive"
+        loading={hide.isPending}
+        onConfirm={confirmHideQuestion}
+      />
+
+      <ConfirmDialog
         open={!!dismissTarget}
         onOpenChange={(o) => !o && setDismissTarget(null)}
         title="Dismiss this report?"
@@ -246,7 +289,10 @@ function ReportsView() {
         <div className="space-y-3">
           <div className="space-y-1.5">
             <Label htmlFor="report-note">Note (optional)</Label>
-            <Textarea id="report-note" rows={3} maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)} />
+            <Textarea id="report-note" rows={3} maxLength={REPORT_NOTE_MAX} value={note} onChange={(e) => setNote(e.target.value)} />
+            <p className="text-right text-xs text-muted-foreground">
+              {note.length}/{REPORT_NOTE_MAX}
+            </p>
           </div>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" className="accent-primary" checked={applyToAll} onChange={(e) => setApplyToAll(e.target.checked)} />

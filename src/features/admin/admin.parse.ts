@@ -98,7 +98,8 @@ export function parseCommissionAdminPage(body: unknown): Paged<AdminCommission> 
     meta: base.meta,
     items: base.items.map((c, i) => {
       const s = obj(obj(raw[i]).seller);
-      return { ...c, seller: { id: str(s.id), name: str(s.name), email: str(s.email) } };
+      const note = obj(raw[i]).waivedNote;
+      return { ...c, waivedNote: typeof note === 'string' && note ? note : null, seller: { id: str(s.id), name: str(s.name), email: str(s.email) } };
     }),
   };
 }
