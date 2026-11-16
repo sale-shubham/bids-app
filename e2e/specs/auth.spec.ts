@@ -11,7 +11,7 @@ const runId = () => loadState().runId;
 
 async function fillSignup(page: Page, email: string) {
   await page.goto('/signup');
-  await page.getByLabel('Full name').fill('E2E New Bidder');
+  await page.getByLabel('Full name').fill('E2E New Member');
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
   await page.getByLabel('Confirm password').fill(PASSWORD);
@@ -35,8 +35,8 @@ test('signup shows validation errors for an empty / weak form', async ({ page })
   await expect(page.getByText('Passwords do not match')).toBeVisible();
 });
 
-test('signup as a bidder with the stub OTP lands signed in on the auctions home', async ({ page }) => {
-  const email = testEmail(runId(), 'signup-bidder');
+test('signup (no role choice) with the stub OTP lands signed in on the auctions home as a MEMBER', async ({ page }) => {
+  const email = testEmail(runId(), 'signup-member');
   await fillSignup(page, email);
   await page.getByRole('checkbox').check();
   await page.getByRole('button', { name: 'Create account' }).click();
@@ -47,18 +47,15 @@ test('signup as a bidder with the stub OTP lands signed in on the auctions home'
 
   await expect(page).toHaveURL(/\/auctions$/);
   const row = await memberByEmail(email);
-  expect(row).toMatchObject({ role: 'BIDDER', isActive: true });
+  expect(row).toMatchObject({ role: 'MEMBER', isActive: true });
   expect(row.emailVerifiedAt).not.toBeNull();
 });
 
-test('signup as an auctioneer lands in the seller area', async ({ page }) => {
-  const email = testEmail(runId(), 'signup-seller');
-  await fillSignup(page, email);
-  await page.getByText('I want to sell').click();
-  await page.getByRole('checkbox').check();
-  await page.getByRole('button', { name: 'Create account' }).click();
-  await fillOtp(page, STUB_OTP);
-  await expect(page).toHaveURL(/\/sell\/auctions$/);
+test('signup has no "I want to bid / sell" choice', async ({ page }) => {
+  await page.goto('/signup');
+  await expect(page.getByText('I want to bid')).toHaveCount(0);
+  await expect(page.getByText('I want to sell')).toHaveCount(0);
+  await expect(page.getByRole('radio')).toHaveCount(0);
 });
 
 test('signup with an existing email shows a friendly error', async ({ page }) => {
@@ -91,7 +88,7 @@ test('login honours a safe ?next= and rejects the wrong password', async ({ page
 
 test('forgot + reset password: code, new password, then log in with it', async ({ page }) => {
   const email = testEmail(runId(), 'reset');
-  await createMember({ email, name: 'E2E Reset', role: 'BIDDER' });
+  await createMember({ email, name: 'E2E Reset', role: 'MEMBER' });
   const newPassword = 'BrandNew456';
 
   await page.goto('/forgot-password');
@@ -114,7 +111,7 @@ test('forgot + reset password: code, new password, then log in with it', async (
 
 test('reset with a wrong code keeps the user on the form with an error', async ({ page }) => {
   const email = testEmail(runId(), 'badcode');
-  await createMember({ email, name: 'E2E Bad Code', role: 'BIDDER' });
+  await createMember({ email, name: 'E2E Bad Code', role: 'MEMBER' });
   await page.goto('/forgot-password');
   await page.getByLabel('Email').fill(email);
   await page.getByRole('button', { name: 'Send code' }).click();
@@ -128,7 +125,7 @@ test('reset with a wrong code keeps the user on the form with an error', async (
 
 test('unverified login goes to the verify-email step and the stub code finishes it', async ({ page }) => {
   const email = testEmail(runId(), 'unverified');
-  await createMember({ email, name: 'E2E Unverified', role: 'BIDDER', verified: false });
+  await createMember({ email, name: 'E2E Unverified', role: 'MEMBER', verified: false });
   await loginViaUi(page, email);
   await expect(page.getByRole('heading', { name: 'Verify your email' })).toBeVisible();
   await fillOtp(page, STUB_OTP);

@@ -1,9 +1,9 @@
 # Commission payments flow (frontend)
 
-Code: `src/features/commissions/`, `src/features/payments/` (`use-razorpay-payment.ts`, `use-stub-payment-confirm.tsx`, `payments.api.ts`, `payments.types.ts`), `src/lib/razorpay.ts`, page `src/app/(auctioneer)/sell/commissions/page.tsx`.
+Code: `src/features/commissions/`, `src/features/payments/` (`use-razorpay-payment.ts`, `use-stub-payment-confirm.tsx`, `payments.api.ts`, `payments.types.ts`), `src/lib/razorpay.ts`, page `src/app/(member)/sell/commissions/page.tsx`.
 
 ## Rule
-A sold auction creates a 5% commission (DUE). While `me.unpaidCommissionPaise > 0` the seller cannot create auctions (`COMMISSION_UNPAID`). `UnpaidCommissionBanner` (auctioneer layout, hidden on `/sell/commissions`) and the profile card link to `/sell/commissions`.
+A sold auction creates a 5% commission (DUE). While `me.unpaidCommissionPaise > 0` the seller cannot create auctions (`COMMISSION_UNPAID`). `UnpaidCommissionBanner` (the nested `(member)/sell/layout.tsx`, hidden on `/sell/commissions`) and the profile card link to `/sell/commissions`.
 
 ## Shared payment hook (`useRazorpayPayment`)
 `src/features/payments/use-razorpay-payment.ts` runs the whole flow for anything payable: `useRazorpayPayment({ createCheckout(id), isAlreadyPaid?(id), invalidateKeys, confirmStub, successMessage?, errorMessage, onCheckoutError? })` returns `{ pay(id), payingId }`. `isAlreadyPaid` switches on the paid-by-webhook watcher and the post-verify fallback. `usePayCommission` (commissions) and `useSalePayment` (sales, see `checkout.md`) are thin wrappers. `useStubPaymentConfirm()` returns `{ confirmStub, stubDialog }`: render `stubDialog` once in the page. `verifyPayment` returns `{ referenceType: 'COMMISSION' | 'SALE' | 'DEPOSIT', commission?, sale? }` (a missing `referenceType` is read as COMMISSION). `CheckoutPayload` lives in `payments.types.ts` (re-exported by `commissions.types.ts`).

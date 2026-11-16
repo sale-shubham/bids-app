@@ -23,7 +23,7 @@ describe('passwordField', () => {
 });
 
 describe('signupSchema', () => {
-  const ok = { name: 'Asha', email: ' Asha@Example.COM ', password: 'abcdefg1', confirmPassword: 'abcdefg1', role: 'BIDDER', terms: true };
+  const ok = { name: 'Asha', email: ' Asha@Example.COM ', password: 'abcdefg1', confirmPassword: 'abcdefg1', terms: true };
   it('normalises the email and passes', () => {
     const r = signupSchema.safeParse(ok);
     expect(r.success).toBe(true);
@@ -33,9 +33,13 @@ describe('signupSchema', () => {
     const r = signupSchema.safeParse({ ...ok, confirmPassword: 'different1' });
     expect(r.error?.issues.find((i) => i.path[0] === 'confirmPassword')?.message).toBe('Passwords do not match');
   });
-  it('requires terms and rejects SUPER_ADMIN role', () => {
+  it('has no role field: a role sent by an old client is stripped', () => {
+    const r = signupSchema.safeParse({ ...ok, role: 'SUPER_ADMIN' });
+    expect(r.success).toBe(true);
+    expect(r.data).not.toHaveProperty('role');
+  });
+  it('requires terms', () => {
     expect(msgs(signupSchema.safeParse({ ...ok, terms: false }))).toContain('You must accept the Terms and Conditions to continue');
-    expect(signupSchema.safeParse({ ...ok, role: 'SUPER_ADMIN' }).success).toBe(false);
   });
 });
 

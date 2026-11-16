@@ -12,10 +12,12 @@ There is no SMS phone verification, WhatsApp opt-in or two-factor authentication
 `ChangePasswordCard`, `MyDevicesCard`, `SignOutCard`. The profile phone (Account tab) is plain contact info: it is not verified and nothing depends on it.
 
 ## Verified badge
-`member.verified` (and `verified` on auction/seller DTOs) means the seller has a KYC'd payout account: AUCTIONEER + payout account `ACTIVE` + not revoked by an admin (see `payouts.md`). `VerifiedBadge` tooltip: "Verified seller: payout account KYC completed". Admins can revoke / restore it on `/admin/members`.
+`member.verified` (and `verified` on auction/seller DTOs) means the seller has a KYC'd payout account: MEMBER + payout account `ACTIVE` + not revoked by an admin (see `payouts.md`). `VerifiedBadge` tooltip: "Verified seller: payout account KYC completed". Admins can revoke / restore it on `/admin/members`.
 
 ## Error codes (`auth.errors.ts`)
 `INVALID_CREDENTIALS`, `INVALID_CURRENT_PASSWORD`, `EMAIL_TAKEN`, `EMAIL_NOT_VERIFIED`, `ACCOUNT_SUSPENDED`, `RATE_LIMITED`, `TOO_MANY_REQUESTS`; anything else falls back to the server message.
 
 ## Referral code on signup
+Signup has no role choice (the old "I want to bid / I want to sell" cards are gone) and sends no `role`: every account is a MEMBER who can bid and sell. For one release a `BIDDER` / `AUCTIONEER` role from the API (or an old token) is treated as MEMBER (`normalizeRole()`).
+
 `/signup?ref=CODE` is remembered for 30 days (`localStorage` key `nb_ref`, `features/referrals/referral-code.ts`) and sent as `referralCode` in `POST /auth/signup`; cleared after a successful signup. The API ignores an invalid or unknown code silently (no error). See `referrals.md`.

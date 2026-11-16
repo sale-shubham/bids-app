@@ -60,7 +60,6 @@ export const signupSchema = z
     email: emailField,
     password: passwordField,
     confirmPassword: z.string().min(1, 'Confirm your password'),
-    role: z.enum(['BIDDER', 'AUCTIONEER']),
     terms: z.literal(true, { error: 'You must accept the Terms and Conditions to continue' }),
   })
   .refine((v) => v.password === v.confirmPassword, {
@@ -76,7 +75,7 @@ export const forgotPasswordSchema = z.object({ email: emailField });
 Notes on this schema:
 - `emailField` and `passwordField` are shared constants, so login, signup, forgot / reset and change password stay in sync. `passwordField` counts **bytes** (`TextEncoder`), matching the API's 72-byte limit, so multi-byte characters count more than once.
 - `email` chains `.trim().toLowerCase().email(...)`: normalization happens before the format check, and the cleaned value is submitted.
-- `role` allows only `BIDDER` and `AUCTIONEER`; `SUPER_ADMIN` cannot sign up. `terms` must be exactly `true` (the checkbox).
+- There is no `role` field: every signup is a MEMBER (a `role` sent by an old client is stripped by zod, and the form does not send one). `terms` must be exactly `true` (the checkbox).
 - The password-match refine puts its error on `confirmPassword` via `path`.
 - The email OTP itself (signup verify, login's unverified-email branch) is not a zod form: `<VerifyEmailStep>` keeps the code in `useState` and submits it from `<OtpStep>`. The reset-password step does validate its code with `codeField` (6 digits).
 

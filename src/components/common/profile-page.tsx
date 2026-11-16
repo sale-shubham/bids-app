@@ -18,10 +18,10 @@ import { useAuthStore } from '@/store/auth-store';
 
 // Profile for every signed-in role: identity + avatar + edit form, security
 // (password, devices, sign out) and the shared App tab from <MorePage>. Mounted
-// at /profile (BIDDER / AUCTIONEER) and /admin/profile (SUPER_ADMIN).
+// at /profile (MEMBER) and /admin/profile (SUPER_ADMIN).
 export function ProfilePage() {
   const nav = useNav();
-  const isBidder = useAuthStore((s) => s.member?.role === 'BIDDER');
+  const isMember = useAuthStore((s) => s.member?.role === 'MEMBER');
   const isAdmin = useAuthStore((s) => s.member?.role === 'SUPER_ADMIN');
   const deviceLimit = useAuthStore((s) => s.member?.deviceLimit ?? 1);
 
@@ -73,7 +73,7 @@ export function ProfilePage() {
           },
           { value: 'invoices', label: 'Invoices', icon: FileText, content: <InvoicesCard /> },
         ]),
-    ...(isBidder ? [{ value: 'alerts', label: 'Alerts', icon: BellRing, content: <AlertsCard /> }] : []),
+    ...(isMember ? [{ value: 'alerts', label: 'Alerts', icon: BellRing, content: <AlertsCard /> }] : []),
   ];
 
   return <MorePage nav={nav} title="Profile" tabs={tabs} />;

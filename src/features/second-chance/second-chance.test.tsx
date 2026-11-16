@@ -23,13 +23,13 @@ vi.mock('./use-second-chance', () => ({
   useOfferSecondChance: () => ({ mutate: m.create, isPending: false }),
   useInvalidateOffers: () => m.invalidate,
   useOffer: () => ({ data: m.offer, isPending: false, error: null, refetch: m.refetch }),
-  useMyOffers: () => ({ data: m.offers }),
+  useMyOffers: () => ({ data: m.offers, isPending: false, isError: false, refetch: m.refetch }),
   useAcceptOffer: () => ({ mutate: m.accept, isPending: false }),
   useDeclineOffer: () => ({ mutate: m.decline, isPending: false }),
 }));
 
 import { OfferDetailPage } from './components/offer-detail-page';
-import { OffersSection } from './components/offers-section';
+import { OffersList } from './components/offers-section';
 import { SellerOfferCard } from './components/seller-offer-card';
 
 const inFuture = (ms: number) => new Date(Date.now() + ms).toISOString();
@@ -92,18 +92,17 @@ describe('SellerOfferCard', () => {
   });
 });
 
-describe('OffersSection', () => {
+describe('OffersList', () => {
   it('lists only PENDING offers and links to each', () => {
     m.offers = [offer(), offer({ id: 'o2', status: 'EXPIRED' })];
-    render(<OffersSection />);
-    expect(screen.getByRole('heading', { name: 'Offers' })).toBeInTheDocument();
+    render(<OffersList />);
     expect(screen.getAllByRole('link', { name: 'View offer' })).toHaveLength(1);
     expect(screen.getByRole('link', { name: 'View offer' })).toHaveAttribute('href', '/purchases/offers/o1');
   });
-  it('renders nothing without pending offers', () => {
+  it('shows the empty state without pending offers', () => {
     m.offers = [offer({ status: 'ACCEPTED' })];
-    const { container } = render(<OffersSection />);
-    expect(container).toBeEmptyDOMElement();
+    render(<OffersList />);
+    expect(screen.getByText('No offers')).toBeInTheDocument();
   });
 });
 

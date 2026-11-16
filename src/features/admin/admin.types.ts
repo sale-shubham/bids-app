@@ -5,8 +5,10 @@ import type { Role } from '@/constants/routes';
 
 export interface AdminTotals {
   members: number;
-  bidders: number;
-  auctioneers: number;
+  /** Members who placed at least one bid. */
+  buyers: number;
+  /** Members who listed at least one auction. */
+  sellers: number;
   liveAuctions: number;
   upcomingAuctions: number;
   endedAuctions: number;
@@ -18,7 +20,7 @@ export interface AdminTotals {
 export interface AdminDashboard {
   totals: AdminTotals;
   revenueByMonth: { month: string; paidPaise: number }[];
-  signupsByMonth: { month: string; bidders: number; auctioneers: number }[];
+  signupsByMonth: { month: string; members: number }[];
   recentAuctions: AuctionCard[];
 }
 
@@ -42,13 +44,16 @@ export interface AdminMember {
   activeStrikes: number;
   /** Credit balance (referral rewards etc.) in paise. */
   creditBalancePaise: number;
+  /** Auctions this member has listed (0 = not a seller yet). */
+  auctionsListed: number;
 }
 
 export type MemberStatusFilter = '' | 'active' | 'inactive';
-export type MemberRoleFilter = '' | Role;
+/** '' = everyone, 'true' = has listed an auction, 'false' = has not. */
+export type MemberSellerFilter = '' | 'true' | 'false';
 export interface MemberFilters {
   q: string;
-  role: MemberRoleFilter;
+  seller: MemberSellerFilter;
   status: MemberStatusFilter;
 }
 

@@ -17,7 +17,7 @@ const BID_PAISE = 100000; // ₹1,000 -> 5% commission = ₹50
 test('auction closes, winner sees the result + contact, seller pays commission in test mode', async ({ browser, page }) => {
   const { runId, members } = loadState();
   const sellerEmail = testEmail(runId, 'seller2');
-  const seller = await createMember({ email: sellerEmail, name: `E2E ${runId} Seller Two`, role: 'AUCTIONEER', phone: '+91 90000 00001' });
+  const seller = await createMember({ email: sellerEmail, name: `E2E ${runId} Seller Two`, role: 'MEMBER', phone: '+91 90000 00001' });
   const auction = await createAuction({
     sellerId: seller.id,
     title: `E2E Closing ${runId}`,

@@ -4,13 +4,15 @@ import { PushPermissionPrompt } from '@/components/common/push-permission-prompt
 import { DashboardShell } from '@/components/layout/dashboard-shell';
 import { useMoreTab, useNav } from '@/components/layout/nav-items';
 
-// Member area (watchlist, notifications, profile): BIDDER / AUCTIONEER. SUPER_ADMIN is
-// bounced to /admin by the edge gate (src/proxy.ts) and by this guard.
+// Member area (auctions you bid on and sell: /my-bids, /purchases, /sell/*, /watchlist,
+// /notifications, /profile): MEMBER. The legacy BIDDER / AUCTIONEER values are
+// normalised to MEMBER by AuthGuard for one release. SUPER_ADMIN is bounced to
+// /admin by the edge gate (src/proxy.ts) and by this guard.
 export default function MemberLayout({ children }: { children: React.ReactNode }) {
   const nav = useNav();
   const moreTab = useMoreTab();
   return (
-    <AuthGuard allow={['BIDDER', 'AUCTIONEER']}>
+    <AuthGuard allow={['MEMBER']}>
       <PushPermissionPrompt />
       <DashboardShell nav={nav} moreTab={moreTab}>{children}</DashboardShell>
     </AuthGuard>

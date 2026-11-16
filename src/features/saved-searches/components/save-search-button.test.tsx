@@ -26,20 +26,20 @@ function renderButton(filters: AuctionFilters) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  signIn('BIDDER');
+  signIn('MEMBER');
 });
 
 describe('SaveSearchButton', () => {
-  it('is hidden for guests, non-bidders and when no criterion is set', () => {
+  it('is hidden for guests, admins and when no criterion is set', () => {
     signIn(null);
     renderButton({ ...DEFAULT_FILTERS, q: 'vase' });
     expect(screen.queryByRole('button', { name: /Save this search/ })).not.toBeInTheDocument();
     cleanup();
-    signIn('AUCTIONEER');
+    signIn('SUPER_ADMIN');
     renderButton({ ...DEFAULT_FILTERS, q: 'vase' });
     expect(screen.queryByRole('button', { name: /Save this search/ })).not.toBeInTheDocument();
     cleanup();
-    signIn('BIDDER');
+    signIn('MEMBER');
     renderButton(DEFAULT_FILTERS);
     expect(screen.queryByRole('button', { name: /Save this search/ })).not.toBeInTheDocument();
   });

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as adminApi from '@/features/admin/admin.api';
@@ -8,13 +8,14 @@ import type { AdminMember } from '@/features/admin/admin.types';
 import AdminMembersPage from './page';
 
 const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
+const urlQuery = vi.hoisted(() => ({ value: '' }));
 vi.mock('sonner', () => ({ toast }));
 vi.mock('@/features/admin/admin.api');
 vi.mock('@/features/strikes/strikes.api');
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace: vi.fn() }),
   usePathname: () => '/admin/members',
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => new URLSearchParams(urlQuery.value),
 }));
 vi.mock('@/hooks/use-is-narrow-content', () => ({ useIsNarrowContent: () => false }));
 
@@ -23,7 +24,7 @@ const member: AdminMember = {
   name: 'Sam Seller',
   email: 'sam@example.com',
   phone: '9876543210',
-  role: 'AUCTIONEER',
+  role: 'MEMBER',
   isActive: true,
   emailVerifiedAt: '2026-10-01T00:00:00Z',
   createdAt: '2026-10-01T00:00:00Z',
@@ -34,6 +35,7 @@ const member: AdminMember = {
   payoutStatus: 'ACTIVE',
   activeStrikes: 0,
   creditBalancePaise: 0,
+  auctionsListed: 4,
 };
 const page = (m: AdminMember) => ({ items: [m], meta: { total: 1, page: 1, pageSize: 10, totalPages: 1 } });
 
@@ -52,6 +54,7 @@ function setup() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  urlQuery.value = '';
   vi.mocked(adminApi.fetchMembers).mockResolvedValue(page(member));
   vi.mocked(adminApi.updateMember).mockResolvedValue({});
 });
@@ -121,33 +124,60 @@ describe('AdminMembersPage layout and filters', () => {
     expect(screen.getByRole('group', { name: 'Filters' })).toBeInTheDocument();
   });
 
-  it('never offers Super admins in the role filter and never sends role=SUPER_ADMIN', async () => {
+  it('has a Selling filter (All / Sellers / Non-sellers) and no Role filter', async () => {
     setup();
     await screen.findByText('Sam Seller');
     await userEvent.click(screen.getByRole('button', { name: /Filters/ }));
-    await userEvent.click(screen.getByRole('combobox', { name: 'Role' }));
-    expect(await screen.findByText('Bidders')).toBeInTheDocument();
-    expect(screen.getByText('Auctioneers')).toBeInTheDocument();
-    expect(screen.queryByText('Super admins')).not.toBeInTheDocument();
-    for (const call of vi.mocked(adminApi.fetchMembers).mock.calls) expect(call[0].role).not.toBe('SUPER_ADMIN');
+    expect(screen.queryByRole('combobox', { name: 'Role' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('combobox', { name: 'Selling' }));
+    expect(await screen.findByRole('option', { name: 'Sellers' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Non-sellers' })).toBeInTheDocument();
   });
 
-  it('change role dialog offers only Bidder and Auctioneer', async () => {
+  it('sends a valid ?seller= to the API and drops an invalid one', async () => {
+    urlQuery.value = 'seller=true';
     setup();
-    await pick('Role');
-    const dialog = await screen.findByRole('dialog');
-    await userEvent.click(within(dialog).getByRole('combobox', { name: 'New role' }));
-    expect(await screen.findByRole('option', { name: 'Bidder' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'Auctioneer' })).toBeInTheDocument();
-    expect(screen.queryByRole('option', { name: 'Super admin' })).not.toBeInTheDocument();
-    expect(screen.getAllByRole('option')).toHaveLength(2);
+    await screen.findByText('Sam Seller');
+    expect(vi.mocked(adminApi.fetchMembers).mock.calls[0][0]).toMatchObject({ seller: 'true' });
+    cleanup();
+    vi.mocked(adminApi.fetchMembers).mockClear();
+    urlQuery.value = 'seller=maybe&role=BIDDER';
+    setup();
+    await screen.findByText('Sam Seller');
+    const f = vi.mocked(adminApi.fetchMembers).mock.calls[0][0];
+    expect(f.seller).toBe('');
+    expect(f).not.toHaveProperty('role');
+  });
+
+  it('shows how many auctions the member has listed, and no role column', async () => {
+    setup();
+    await screen.findByText('Sam Seller');
+    expect(screen.getByRole('columnheader', { name: 'Listed' })).toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'Role' })).not.toBeInTheDocument();
+    expect(screen.getByText('4')).toBeInTheDocument();
+  });
+
+  it('offers the verification action on an ACTIVE payout account with no role check', async () => {
+    vi.mocked(adminApi.fetchMembers).mockResolvedValue(page({ ...member, verified: false, payoutStatus: 'ACTIVE' }));
+    setup();
+    await userEvent.click(await screen.findByRole('button', { name: 'Actions for Sam Seller' }));
+    expect(await screen.findByRole('menuitem', { name: 'Restore verification' })).toBeInTheDocument();
+  });
+
+  it('hides the verification action without an ACTIVE payout account', async () => {
+    vi.mocked(adminApi.fetchMembers).mockResolvedValue(page({ ...member, verified: false, payoutStatus: null }));
+    setup();
+    await userEvent.click(await screen.findByRole('button', { name: 'Actions for Sam Seller' }));
+    await screen.findByRole('menuitem', { name: 'Deactivate' });
+    expect(screen.queryByRole('menuitem', { name: /verification/ })).not.toBeInTheDocument();
   });
 
   it('lists the existing actions in the row menu, with Deactivate and Adjust credits', async () => {
     setup();
     await userEvent.click(await screen.findByRole('button', { name: 'Actions for Sam Seller' }));
-    for (const n of ['Deactivate', 'Role', 'Strikes', 'Adjust credits', 'Revoke verification'])
+    for (const n of ['Deactivate', 'Strikes', 'Adjust credits', 'Revoke verification'])
       expect(await screen.findByRole('menuitem', { name: n })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: 'Role' })).not.toBeInTheDocument();
   });
 
   it('deactivates only after confirming', async () => {

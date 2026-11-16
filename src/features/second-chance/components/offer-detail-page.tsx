@@ -2,13 +2,14 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Tag } from 'lucide-react';
+import { Tag } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { EmptyState } from '@/components/common/empty-state';
+import { PageHeader } from '@/components/common/page-header';
 import { CoverImage } from '@/features/auctions/components/auction-card';
 import { apiErrorCode } from '@/lib/api-client';
 import { formatDate, formatINR } from '@/lib/utils';
@@ -54,13 +55,8 @@ export function OfferDetailPage({ id }: { id: string }) {
   const actionable = !!offer && offer.status === 'PENDING' && !expired;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <Link href="/purchases" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" aria-hidden /> Purchases
-        </Link>
-        <h1 className="mt-2 text-2xl font-bold tracking-tight">Second-chance offer</h1>
-      </div>
+    <div className="space-y-4">
+      <PageHeader title="Second-chance offer" backHref="/purchases?tab=offers" backLabel="Back to purchases" />
 
       {isPending ? (
         <Skeleton className="h-48" />

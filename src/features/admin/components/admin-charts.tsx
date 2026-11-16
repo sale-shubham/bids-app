@@ -1,5 +1,5 @@
 'use client';
-import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { formatINR } from '@/lib/utils';
 
 export const TOOLTIP = {
@@ -31,7 +31,7 @@ export function RevenueBarChart({ data }: { data: { month: string; paidPaise: nu
   );
 }
 
-export function SignupsLineChart({ data }: { data: { month: string; bidders: number; auctioneers: number }[] }) {
+export function SignupsLineChart({ data }: { data: { month: string; members: number }[] }) {
   const rows = data.map((d) => ({ ...d, label: monthLabel(d.month) }));
   return (
     <ResponsiveContainer width="100%" height={260}>
@@ -40,9 +40,7 @@ export function SignupsLineChart({ data }: { data: { month: string; bidders: num
         <XAxis dataKey="label" tick={AXIS} tickLine={false} axisLine={false} />
         <YAxis tick={AXIS} tickLine={false} axisLine={false} width={32} allowDecimals={false} />
         <Tooltip {...TOOLTIP} />
-        <Legend wrapperStyle={{ fontSize: 12 }} />
-        <Line type="monotone" dataKey="bidders" name="Bidders" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={false} />
-        <Line type="monotone" dataKey="auctioneers" name="Auctioneers" stroke="hsl(var(--warning))" strokeWidth={2.5} dot={false} />
+        <Line type="monotone" dataKey="members" name="Signups" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={false} />
       </LineChart>
     </ResponsiveContainer>
   );

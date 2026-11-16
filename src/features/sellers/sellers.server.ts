@@ -5,6 +5,8 @@ export interface SellerProfile {
   name: string;
   avatarUrl: string | null;
   role: string;
+  /** Auctions this member has listed; the Follow button needs > 0. */
+  listedCount?: number;
   createdAt: string;
   auctionsSold: number;
   activeAuctions: number;

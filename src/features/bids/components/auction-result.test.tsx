@@ -16,7 +16,7 @@ const ended = (over: Partial<AuctionDetail> = {}): AuctionDetail =>
     seller: { id: 'seller1', name: 'Sam', avatarUrl: null },
     ...over,
   }) as unknown as AuctionDetail;
-const signIn = (id: string | null) => useAuthStore.setState({ member: id ? ({ id, role: 'BIDDER' } as AuthMember) : null, initialized: true });
+const signIn = (id: string | null) => useAuthStore.setState({ member: id ? ({ id, role: 'MEMBER' } as AuthMember) : null, initialized: true });
 
 beforeEach(() => signIn(null));
 

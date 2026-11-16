@@ -1,28 +1,25 @@
 'use client';
 import { Archive, Banknote, BarChart3, FileUp, Flag, FolderTree, Gavel, Heart, Landmark, LayoutDashboard, LogIn, FileText, Receipt, Settings, ShieldAlert, ShoppingBag, Star, Store, Trophy, User, Users, Wallet } from 'lucide-react';
-import { useAuthStore, type Role } from '@/store/auth-store';
+import { useAuthStore } from '@/store/auth-store';
 import type { NavItem } from './dashboard-shell';
 import type { MoreTab } from './mobile-bottom-nav';
 import { useWatchlistActiveCount } from '@/features/watchlist/use-watchlist';
 
-interface RoleNavItem extends NavItem {
-  /** Roles that see this item. Omitted = every member role (BIDDER and AUCTIONEER). */
-  roles?: Role[];
-}
-
-// Member nav (BIDDER / AUCTIONEER). SUPER_ADMIN has its own list below: it only
-// uses /admin/* plus the public pages.
-const MEMBER_NAV: RoleNavItem[] = [
-  { href: '/auctions', label: 'Auctions', icon: Gavel },
+// One member nav (MEMBER buys and sells with one account). SUPER_ADMIN has its own list
+// below: it only uses /admin/* plus the public pages. The `group` headings ("Buying",
+// "Selling") show in the desktop sidebar; the phone bottom bar pins Auctions, My bids
+// and My auctions (`pinMobile`) and the rest lands in the Profile grid.
+export const MEMBER_NAV: NavItem[] = [
+  { href: '/auctions', label: 'Auctions', icon: Gavel, pinMobile: true },
   { href: '/watchlist', label: 'Watchlist', icon: Heart },
-  { href: '/my-bids', label: 'My bids', icon: Trophy, roles: ['BIDDER'] },
-  { href: '/purchases', label: 'Purchases', icon: ShoppingBag, roles: ['BIDDER'] },
-  { href: '/sell/auctions', label: 'Sell', icon: Store, roles: ['AUCTIONEER'] },
-  { href: '/sell/analytics', label: 'Analytics', icon: BarChart3, roles: ['AUCTIONEER'] },
-  { href: '/sell/sales', label: 'Sales', icon: Banknote, roles: ['AUCTIONEER'] },
-  { href: '/sell/payouts', label: 'Payouts', icon: Landmark, roles: ['AUCTIONEER'] },
-  { href: '/sell/bulk', label: 'Bulk upload', icon: FileUp, roles: ['AUCTIONEER'] },
-  { href: '/sold', label: 'Sold archive', icon: Archive },
+  { href: '/sold', label: 'Sold', icon: Archive },
+  { href: '/my-bids', label: 'My bids', icon: Trophy, group: 'Buying', pinMobile: true },
+  { href: '/purchases', label: 'Purchases', icon: ShoppingBag, group: 'Buying' },
+  { href: '/sell/auctions', label: 'My auctions', icon: Store, group: 'Selling', pinMobile: true },
+  { href: '/sell/sales', label: 'Sales', icon: Banknote, group: 'Selling' },
+  { href: '/sell/analytics', label: 'Analytics', icon: BarChart3, group: 'Selling' },
+  { href: '/sell/payouts', label: 'Payouts', icon: Landmark, group: 'Selling' },
+  { href: '/sell/bulk', label: 'Bulk upload', icon: FileUp, group: 'Selling' },
   { href: '/profile', label: 'Profile', icon: User, pinBottomDesktop: true, hideMobile: true },
 ];
 
@@ -63,9 +60,7 @@ export function useNav(): NavItem[] {
   const role = useAuthStore((s) => s.member?.role);
   const watching = useWatchlistActiveCount();
   if (role === 'SUPER_ADMIN') return ADMIN_NAV;
-  return MEMBER_NAV.filter((item) => !item.roles || (role && item.roles.includes(role))).map((item) =>
-    item.href === '/watchlist' ? { ...item, badge: watching } : item,
-  );
+  return MEMBER_NAV.map((item) => (item.href === '/watchlist' ? { ...item, badge: watching } : item));
 }
 
 export function useMoreTab(): MoreTab {

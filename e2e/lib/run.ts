@@ -12,6 +12,8 @@ const here = dirname(fileURLToPath(import.meta.url));
 export const RUN_DIR = join(here, '..', '.run');
 const STATE_FILE = join(RUN_DIR, 'state.json');
 
+// Personas, not roles: all three non-admin ones are MEMBERs. `auctioneer` is the one that lists the
+// run's auctions; `bidderA` / `bidderB` bid on them.
 export type TestRole = 'admin' | 'auctioneer' | 'bidderA' | 'bidderB';
 
 export interface TestMember {

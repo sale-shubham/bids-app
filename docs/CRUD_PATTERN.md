@@ -9,7 +9,7 @@ a table (see Admin CRUD).
 ## List page anatomy
 
 ```
-/sell/auctions                   ← list page (src/app/(auctioneer)/sell/auctions/page.tsx)
+/sell/auctions                   ← list page (src/app/(member)/sell/auctions/page.tsx)
   ├── Header row                 ← title + "New auction" button, the shared container row (below)
   ├── Filter controls            ← status <Tabs> (Upcoming / Live / Ended / Cancelled) → server param
   ├── Rows or cards              ← flattened useInfiniteQuery pages

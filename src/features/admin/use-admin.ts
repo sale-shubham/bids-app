@@ -3,7 +3,6 @@ import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClie
 import { nextPagedParam, type Paged } from '@/lib/paged';
 import { MOBILE_PAGE_SIZE } from '@/lib/pagination';
 import { useIsNarrowContent } from '@/hooks/use-is-narrow-content';
-import type { Role } from '@/constants/routes';
 import * as api from './admin.api';
 import type { AdminSettings, LegalSlug } from './admin.types';
 
@@ -89,7 +88,7 @@ export function useRefundSale() {
 export function useUpdateMember() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...body }: { id: string; isActive?: boolean; role?: Role; verified?: boolean }) => api.updateMember(id, body),
+    mutationFn: ({ id, ...body }: { id: string; isActive?: boolean; verified?: boolean }) => api.updateMember(id, body),
     onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.all }),
   });
 }

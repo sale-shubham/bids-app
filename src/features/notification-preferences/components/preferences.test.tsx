@@ -31,7 +31,7 @@ function wrap(ui: React.ReactNode) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  useAuthStore.setState({ member: { id: 'me', role: 'BIDDER', phone: '+91 98765 43210' } as AuthMember, initialized: true });
+  useAuthStore.setState({ member: { id: 'me', role: 'MEMBER', phone: '+91 98765 43210' } as AuthMember, initialized: true });
 });
 
 describe('NotificationPreferencesCard', () => {

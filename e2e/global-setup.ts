@@ -5,7 +5,7 @@ import { createMember, sweep, type DbRole } from './lib/db.ts';
 import { RUN_DIR, newRunId, saveState, storageStatePath, testEmail, type RunState, type TestRole } from './lib/run.ts';
 import { SUPPRESS_PROMPTS } from './lib/ui.ts';
 
-const ROLES: Record<TestRole, DbRole> = { admin: 'SUPER_ADMIN', auctioneer: 'AUCTIONEER', bidderA: 'BIDDER', bidderB: 'BIDDER' };
+const ROLES: Record<TestRole, DbRole> = { admin: 'SUPER_ADMIN', auctioneer: 'MEMBER', bidderA: 'MEMBER', bidderB: 'MEMBER' };
 
 // Servers are started separately (npm run dev in bids-api and bids-app). Setup
 // checks both answer, then creates this run's members straight in the DB and signs

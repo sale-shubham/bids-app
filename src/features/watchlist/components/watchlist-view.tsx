@@ -1,6 +1,5 @@
 'use client';
-import { Heart } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { AlertCircle, Heart } from 'lucide-react';
 import { EmptyState } from '@/components/common/empty-state';
 import { InfiniteScroll } from '@/components/common/infinite-scroll';
 import { AuctionGrid, AuctionGridSkeleton } from '@/features/auctions/components/auction-grid';
@@ -14,13 +13,13 @@ export function WatchlistView() {
   if (q.isPending) return <AuctionGridSkeleton />;
   if (q.isError && items.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed py-16 text-center">
-        <p className="font-medium">Could not load your watchlist</p>
-        <p className="max-w-sm text-sm text-muted-foreground">{auctionErrorMessage(q.error)}</p>
-        <Button variant="outline" onClick={() => void q.refetch()}>
-          Try again
-        </Button>
-      </div>
+      <EmptyState
+        icon={AlertCircle}
+        title="Could not load your watchlist"
+        description={auctionErrorMessage(q.error)}
+        actionLabel="Try again"
+        onAction={() => void q.refetch()}
+      />
     );
   }
   if (items.length === 0) {

@@ -20,7 +20,7 @@ test('dashboard loads its stat cards and navigation', async ({ page }) => {
 
 test('deactivate and reactivate a member', async ({ page }) => {
   const email = testEmail(loadState().runId, 'toggle');
-  await createMember({ email, name: 'E2E Toggle Member', role: 'BIDDER' });
+  await createMember({ email, name: 'E2E Toggle Member', role: 'MEMBER' });
 
   await page.goto('/admin/members');
   await page.getByPlaceholder('Search name or email').fill(email);

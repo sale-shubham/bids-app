@@ -12,7 +12,7 @@ vi.mock('sonner', () => ({ toast }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace, push: vi.fn() }) }));
 vi.mock('@/features/auth/auth.api');
 
-const member = { id: 'm1', role: 'BIDDER', email: 'a@b.com' } as AuthMember;
+const member = { id: 'm1', role: 'MEMBER', email: 'a@b.com' } as AuthMember;
 
 function setup() {
   render(

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-import type { Role } from "@/constants/routes";
+import { normalizeRole, type Role } from "@/constants/routes";
 
 export type { Role };
 
@@ -43,7 +43,8 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set) => ({
   member: null,
   initialized: false,
-  setMember: (member) => set({ member }),
+  // A legacy BIDDER / AUCTIONEER role (one release) is stored as MEMBER.
+  setMember: (member) => set({ member: member && { ...member, role: normalizeRole(member.role) ?? 'MEMBER' } }),
   setInitialized: (initialized) => set({ initialized }),
   clear: () => set({ member: null }),
 }));

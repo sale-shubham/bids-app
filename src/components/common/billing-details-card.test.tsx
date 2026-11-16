@@ -15,7 +15,7 @@ const VALID = '29ABCDE1234F1Z5';
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(membersApi.updateMe).mockResolvedValue({});
-  useAuthStore.setState({ member: { id: 'm1', role: 'AUCTIONEER', gstin: null, billingState: null } as AuthMember, initialized: true });
+  useAuthStore.setState({ member: { id: 'm1', role: 'MEMBER', gstin: null, billingState: null } as AuthMember, initialized: true });
 });
 
 const setup = () =>

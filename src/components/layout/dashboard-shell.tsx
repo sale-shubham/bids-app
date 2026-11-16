@@ -24,6 +24,8 @@ export interface NavItem {
   href: string;
   label: string;
   icon: LucideIcon;
+  /** Desktop sidebar only: a heading ("Buying", "Selling") shown above the first item of each run of items sharing it. */
+  group?: string;
   /** Pin to the mobile bottom bar regardless of array position (see mobile-bottom-nav.tsx). */
   pinMobile?: boolean;
   /** Hide entirely on mobile (bottom bar + More page) — desktop sidebar still shows it. */
@@ -32,6 +34,25 @@ export interface NavItem {
   pinBottomDesktop?: boolean;
   /** Live count shown beside the item (`<CountBadge>`) — attached at runtime, not declared in a nav array: attached by the nav hook (e.g. unread counts). On a phone an overflow item's count shows on its Profile-grid cell, and the 4th tab carries a dot. */
   badge?: number;
+}
+
+/** Sidebar rows with a small heading above each new `group` run (ungrouped items get none). */
+function renderNavList(items: NavItem[], pathname: string) {
+  let prev: string | undefined;
+  return items.map((item) => {
+    const heading = item.group && item.group !== prev ? item.group : null;
+    prev = item.group;
+    return (
+      <React.Fragment key={item.href}>
+        {heading && (
+          <p className="px-3 pb-1 pt-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground/70">
+            {heading}
+          </p>
+        )}
+        {renderNavLink(item, pathname)}
+      </React.Fragment>
+    );
+  });
 }
 
 function renderNavLink(item: NavItem, pathname: string) {
@@ -118,7 +139,7 @@ export function DashboardShell({
         </Link>
       </div>
       <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-        {primaryNav.map((item) => renderNavLink(item, pathname))}
+        {renderNavList(primaryNav, pathname)}
       </nav>
       {!guest && (
         <div className="space-y-1 border-t p-3">

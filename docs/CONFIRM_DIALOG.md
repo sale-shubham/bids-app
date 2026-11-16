@@ -120,13 +120,13 @@ onClick={() => setToDelete(auction)}
 | File | Action confirmed |
 |---|---|
 | `src/features/bids/components/bid-panel.tsx` | Place / raise a maximum bid ("Confirm your maximum bid"), and Buy It Now ("Buy it now"; confirm label shows the price) |
-| `src/app/(auctioneer)/sell/auctions/page.tsx` | Delete auction (row action on My auctions) |
-| `src/app/(auctioneer)/sell/auctions/[id]/page.tsx` | Delete auction (seller's auction page) |
+| `src/app/(member)/sell/auctions/page.tsx` | Delete auction (row action on My auctions) |
+| `src/app/(member)/sell/auctions/[id]/page.tsx` | Delete auction (seller's auction page) |
 | `src/features/featured/components/promote-card.tsx` | Pay for a promotion with credits |
-| `src/app/(auctioneer)/sell/commissions/page.tsx` | Pay a commission with credits |
+| `src/app/(member)/sell/commissions/page.tsx` | Pay a commission with credits |
 | `src/features/admin/components/adjust-credits-dialog.tsx` | Admin credit adjustment (form inside the dialog) |
 | `src/features/auctions/components/auction-detail.tsx` | Delete auction (owner only, from the public detail page) |
-| `src/app/(auctioneer)/sell/commissions/page.tsx` | Simulate a commission payment in Razorpay stub mode ("Test mode", via `useStubPaymentConfirm`) |
+| `src/app/(member)/sell/commissions/page.tsx` | Simulate a commission payment in Razorpay stub mode ("Test mode", via `useStubPaymentConfirm`) |
 | `src/app/(admin)/admin/auctions/page.tsx` | Cancel auction (admin, destructive) |
 | `src/app/(admin)/admin/members/page.tsx` | Activate / deactivate member (destructive when deactivating); change role (destructive when granting `SUPER_ADMIN`, with the role `Select` as `children`) |
 | `src/features/sales/components/purchase-actions.tsx` | Confirm received; Report a problem (destructive, reason `Textarea` as `children`); Razorpay stub "Test mode" via `useStubPaymentConfirm` |

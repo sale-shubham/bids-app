@@ -2,7 +2,6 @@ import { api } from '@/lib/api-client';
 import type { Paged } from '@/lib/paged';
 import { parseSalePage, parseSaleResponse } from '@/features/sales/sales.parse';
 import type { SaleDTO } from '@/features/sales/sales.types';
-import type { Role } from '@/constants/routes';
 import {
   parseAuctionAdminPage,
   parseCommissionAdminPage,
@@ -38,7 +37,7 @@ export async function fetchMembers(f: MemberFilters, page: number, pageSize: num
   return parseMemberPage(res.data);
 }
 
-export const updateMember = (id: string, body: { isActive?: boolean; role?: Role; verified?: boolean }) =>
+export const updateMember = (id: string, body: { isActive?: boolean; verified?: boolean }) =>
   api.patch(`/admin/members/${id}`, body).then((r) => r.data.data);
 
 /** Adds (positive) or removes (negative) credits; `note` is shown to the member in their ledger. */

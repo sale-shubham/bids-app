@@ -23,7 +23,6 @@ export const signupSchema = z
     email: emailField,
     password: passwordField,
     confirmPassword: z.string().min(1, 'Confirm your password'),
-    role: z.enum(['BIDDER', 'AUCTIONEER']),
     terms: z.literal(true, { error: 'You must accept the Terms and Conditions to continue' }),
   })
   .refine((v) => v.password === v.confirmPassword, {

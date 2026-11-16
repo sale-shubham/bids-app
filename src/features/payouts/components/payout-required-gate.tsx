@@ -1,7 +1,6 @@
 'use client';
 import * as React from 'react';
-import Link from 'next/link';
-import { AlertTriangle } from 'lucide-react';
+import { Notice } from '@/components/common/notice';
 import { Skeleton } from '@/components/ui/skeleton';
 import { usePublicSettings } from '@/features/settings/use-settings';
 import { usePayoutAccount } from '../use-payouts';
@@ -21,16 +20,10 @@ export function PayoutRequiredGate({ children }: { children: React.ReactNode }) 
 
   const status = account.data?.status;
   return (
-    <div role="alert" className="mx-auto flex max-w-3xl items-start gap-3 rounded-xl border border-warning/40 bg-warning/10 p-4 text-sm">
-      <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning" aria-hidden />
-      <p>
-        {status
-          ? 'Your payout account is not active yet. You can create auctions once it has been verified.'
-          : 'Set up your payout account before creating an auction, so buyers can pay you through the platform.'}{' '}
-        <Link href="/sell/payouts" className="font-medium text-primary hover:underline">
-          Go to payout account
-        </Link>
-      </p>
-    </div>
+    <Notice className="mx-auto max-w-3xl" action={{ label: 'Go to payout account', href: '/sell/payouts' }}>
+      {status
+        ? 'Your payout account is not active yet. You can create auctions once it has been verified.'
+        : 'Set up your payout account before creating an auction, so buyers can pay you through the platform.'}
+    </Notice>
   );
 }

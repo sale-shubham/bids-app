@@ -74,7 +74,7 @@ export default function Page() { return <Suspense><XView /></Suspense>; } // use
 8. Table: header `h-11 text-xs uppercase` (the `TableHead` default), cells `px-4 py-3 text-sm`, numbers `tnum` and right-aligned, money through `formatINR`. Actions column: `w-12`, sr-only header. Cards: `<Card><CardContent className="space-y-2 p-4">`, three spacing steps only (`space-y-2` between blocks).
 9. Statuses use `StatusBadge` / the feature's badge. Empty copy differs for "nothing exists" vs "search/filter matched nothing" when useful.
 10. Page sizes are 10/25/50/75/100 (`ADMIN_PAGE_SIZES` now matches `ListPagination`); cards load 100 per batch.
-11. Hidden data: super admin accounts never appear in `/admin/members` (API hides them); do not offer or send `role=SUPER_ADMIN`.
+11. Hidden data: super admin accounts never appear in `/admin/members` (API hides them); there is no role filter any more (the members page filters by `seller=true|false` and status).
 12. Tests: mock `@/hooks/use-is-narrow-content` to `false`, use `new QueryClient({ defaultOptions: { queries: { retry: false } } })` to test error states, open row actions with `getByRole('button', { name: 'Actions for <name>' })` then `menuitem`.
 
 ## Taken from the Unikorn reference app

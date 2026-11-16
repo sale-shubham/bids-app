@@ -47,7 +47,7 @@ Email + password login; email OTP only for signup verification and forgot passwo
 | Hook | Type | Key / target | Behavior |
 |---|---|---|---|
 | `useLogin()` | mutation | `login` -> `POST /auth/login` `{ email, password, deviceInfo }` | on success `useSignedIn()`: `resetAuthFlags()`, `setMember(member)`, invalidates `['me']`, `router.replace` to `?next=` (non-admins, when safe) or `homeFor(role)`. A `403 EMAIL_NOT_VERIFIED` means the API just emailed a code; the login page switches to `<VerifyEmailStep>` |
-| `useSignup()` | mutation | `signup` -> `POST /auth/signup` `{ name, email, password, role }` | `role` is `BIDDER` or `AUCTIONEER`; returns `{ email, resendAfterSec }` |
+| `useSignup()` | mutation | `signup` -> `POST /auth/signup` `{ name, email, password, referralCode? }` | no `role` (every account is a MEMBER); returns `{ email, resendAfterSec }` |
 | `useSignupVerify()` | mutation | `signupVerify` -> `POST /auth/signup/verify` `{ email, code, deviceInfo }` | sets the cookies; on success `useSignedIn()` as for login |
 | `useSignupResend()` | mutation | `signupResend` -> `POST /auth/signup/resend` `{ email }` | returns `{ resendAfterSec }` |
 | `useForgotPassword()` | mutation | `forgotPassword` -> `POST /auth/password/forgot` `{ email }` | always 200; returns `{ resendAfterSec }` |

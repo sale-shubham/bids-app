@@ -51,7 +51,7 @@ export function BidPanel({ auction }: { auction: AuctionDetail }) {
       </Button>
     );
   else if (member.id === auction.seller.id) action = <Note>This is your auction, so you cannot bid on it.</Note>;
-  else if (member.role !== 'BIDDER') action = <Note>Only bidder accounts can bid.</Note>;
+  else if (member.role === 'SUPER_ADMIN') action = <Note>Admin accounts cannot place bids.</Note>;
   else if (notStarted)
     action = (
       <Note>

@@ -4,12 +4,11 @@ import {
   gateFor,
   homeFor,
   isAdminRoute,
-  isAuctioneerRoute,
   isAuthRoute,
-  isBidderRoute,
   isMemberRoute,
   isGatedRoute,
   isPublicRoute,
+  normalizeRole,
   safeNextPath,
   startsWithAny,
 } from './routes';
@@ -40,11 +39,24 @@ describe('safeNextPath', () => {
   });
 });
 
+describe('normalizeRole', () => {
+  it('collapses the legacy BIDDER / AUCTIONEER values and unknown strings to MEMBER', () => {
+    expect(normalizeRole('MEMBER')).toBe('MEMBER');
+    expect(normalizeRole('BIDDER')).toBe('MEMBER');
+    expect(normalizeRole('AUCTIONEER')).toBe('MEMBER');
+    expect(normalizeRole('HACKER')).toBe('MEMBER');
+    expect(normalizeRole('SUPER_ADMIN')).toBe('SUPER_ADMIN');
+    expect(normalizeRole(undefined)).toBeUndefined();
+    expect(normalizeRole(null)).toBeUndefined();
+  });
+});
+
 describe('homeFor', () => {
-  it('maps each role to its landing page', () => {
+  it('sends admins to /admin and every member (including legacy roles) to /auctions', () => {
     expect(homeFor('SUPER_ADMIN')).toBe('/admin');
-    expect(homeFor('AUCTIONEER')).toBe('/sell/auctions');
+    expect(homeFor('MEMBER')).toBe('/auctions');
     expect(homeFor('BIDDER')).toBe('/auctions');
+    expect(homeFor('AUCTIONEER')).toBe('/auctions');
   });
 });
 
@@ -55,8 +67,10 @@ describe('route classes (role -> allowed areas)', () => {
     expect(isAuthRoute('/auctions')).toBe(false);
     expect(isAuthRoute('/auctions')).toBe(false);
     expect(isAdminRoute('/admin/members')).toBe(true);
-    expect(isAuctioneerRoute('/sell/auctions/new')).toBe(true);
-    expect(isBidderRoute('/my-bids')).toBe(true);
+    expect(isMemberRoute('/sell/auctions/new')).toBe(true);
+    expect(isMemberRoute('/sell')).toBe(true);
+    expect(isMemberRoute('/my-bids')).toBe(true);
+    expect(isMemberRoute('/purchases/offers/o1')).toBe(true);
     expect(isMemberRoute('/profile')).toBe(true);
     expect(isMemberRoute('/notifications')).toBe(true);
   });
@@ -76,8 +90,7 @@ describe('route classes (role -> allowed areas)', () => {
   });
   it('each role home is reachable by that role', () => {
     expect(isAdminRoute(homeFor('SUPER_ADMIN'))).toBe(true);
-    expect(isAuctioneerRoute(homeFor('AUCTIONEER'))).toBe(true);
-    expect(isPublicRoute(homeFor('BIDDER'))).toBe(true);
+    expect(isPublicRoute(homeFor('MEMBER'))).toBe(true);
   });
 });
 
@@ -91,7 +104,7 @@ describe('gateFor (edge gate decision table)', () => {
     }
   });
   it('signed-in users are sent home from guest-only routes, including "/"', () => {
-    for (const role of ['BIDDER', 'AUCTIONEER', 'SUPER_ADMIN'] as const) {
+    for (const role of ['MEMBER', 'BIDDER', 'AUCTIONEER', 'SUPER_ADMIN'] as const) {
       expect(gateFor('/', role)).toBe('home');
       expect(gateFor('/login', role)).toBe('home');
     }
@@ -104,34 +117,27 @@ describe('gateFor (edge gate decision table)', () => {
       expect(gateFor(p, 'SUPER_ADMIN')).toBe('home'); // -> /admin
     }
   });
-  it('BIDDER / AUCTIONEER never reach /admin; the bidder/auctioneer split holds', () => {
-    expect(gateFor('/admin/members', 'BIDDER')).toBe('home');
-    expect(gateFor('/admin', 'AUCTIONEER')).toBe('home');
-    expect(gateFor('/my-bids', 'BIDDER')).toBe('allow');
-    expect(gateFor('/my-bids', 'AUCTIONEER')).toBe('home');
-    expect(gateFor('/sell/new', 'AUCTIONEER')).toBe('allow');
-    expect(gateFor('/sell/new', 'BIDDER')).toBe('home');
-    for (const role of ['BIDDER', 'AUCTIONEER'] as const) {
-      for (const p of ['/watchlist', '/profile', '/notifications']) expect(gateFor(p, role)).toBe('allow');
-    }
-  });
-  it('Phase C routes: purchases are BIDDER only, sales and payouts AUCTIONEER only, admin sales SUPER_ADMIN only', () => {
-    for (const p of ['/purchases', '/purchases/s1']) {
-      expect(isBidderRoute(p)).toBe(true);
-      expect(gateFor(p, 'BIDDER')).toBe('allow');
-      expect(gateFor(p, 'AUCTIONEER')).toBe('home');
-      expect(gateFor(p, 'SUPER_ADMIN')).toBe('home');
-      expect(gateFor(p, undefined)).toBe('login');
-    }
-    for (const p of ['/sell/sales', '/sell/sales/s1', '/sell/payouts', '/sell/analytics']) {
-      expect(gateFor(p, 'AUCTIONEER')).toBe('allow');
-      expect(gateFor(p, 'BIDDER')).toBe('home');
+  it('MEMBER never reaches /admin, and reaches every member area', () => {
+    expect(gateFor('/admin/members', 'MEMBER')).toBe('home');
+    expect(gateFor('/admin', 'MEMBER')).toBe('home');
+    for (const p of ['/my-bids', '/purchases', '/purchases/s1', '/purchases/offers/o1', '/sell/new', '/sell/auctions', '/sell/sales', '/sell/sales/s1', '/sell/payouts', '/sell/analytics', '/watchlist', '/profile', '/notifications']) {
+      expect(gateFor(p, 'MEMBER')).toBe('allow');
       expect(gateFor(p, 'SUPER_ADMIN')).toBe('home');
       expect(gateFor(p, undefined)).toBe('login');
     }
     expect(gateFor('/admin/sales', 'SUPER_ADMIN')).toBe('allow');
-    expect(gateFor('/admin/sales', 'BIDDER')).toBe('home');
+    expect(gateFor('/admin/sales', 'MEMBER')).toBe('home');
     expect(gateFor('/admin/sales', undefined)).toBe('login');
+  });
+  it('legacy BIDDER / AUCTIONEER roles (one release) are treated as MEMBER', () => {
+    for (const role of ['BIDDER', 'AUCTIONEER'] as const) {
+      for (const p of ['/my-bids', '/purchases', '/sell/new', '/sell/sales', '/watchlist', '/profile']) {
+        expect(gateFor(p, role)).toBe('allow');
+      }
+      expect(gateFor('/admin', role)).toBe('home');
+      expect(gateFor('/admin/members', role)).toBe('home');
+      expect(gateFor('/login', role)).toBe('home');
+    }
   });
   it('isGatedRoute covers exactly the areas the gate cares about', () => {
     expect(isGatedRoute('/')).toBe(true);
@@ -143,20 +149,13 @@ describe('gateFor (edge gate decision table)', () => {
 
 describe('destinationFor', () => {
   it('members follow a safe ?next=, falling back to their home', () => {
-    expect(destinationFor('BIDDER', '/auctions/abc')).toBe('/auctions/abc');
-    expect(destinationFor('AUCTIONEER', '//evil.com')).toBe('/sell/auctions');
-    expect(destinationFor('BIDDER', null)).toBe('/auctions');
+    expect(destinationFor('MEMBER', '/auctions/abc')).toBe('/auctions/abc');
+    expect(destinationFor('MEMBER', '//evil.com')).toBe('/auctions');
+    expect(destinationFor('MEMBER', null)).toBe('/auctions');
+    expect(destinationFor('BIDDER', '/sell/new')).toBe('/sell/new');
+    expect(destinationFor('AUCTIONEER', null)).toBe('/auctions');
   });
   it('SUPER_ADMIN always lands on /admin', () => {
     expect(destinationFor('SUPER_ADMIN', '/auctions/abc')).toBe('/admin');
-  });
-});
-
-describe('second-chance offer routes', () => {
-  it('/purchases/offers/* is in the bidder class', () => {
-    expect(isBidderRoute('/purchases/offers/o1')).toBe(true);
-    expect(gateFor('/purchases/offers/o1', 'BIDDER')).toBe('allow');
-    expect(gateFor('/purchases/offers/o1', 'AUCTIONEER')).toBe('home');
-    expect(gateFor('/purchases/offers/o1', undefined)).toBe('login');
   });
 });

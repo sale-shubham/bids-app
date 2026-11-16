@@ -1,6 +1,6 @@
 # Referrals and credits
 
-Code: `src/features/referrals/` (`referral-code.ts`, `referrals.api/types.ts`, `use-referrals.ts`, `components/{refer-card,credit-ledger}.tsx`), signup page `src/app/(auth)/signup/page.tsx`, profile tab in `src/components/common/profile-page.tsx`, commission credits in `src/app/(auctioneer)/sell/commissions/page.tsx`, admin credits in `src/features/admin/components/adjust-credits-dialog.tsx`.
+Code: `src/features/referrals/` (`referral-code.ts`, `referrals.api/types.ts`, `use-referrals.ts`, `components/{refer-card,credit-ledger}.tsx`), signup page `src/app/(auth)/signup/page.tsx`, profile tab in `src/components/common/profile-page.tsx`, commission credits in `src/app/(member)/sell/commissions/page.tsx`, admin credits in `src/features/admin/components/adjust-credits-dialog.tsx`.
 
 ## Capturing a code
 The invite link is `/signup?ref=CODE`. The signup page reads `window.location.search` in an effect and `captureReferralCode` stores `{ code, expires }` in `localStorage` (`nb_ref`, 30 days, every access in try/catch; codes must match `^[A-Za-z0-9_-]{3,40}$`). On submit `readReferralCode()` is sent as `referralCode` in `POST /auth/signup` (omitted when none); a successful signup clears it.

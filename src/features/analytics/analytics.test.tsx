@@ -108,7 +108,7 @@ describe('useTrackAuctionView', () => {
   });
 
   it('skips the seller and swallows failures', () => {
-    useAuthStore.setState({ member: { id: 's1', role: 'AUCTIONEER' } as AuthMember, initialized: true });
+    useAuthStore.setState({ member: { id: 's1', role: 'MEMBER' } as AuthMember, initialized: true });
     renderHook(() => useTrackAuctionView('a1', 's1'));
     expect(api.recordAuctionView).not.toHaveBeenCalled();
 

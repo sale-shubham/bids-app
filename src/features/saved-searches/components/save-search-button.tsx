@@ -15,14 +15,14 @@ import { savedSearchSchema, type SavedSearchFormValues } from '../saved-searches
 import { hasSearchCriteria, summarizeSavedSearch, toSavedSearchPayload } from '../saved-searches.utils';
 import { useCreateSavedSearch } from '../use-saved-searches';
 
-/** "Save this search" for signed-in bidders once a search/filter is set; opens a name dialog. */
+/** "Save this search" for signed-in members once a search/filter is set; opens a name dialog. */
 export function SaveSearchButton({ filters }: { filters: AuctionFilters }) {
-  const isBidder = useAuthStore((s) => s.member?.role === 'BIDDER');
+  const isMember = useAuthStore((s) => s.member?.role === 'MEMBER');
   const create = useCreateSavedSearch();
   const [open, setOpen] = React.useState(false);
   const form = useForm<SavedSearchFormValues>({ resolver: zodResolver(savedSearchSchema), defaultValues: { name: '' } });
 
-  if (!isBidder || !hasSearchCriteria(filters)) return null;
+  if (!isMember || !hasSearchCriteria(filters)) return null;
 
   const payload = toSavedSearchPayload(filters);
   const summary = summarizeSavedSearch({

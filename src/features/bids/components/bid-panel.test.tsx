@@ -42,7 +42,7 @@ const auction = (over: Partial<AuctionDetail> = {}): AuctionDetail =>
     ...over,
   }) as unknown as AuctionDetail;
 
-const member = (over: Partial<AuthMember> = {}) => ({ id: 'me', role: 'BIDDER', ...over }) as AuthMember;
+const member = (over: Partial<AuthMember> = {}) => ({ id: 'me', role: 'MEMBER', ...over }) as AuthMember;
 const signIn = (m: AuthMember | null) => useAuthStore.setState({ member: m, initialized: true });
 
 function renderPanel(a: AuctionDetail) {
@@ -71,10 +71,10 @@ describe('BidPanel states', () => {
     expect(screen.queryByRole('link', { name: 'Log in to bid' })).not.toBeInTheDocument();
   });
 
-  it('non-bidder accounts get a note instead of controls', async () => {
-    signIn(member({ role: 'AUCTIONEER' }));
+  it('admin accounts get a note instead of controls', async () => {
+    signIn(member({ role: 'SUPER_ADMIN' }));
     renderPanel(auction());
-    expect(await screen.findByText('Only bidder accounts can bid.')).toBeInTheDocument();
+    expect(await screen.findByText('Admin accounts cannot place bids.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Place bid' })).not.toBeInTheDocument();
   });
 

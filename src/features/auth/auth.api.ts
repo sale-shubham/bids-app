@@ -3,8 +3,6 @@ import type { AuthMember } from '@/store/auth-store';
 import { getDeviceInfo, type DeviceInfo } from '@/lib/device-info';
 
 // Every success body is the bids-api envelope `{ success: true, data }`.
-export type SignupRole = 'BIDDER' | 'AUCTIONEER';
-
 export interface OtpSent {
   email: string;
   resendAfterSec: number;
@@ -15,7 +13,6 @@ export async function signup(input: {
   name: string;
   email: string;
   password: string;
-  role: SignupRole;
   /** Remembered `?ref=` code, when there is one. */
   referralCode?: string;
 }): Promise<OtpSent> {
