@@ -8,7 +8,7 @@ When an auction sells and the seller has an ACTIVE payout account, the API creat
 ## Routes and entry points
 | Route | Who | Purpose |
 |---|---|---|
-| `/purchases` | MEMBER (as buyer) | `PageHeader` + `ListToolbar` status tabs in the URL (`?tab=`: All / Awaiting payment / Paid / Shipped / Completed / Disputed / Offers) over `SaleListBody`, infinite scroll (`SALES_PAGE_SIZE` 20) |
+| `/purchases` | MEMBER (as buyer) | `PageHeader` + `ListToolbar` status tabs in the URL (`?tab=`: All / Awaiting payment / Paid / Shipped / Completed / Disputed / Offers) over `SaleListBody` (`usePagedList`: paged table on wide, infinite cards on narrow; `page` / `pageSize` read from the URL inside the body). `/sell/sales` is `SaleList` (`?status=` tabs) over the same body; row actions (Pay now / Ship / View) are in a `RowActionsMenu`, and the single next step (buyer Pay now on AWAITING_PAYMENT, solid; seller Ship on PAID, outline) also shows as a small inline button beside the menu on table rows and cards. `SaleDetailPage` uses `Notice` for the closed-payment-window and dispute-reason warnings |
 | `/purchases/[id]` | MEMBER (as buyer) | `SaleDetailPage view="buyer"` (`PageHeader` with back button): item, amount breakdown, progress timeline, seller contact once paid, delivery info, `PurchaseActions` |
 | `/sell/sales` | MEMBER (as seller) | `SaleList role="seller"`, same tabs; "Ship" shortcut on PAID rows |
 | `/sell/sales/[id]` | MEMBER (as seller) | Same detail view: buyer contact once paid, payout + commission rows, `ShipForm` when PAID |
@@ -36,7 +36,7 @@ PAID / SHIPPED / DELIVERED / DISPUTED: **Release** (`POST /admin/sales/:id/relea
 `disputeSchema { reason: 10..1000 }`, `shipSchema { method, courier (required when COURIER, <=60), trackingNo (<=60) }`.
 
 ## Data and errors
-- Keys: `['sales','mine',role,status]` (infinite), `['sales','one',id]`; admin `['admin','sales',...]` via `useAdminList`.
+- Keys: `saleKeys.mine(role)` = `['sales','mine',role]` + `usePagedList` suffix (`'list'|'infinite'`, filters `{status}`, page, size), `['sales','one',id]`; admin `['admin','sales',...]` via `useAdminList`.
 - `sales.parse.ts` is the only place sale keys are mapped (optional `commissionPaise`, `payoutPaise`, `buyerContact`, `sellerContact` are omitted when absent).
 - `sales.errors.ts`: `SALE_NOT_FOUND`, `SALE_NOT_PAYABLE`, `PAYOUT_ACCOUNT_INACTIVE`, `SALE_INVALID_STATE` (the last three also refetch the sale lists via `isStaleSaleError`); payment errors fall back to the shared Razorpay codes in `commissions.errors.ts`.
 - Notifications `sale-receipt`, `sale-paid`, `sale-shipped`, `sale-released`, `sale-disputed`, `sale-refunded`, `sale-cancelled` render through the generic notification item; their urls are `/purchases/<id>` and `/sell/sales/<id>`.

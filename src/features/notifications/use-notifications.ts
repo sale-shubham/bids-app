@@ -1,11 +1,10 @@
 'use client';
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { nextPagedParam } from '@/lib/paged';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { usePagedList } from '@/hooks/use-paged-list';
 import { unreadCountKey, useUnreadMessageCount } from '@/features/push/use-push';
 import { useAuthStore } from '@/store/auth-store';
 import * as api from './notifications.api';
 
-export const NOTIFICATIONS_PAGE_SIZE = 20;
 export const BELL_LIMIT = 10;
 
 /** Unread total (polled every 60 s while the tab is visible; shared with the app-icon badge). */
@@ -22,14 +21,9 @@ export function useLatestNotifications(enabled: boolean) {
   });
 }
 
-/** Full paginated list for /notifications. */
-export function useNotificationList() {
-  return useInfiniteQuery({
-    queryKey: ['notifications', 'list'],
-    queryFn: ({ pageParam }) => api.fetchNotifications(pageParam, NOTIFICATIONS_PAGE_SIZE),
-    initialPageParam: 1,
-    getNextPageParam: nextPagedParam,
-  });
+/** Full paginated list for /notifications. Keys start with `['notifications']` (invalidated by pushes, sockets and mutations); `'latest'` (the bell) stays separate. */
+export function useNotificationList(page: number, pageSize: number) {
+  return usePagedList(['notifications'], {}, page, pageSize, (_f, p, size) => api.fetchNotifications(p, size));
 }
 
 function useRefreshNotifications() {

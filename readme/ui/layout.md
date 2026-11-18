@@ -6,7 +6,7 @@ How pages assemble. The app uses **Next.js 16 App Router route groups**: each pr
 
 | Group / folder | Routes | Chrome | Guard |
 |---|---|---|---|
-| `(member)` | `/my-bids`, `/purchases`, `/purchases/[id]`, `/purchases/offers/[id]`, `/sell/*`, `/watchlist`, `/profile`, `/notifications` | `DashboardShell`; also mounts `<PushPermissionPrompt>` | `AuthGuard allow={['MEMBER']}` (legacy `BIDDER` / `AUCTIONEER` count as MEMBER) |
+| `(member)` | `/my-bids`, `/purchases`, `/purchases/[id]`, `/purchases/offers/[id]`, `/sell/*`, `/watchlist`, `/profile`, `/notifications` | `DashboardShell`; also mounts `<PushPermissionPrompt>` and `<StrikeBanner>` (buying paths only) | `AuthGuard allow={['MEMBER']}` (legacy `BIDDER` / `AUCTIONEER` count as MEMBER) |
 | `(member)/sell` | `/sell/auctions`, `/sell/new`, `/sell/auctions/[id]`, `/sell/auctions/[id]/edit`, `/sell/commissions`, `/sell/sales`, `/sell/payouts`, `/sell/analytics`, `/sell/bulk` | nested `sell/layout.tsx`: `<UnpaidCommissionBanner>` above the page (it hides itself on `/sell/commissions`, `/sell/new` and the edit page) | inherited from `(member)` |
 | `(admin)` | `/admin`, `/admin/members`, `/admin/auctions`, `/admin/commissions`, `/admin/payments`, `/admin/settings`, `/admin/profile` | `DashboardShell`; the sidebar (`ADMIN_NAV`) lists every admin page, so there is no separate sub-navigation | `AuthGuard allow={['SUPER_ADMIN']}` |
 | `(auth)` | `/login`, `/signup`, `/forgot-password`, `/reset-password` | header with the wordmark + a centred `max-w-md` column | none (guest-only at the edge) |

@@ -25,7 +25,7 @@ export async function fetchAuctionBids(auctionId: string, page: number) {
   return parseBidPage(res.data);
 }
 
-export async function fetchMyBids(tab: MyBidsTab, page: number) {
-  const res = await api.get('/bids/mine', { params: { tab, page, pageSize: BIDS_PAGE_SIZE } });
+export async function fetchMyBids(tab: MyBidsTab, page: number, pageSize: number = BIDS_PAGE_SIZE) {
+  const res = await api.get('/bids/mine', { params: { tab, page, pageSize } });
   return parseMyBidsPage(res.data);
 }

@@ -3,10 +3,8 @@ import { parseCheckout } from '@/features/commissions/commissions.parse';
 import { parseSalePage, parseSaleResponse } from './sales.parse';
 import type { SaleListRole, SaleStatus, ShipSaleInput, ShippingMethod } from './sales.types';
 
-export const SALES_PAGE_SIZE = 20;
-
-export async function fetchMySales(role: SaleListRole, status: SaleStatus | 'all', page: number) {
-  const params: Record<string, string | number> = { role, page, pageSize: SALES_PAGE_SIZE };
+export async function fetchMySales(role: SaleListRole, status: SaleStatus | 'all', page: number, pageSize: number) {
+  const params: Record<string, string | number> = { role, page, pageSize };
   if (status !== 'all') params.status = status;
   const res = await api.get('/sales/mine', { params });
   return parseSalePage(res.data);

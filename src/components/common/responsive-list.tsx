@@ -35,7 +35,15 @@ interface MobileConfig<T> {
 interface ResponsiveListProps<T> {
   desktop: DesktopConfig<T>;
   mobile: MobileConfig<T>;
-  empty: { icon: LucideIcon; title: string; description: string };
+  empty: {
+    icon: LucideIcon;
+    title: string;
+    description: string;
+    /** Optional call to action: a link (`actionHref`) or a click handler (`onAction`). */
+    actionLabel?: string;
+    actionHref?: string;
+    onAction?: () => void;
+  };
   /** Stable key for each mobile card. */
   getKey: (item: T) => React.Key;
 }
@@ -58,7 +66,14 @@ interface ResponsiveListProps<T> {
  */
 export function ResponsiveList<T>({ desktop, mobile, empty, getKey }: ResponsiveListProps<T>) {
   const emptyState = (
-    <EmptyState icon={empty.icon} title={empty.title} description={empty.description} />
+    <EmptyState
+      icon={empty.icon}
+      title={empty.title}
+      description={empty.description}
+      actionLabel={empty.actionLabel}
+      actionHref={empty.actionHref}
+      onAction={empty.onAction}
+    />
   );
 
   return (

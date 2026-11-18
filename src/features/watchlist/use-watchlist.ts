@@ -1,9 +1,9 @@
 'use client';
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { apiErrorMessage } from '@/lib/api-client';
 import { recordEngagement } from '@/lib/engagement';
-import { nextPagedParam } from '@/lib/paged';
+import { usePagedList } from '@/hooks/use-paged-list';
 import { useAuthStore } from '@/store/auth-store';
 import * as api from './watchlist.api';
 import type { WatchlistIds } from './watchlist.api';
@@ -32,13 +32,9 @@ export function useIsWatching(auctionId: string): boolean {
   return !!data?.ids.includes(auctionId);
 }
 
-export function useWatchlist() {
-  return useInfiniteQuery({
-    queryKey: watchlistKey,
-    queryFn: ({ pageParam }) => api.fetchWatchlist(pageParam),
-    initialPageParam: 1,
-    getNextPageParam: nextPagedParam,
-  });
+/** The watchlist, paged (table on wide, infinite cards on narrow). Keys start with `watchlistKey`, which every toggle invalidates. */
+export function useWatchlist(page: number, pageSize: number) {
+  return usePagedList(watchlistKey, {}, page, pageSize, (_f, p, size) => api.fetchWatchlist(p, size));
 }
 
 /** Optimistic add/remove with rollback; ids, list and the auction detail are refetched afterwards. */

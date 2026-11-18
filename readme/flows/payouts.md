@@ -7,6 +7,7 @@ Platform setting `checkoutMode`: `off` (winner and seller arrange payment themse
 
 ## `/sell/payouts` (`PayoutAccountPanel`)
 - `GET /payouts/account` -> `{ account | null }` (`['payouts','account']`).
+- Load error: `Notice` (error) plus a Try again button.
 - No account: explanation + `PayoutForm`.
 - Account: `PayoutStatusCard` with the status badge, an explanation, the API's `statusReason`, account holder, **only `•••• <bankLast4>`** and IFSC. Statuses: PENDING (verifying), NEEDS_CLARIFICATION (more information needed), ACTIVE, SUSPENDED (contact support), REJECTED (shows the form again to resubmit).
 - `PayoutForm` posts `POST /payouts/account`: legal name, business type (individual / proprietorship), mobile, PAN, account number (+ confirm), IFSC, account holder, address (street, city, state, postal code). The account number inputs are `type="password"` (masked), `autoComplete="off"`, and the form is reset right after a successful submit; the number is never shown again and never stored client-side. The result is written to the query cache.

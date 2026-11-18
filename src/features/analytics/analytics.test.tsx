@@ -8,6 +8,12 @@ import { AuctionAnalyticsSection } from './components/auction-analytics-section'
 import { SellerAnalyticsPage } from './components/seller-analytics-page';
 import { resetTrackedViews, useTrackAuctionView } from './use-analytics';
 
+const nav = vi.hoisted(() => ({ search: '', replace: vi.fn() }));
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ replace: nav.replace }),
+  usePathname: () => '/sell/analytics',
+  useSearchParams: () => new URLSearchParams(nav.search),
+}));
 vi.mock('./analytics.api', async (orig) => ({ ...(await orig<typeof import('./analytics.api')>()), fetchSellerAnalytics: vi.fn(), fetchAuctionAnalytics: vi.fn(), recordAuctionView: vi.fn() }));
 // Recharts needs real layout; the chart itself is not under test.
 vi.mock('./components/analytics-charts', () => ({ DailyChart: () => <div data-testid="chart" /> }));
@@ -31,6 +37,7 @@ const seller = (over = {}) => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  nav.search = '';
   resetTrackedViews();
   useAuthStore.setState({ member: null, initialized: true });
 });
@@ -51,15 +58,29 @@ describe('SellerAnalyticsPage', () => {
     expect(firstTitle()).toBe('Old clock');
   });
 
-  it('switching the day range refetches under a new query key', async () => {
+  it('keeps the day range in the URL and refetches under a new query key', async () => {
     vi.mocked(api.fetchSellerAnalytics).mockResolvedValue(seller());
-    const { client } = wrap(<SellerAnalyticsPage />);
+    const { client, unmount } = wrap(<SellerAnalyticsPage />);
     await screen.findByText('Unique viewers');
     expect(api.fetchSellerAnalytics).toHaveBeenCalledWith(30);
     await userEvent.click(screen.getByRole('button', { name: '7 days' }));
+    expect(nav.replace).toHaveBeenCalledWith('/sell/analytics?days=7', { scroll: false });
+    unmount();
+    nav.search = 'days=7';
+    const second = wrap(<SellerAnalyticsPage />);
     await waitFor(() => expect(api.fetchSellerAnalytics).toHaveBeenCalledWith(7));
-    expect(client.getQueryData(['analytics', 'seller', 7])).toBeTruthy();
+    expect(second.client.getQueryData(['analytics', 'seller', 7])).toBeTruthy();
+    expect(client).toBeTruthy();
     expect(screen.getByRole('button', { name: '7 days' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('falls back to 30 days for a value the switch does not offer', async () => {
+    nav.search = 'days=5';
+    vi.mocked(api.fetchSellerAnalytics).mockResolvedValue(seller());
+    wrap(<SellerAnalyticsPage />);
+    await screen.findByText('Unique viewers');
+    expect(api.fetchSellerAnalytics).toHaveBeenCalledWith(30);
+    expect(api.fetchSellerAnalytics).not.toHaveBeenCalledWith(5);
   });
 
   it('shows an empty state with no data', async () => {

@@ -1,7 +1,7 @@
 'use client';
 import * as React from 'react';
 import Link from 'next/link';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTheme } from 'next-themes';
 import { toast } from 'sonner';
@@ -75,7 +75,7 @@ export interface ProfileTab {
 //
 // `?tab=<value>` picks the opening tab. A starting value only — switching
 // tabs does not rewrite the URL. An unknown value opens the first tab.
-export function MorePage(props: { nav: NavItem[]; title: string; tabs: ProfileTab[] }) {
+export function MorePage(props: { nav: NavItem[]; title: string; description?: string; tabs: ProfileTab[] }) {
   // useSearchParams() needs a Suspense boundary; nothing above it reads the
   // query, so the fallback is never seen.
   return (
@@ -88,13 +88,17 @@ export function MorePage(props: { nav: NavItem[]; title: string; tabs: ProfileTa
 function ProfileTabs({
   nav,
   title,
+  description,
   tabs,
 }: {
   nav: NavItem[];
   title: string;
+  description?: string;
   tabs: ProfileTab[];
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const sp = useSearchParams();
   const overflow = getOverflowNavItems(nav);
 
   const allTabs: ProfileTab[] = [
@@ -104,17 +108,22 @@ function ProfileTabs({
     { value: 'app', label: 'App', icon: MonitorSmartphone, content: <AppCard /> },
   ];
 
-  // Derived, not reset in an effect: if the picked tab is not in the list
-  // (bad `?tab=`) the first one shows.
-  const requested = useSearchParams().get('tab');
-  const [picked, setPicked] = React.useState(requested ?? '');
-  const active = allTabs.some((t) => t.value === picked) ? picked : allTabs[0].value;
+  // Derived from the URL: if `?tab=` is not one of the tabs offered, the first one shows.
+  const requested = sp.get('tab') ?? '';
+  const active = allTabs.some((t) => t.value === requested) ? requested : allTabs[0].value;
+  const setTab = (value: string) => {
+    const next = new URLSearchParams(sp.toString());
+    if (value === allTabs[0].value) next.delete('tab');
+    else next.set('tab', value);
+    const qs = next.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  };
 
   // Stands in for the bottom bar, so it goes where the bar does — a phone
-  // only; from md the sidebar lists every one of these items. Sits at the top
+  // only (narrow content); on wide content the sidebar lists every one of these items. Sits at the top
   // of the first tab, under the strip.
   const quickLinks = overflow.length > 0 && (
-    <div className="mb-5 grid grid-cols-3 gap-3 md:hidden">
+    <div className="mb-5 grid grid-cols-3 gap-3 @lg/content:hidden">
       {overflow.map((item) => {
         const current = isNavActive(pathname, item.href);
         return (
@@ -137,9 +146,9 @@ function ProfileTabs({
 
   return (
     <div className="space-y-4">
-      <PageHeader title={title} />
+      <PageHeader title={title} description={description} />
 
-      <Tabs value={active} onValueChange={setPicked}>
+      <Tabs value={active} onValueChange={setTab}>
         {/* A phone gets an even, text-only strip so every tab (App holds
             Logout) fits on one row; from @lg the strip hugs its tabs at the
             left edge, icons back. */}

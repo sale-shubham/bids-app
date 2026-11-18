@@ -96,13 +96,15 @@ describe('OffersList', () => {
   it('lists only PENDING offers and links to each', () => {
     m.offers = [offer(), offer({ id: 'o2', status: 'EXPIRED' })];
     render(<OffersList />);
-    expect(screen.getAllByRole('link', { name: 'View offer' })).toHaveLength(1);
-    expect(screen.getByRole('link', { name: 'View offer' })).toHaveAttribute('href', '/purchases/offers/o1');
+    // The table (wide) and the card (narrow) both render; the container query hides one.
+    const links = screen.getAllByRole('link', { name: 'View offer' });
+    expect(links).toHaveLength(2);
+    for (const l of links) expect(l).toHaveAttribute('href', '/purchases/offers/o1');
   });
   it('shows the empty state without pending offers', () => {
     m.offers = [offer({ status: 'ACCEPTED' })];
     render(<OffersList />);
-    expect(screen.getByText('No offers')).toBeInTheDocument();
+    expect(screen.getAllByText('No offers').length).toBeGreaterThan(0);
   });
 });
 

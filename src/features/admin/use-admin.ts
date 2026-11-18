@@ -1,8 +1,7 @@
 'use client';
-import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { nextPagedParam, type Paged } from '@/lib/paged';
-import { MOBILE_PAGE_SIZE } from '@/lib/pagination';
-import { useIsNarrowContent } from '@/hooks/use-is-narrow-content';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { Paged } from '@/lib/paged';
+import { usePagedList } from '@/hooks/use-paged-list';
 import * as api from './admin.api';
 import type { AdminSettings, LegalSlug } from './admin.types';
 
@@ -17,10 +16,7 @@ export function useAdminDashboard() {
   return useQuery({ queryKey: adminKeys.dashboard, queryFn: api.fetchDashboard });
 }
 
-/**
- * Dual-pagination list (docs/PAGINATION.md): wide layouts run the offset
- * `useQuery`, narrow ones the infinite query; only one is enabled at a time.
- */
+/** Admin lists share `usePagedList`; keys stay `['admin', resource, 'list' | 'infinite', ...]`. */
 export function useAdminList<T, F extends object>(
   resource: string,
   filters: F,
@@ -28,27 +24,7 @@ export function useAdminList<T, F extends object>(
   pageSize: number,
   fetcher: (f: F, page: number, pageSize: number) => Promise<Paged<T>>,
 ) {
-  const narrow = useIsNarrowContent();
-  const desktop = useQuery({
-    queryKey: ['admin', resource, 'list', filters, page, pageSize],
-    queryFn: () => fetcher(filters, page, pageSize),
-    enabled: !narrow,
-    placeholderData: keepPreviousData,
-  });
-  const mobile = useInfiniteQuery({
-    queryKey: ['admin', resource, 'infinite', filters],
-    queryFn: ({ pageParam }) => fetcher(filters, pageParam, MOBILE_PAGE_SIZE),
-    initialPageParam: 1,
-    getNextPageParam: nextPagedParam<T>,
-    enabled: narrow,
-  });
-  return {
-    desktop,
-    mobile,
-    mobileItems: mobile.data?.pages.flatMap((p) => p.items) ?? [],
-    error: (narrow ? mobile.error : desktop.error) as unknown,
-    refetch: () => (narrow ? mobile.refetch() : desktop.refetch()),
-  };
+  return usePagedList<T, F>(['admin', resource], filters, page, pageSize, fetcher);
 }
 
 export const useAdminMembers = (f: Parameters<typeof api.fetchMembers>[0], page: number, size: number) =>

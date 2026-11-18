@@ -3,6 +3,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { Check, Circle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Notice } from '@/components/common/notice';
 import { ContactCard } from '@/components/common/contact-card';
 import { CoverImage } from '@/features/auctions/components/auction-card';
 import { formatDate, formatINR } from '@/lib/utils';
@@ -137,10 +138,10 @@ export function SaleDetailView({ sale, children }: { sale: SaleDTO; children?: R
           {sale.buyerContact && <ContactCard title="Buyer contact" contact={sale.buyerContact} />}
           <ShippingInfo sale={sale} />
           {sale.disputeReason && (
-            <div className="space-y-1 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Reported problem</p>
+            <Notice tone="error" className="@lg/content:col-span-2">
+              <p className="text-xs font-medium uppercase tracking-wide">Reported problem</p>
               <p className="whitespace-pre-line wrap-break-word">{sale.disputeReason}</p>
-            </div>
+            </Notice>
           )}
         </div>
       )}

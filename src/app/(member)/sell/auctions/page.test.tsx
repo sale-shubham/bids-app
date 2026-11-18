@@ -18,6 +18,7 @@ vi.mock('next/image', () => ({
   // eslint-disable-next-line @next/next/no-img-element
   default: ({ src, alt }: ImgHTMLAttributes<HTMLImageElement> & { fill?: boolean }) => <img src={src as string} alt={alt} />,
 }));
+vi.mock('@/hooks/use-is-narrow-content', () => ({ useIsNarrowContent: () => false }));
 vi.mock('@/features/auctions/auctions.api');
 vi.mock('@/features/auctions/components/republish-dialog', () => ({ RepublishDialog: () => null }));
 
@@ -40,7 +41,7 @@ const auction = (over: Partial<AuctionCard> = {}): AuctionCard => ({
   reserveMet: false,
   ...over,
 });
-const pageOf = (a: AuctionCard) => ({ items: [a], nextCursor: null, meta: { total: 1, page: 1, pageSize: 20, totalPages: 1 } }) as never;
+const pageOf = (a: AuctionCard) => ({ items: [a], meta: { total: 1, page: 1, pageSize: 20, totalPages: 1 } }) as never;
 
 const setup = () =>
   render(
@@ -89,6 +90,17 @@ describe('SellAuctionsPage', () => {
     expect(screen.getByRole('menuitem', { name: 'Edit' })).toHaveAttribute('href', '/sell/auctions/a1/edit');
     await userEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
     expect(await screen.findByText('Delete this auction?')).toBeInTheDocument();
+  });
+
+  it('shows the per-tab empty copy and an error with Try again', async () => {
+    vi.mocked(auctionsApi.fetchMyAuctions).mockResolvedValue({ items: [], meta: { total: 0, page: 1, pageSize: 10, totalPages: 1 } } as never);
+    const { unmount } = setup();
+    expect(await screen.findByText('No live auctions')).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: 'Create auction' })[0]).toHaveAttribute('href', '/sell/new');
+    unmount();
+    vi.mocked(auctionsApi.fetchMyAuctions).mockRejectedValue(new Error('boom'));
+    setup();
+    expect(await screen.findByRole('button', { name: 'Try again' })).toBeInTheDocument();
   });
 
   it('offers no Edit or Delete once there are bids', async () => {

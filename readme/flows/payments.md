@@ -23,7 +23,7 @@ A sold auction creates a 5% commission (DUE). While `me.unpaidCommissionPaise > 
 ## Queries
 Admin waive: see `admin.md` (optional `note`, saved as `waivedNote`, admin-only; sellers never see it).
 
-`['commissions', tab]` infinite (tabs due/paid/waived/all, page size 20), `['commissions','summary']`, `['me']`.
+`['commissions','mine']` via `usePagedList` (filters `{status}`; URL `?status=` tabs due/paid/waived/all; table + cards, pay button and credits checkbox stay inline per row), a `Notice` with the total unpaid / due / overdue replaces the old figure strip, `['commissions','summary']`, `['me']`.
 
 ## Credits and promotions (Phase G part 2)
 - `verifyPayment` also returns `referenceType: 'FEATURE'` (paid promotion, see `featured.md`).

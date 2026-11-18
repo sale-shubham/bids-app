@@ -1,14 +1,14 @@
 'use client';
 import * as React from 'react';
 import Link from 'next/link';
-import { ShoppingBag } from 'lucide-react';
+import { CreditCard, Eye, ShoppingBag, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { EmptyState } from '@/components/common/empty-state';
-import { InfiniteScroll } from '@/components/common/infinite-scroll';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ListToolbar } from '@/components/common/list-toolbar';
-import { StatusTabs } from '@/features/admin/components/admin-list';
+import { PagedList } from '@/components/common/paged-list';
+import { RowActionsMenu, type RowAction } from '@/components/common/row-actions-menu';
+import { StatusTabs } from '@/components/common/status-tabs';
 import { useUrlState } from '@/features/admin/use-url-state';
 import { CoverImage } from '@/features/auctions/components/auction-card';
 import { formatDate, formatINR } from '@/lib/utils';
@@ -17,86 +17,135 @@ import { SALE_TABS } from '../sales.utils';
 import { useMySales } from '../use-sales';
 import { SaleStatusBadge } from './sale-status-badge';
 
-function SaleRow({ sale, role }: { sale: SaleDTO; role: SaleListRole }) {
-  const href = role === 'buyer' ? `/purchases/${sale.id}` : `/sell/sales/${sale.id}`;
-  const needsPayment = role === 'buyer' && sale.status === 'AWAITING_PAYMENT';
-  const needsShipping = role === 'seller' && sale.status === 'PAID';
+const hrefFor = (sale: SaleDTO, role: SaleListRole) => (role === 'buyer' ? `/purchases/${sale.id}` : `/sell/sales/${sale.id}`);
+
+/** The one main money action for a row (buyer pays, seller ships), shown inline beside the menu. */
+function NextStep({ sale, role }: { sale: SaleDTO; role: SaleListRole }) {
+  const href = hrefFor(sale, role);
+  if (role === 'buyer' && sale.status === 'AWAITING_PAYMENT')
+    return (
+      <Button asChild size="sm">
+        <Link href={href}>Pay now</Link>
+      </Button>
+    );
+  if (role === 'seller' && sale.status === 'PAID')
+    return (
+      <Button asChild size="sm" variant="outline">
+        <Link href={href}>Ship</Link>
+      </Button>
+    );
+  return null;
+}
+
+function rowActions(sale: SaleDTO, role: SaleListRole) {
+  const href = hrefFor(sale, role);
+  const menu: RowAction[] = [];
+  if (role === 'buyer' && sale.status === 'AWAITING_PAYMENT') menu.push({ label: 'Pay now', icon: CreditCard, href });
+  if (role === 'seller' && sale.status === 'PAID') menu.push({ label: 'Ship', icon: Truck, href });
+  menu.push({ label: 'View', icon: Eye, href });
   return (
-    <Card>
-      <CardContent className="flex flex-col gap-4 p-4 @lg/content:flex-row @lg/content:items-center">
-        <Link href={href} className="flex min-w-0 flex-1 items-center gap-3 hover:underline">
-          <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md bg-muted">
-            <CoverImage src={sale.auction.coverImage} alt={sale.auction.title} sizes="64px" />
-          </div>
-          <div className="min-w-0">
-            <p className="wrap-break-word font-medium">{sale.auction.title}</p>
-            <p className="text-xs text-muted-foreground">{role === 'buyer' ? `Seller: ${sale.seller.name}` : `Buyer: ${sale.buyer.name}`}</p>
-          </div>
-        </Link>
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm @lg/content:flex @lg/content:items-center">
-          <div>
-            <dt className="text-xs text-muted-foreground">Total</dt>
-            <dd className="font-semibold tnum">{formatINR(sale.amountPaise)}</dd>
-          </div>
-          {needsPayment && sale.payBy && (
-            <div>
-              <dt className="text-xs text-muted-foreground">Pay by</dt>
-              <dd>{formatDate(sale.payBy)}</dd>
-            </div>
-          )}
-        </dl>
-        <div className="flex flex-wrap items-center gap-2 @lg/content:justify-end">
-          <SaleStatusBadge status={sale.status} />
-          <Button asChild size="sm" variant={needsPayment || needsShipping ? 'default' : 'outline'}>
-            <Link href={href}>{needsPayment ? 'Pay now' : needsShipping ? 'Ship' : 'View'}</Link>
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="flex items-center justify-end gap-2">
+      <NextStep sale={sale} role={role} />
+      <RowActionsMenu name={sale.auction.title} actions={menu} />
+    </div>
   );
 }
 
-/** The rows, loading / error / empty states and infinite scroll for one status (`all` = every status). */
-export function SaleListBody({ role, status }: { role: SaleListRole; status: SaleStatus | 'all' }) {
-  const list = useMySales(role, status);
-  const items = list.data?.pages.flatMap((p) => p.items) ?? [];
-  const noun = role === 'buyer' ? 'purchases' : 'sales';
+const counterparty = (sale: SaleDTO, role: SaleListRole) => (role === 'buyer' ? sale.seller.name : sale.buyer.name);
+/** Awaiting-payment buyers see the deadline, everyone else the day the sale was made. */
+const dateLabel = (sale: SaleDTO, role: SaleListRole) =>
+  role === 'buyer' && sale.status === 'AWAITING_PAYMENT' && sale.payBy ? `Pay by ${formatDate(sale.payBy)}` : formatDate(sale.createdAt);
 
-  if (list.isLoading) {
-    return (
-      <div className="space-y-3">
-        {Array.from({ length: 3 }, (_, i) => (
-          <Skeleton key={i} className="h-24" />
-        ))}
-      </div>
-    );
-  }
-  if (list.isError) {
-    return <EmptyState icon={ShoppingBag} title={`Could not load your ${noun}`} actionLabel="Try again" onAction={() => void list.refetch()} />;
-  }
-  if (!items.length) {
-    return (
-      <EmptyState
-        icon={ShoppingBag}
-        title={`No ${noun}`}
-        description={role === 'buyer' ? 'Auctions you win are listed here, ready to pay for.' : 'When one of your auctions sells, the sale appears here.'}
-      />
-    );
-  }
+/** The table / cards, loading / error / empty states and pagination for one status (`all` = every status). Page and page size come from the URL. */
+export function SaleListBody({ role, status }: { role: SaleListRole; status: SaleStatus | 'all' }) {
+  const { page, pageSize, update } = useUrlState({});
+  const list = useMySales(role, status, page, pageSize);
+  const noun = role === 'buyer' ? 'purchases' : 'sales';
+  const who = role === 'buyer' ? 'Seller' : 'Buyer';
+
   return (
-    <div className="space-y-3">
-      {items.map((s) => (
-        <SaleRow key={s.id} sale={s} role={role} />
-      ))}
-      <InfiniteScroll onLoadMore={() => void list.fetchNextPage()} hasMore={!!list.hasNextPage} loading={list.isFetchingNextPage} />
-    </div>
+    <PagedList<SaleDTO>
+      list={list}
+      page={page}
+      onPageChange={(p) => update({ page: String(p) })}
+      onPageSizeChange={(s) => update({ pageSize: String(s) })}
+      getKey={(s) => s.id}
+      errorTitle={`Could not load your ${noun}`}
+      empty={{
+        icon: ShoppingBag,
+        title: `No ${noun}`,
+        description: role === 'buyer' ? 'Auctions you win are listed here, ready to pay for.' : 'When one of your auctions sells, the sale appears here.',
+      }}
+      renderTable={(items) => (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Item</TableHead>
+              <TableHead>{who}</TableHead>
+              <TableHead className="text-right">Total</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead className="w-px">
+                <span className="sr-only">Actions</span>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {items.map((s) => (
+              <TableRow key={s.id}>
+                <TableCell className="max-w-72">
+                  <Link href={hrefFor(s, role)} className="flex items-center gap-3 hover:underline">
+                    <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md bg-muted">
+                      <CoverImage src={s.auction.coverImage} alt={s.auction.title} sizes="48px" />
+                    </div>
+                    <span className="line-clamp-2 font-medium">{s.auction.title}</span>
+                  </Link>
+                </TableCell>
+                <TableCell className="max-w-48 truncate">{counterparty(s, role)}</TableCell>
+                <TableCell className="text-right tnum">{formatINR(s.amountPaise)}</TableCell>
+                <TableCell>
+                  <SaleStatusBadge status={s.status} />
+                </TableCell>
+                <TableCell className="whitespace-nowrap">{dateLabel(s, role)}</TableCell>
+                <TableCell className="text-right">{rowActions(s, role)}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+      renderCard={(s) => (
+        <Card>
+          <CardContent className="space-y-2 p-4">
+            <div className="flex items-center gap-3">
+              <Link href={hrefFor(s, role)} className="flex min-w-0 grow items-center gap-3 hover:underline">
+                <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-md bg-muted">
+                  <CoverImage src={s.auction.coverImage} alt={s.auction.title} sizes="56px" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-medium wrap-break-word">{s.auction.title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {who}: {counterparty(s, role)}
+                  </p>
+                </div>
+              </Link>
+              {rowActions(s, role)}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <SaleStatusBadge status={s.status} />
+              <span className="text-sm text-muted-foreground">{dateLabel(s, role)}</span>
+            </div>
+            <p className="text-sm font-semibold tnum">{formatINR(s.amountPaise)}</p>
+          </CardContent>
+        </Card>
+      )}
+    />
   );
 }
 
 const DEFAULTS = { status: 'all' };
 
 /**
- * Status-tabbed, infinite-scroll list of the caller's purchases (`buyer`) or sales (`seller`).
+ * Status-tabbed list of the caller's purchases (`buyer`) or sales (`seller`).
  * The tab lives in the URL (`?status=`), validated against `SALE_TABS`; needs a `<Suspense>` above it.
  * Pages that own their toolbar (`/purchases`) render `SaleListBody` directly.
  */

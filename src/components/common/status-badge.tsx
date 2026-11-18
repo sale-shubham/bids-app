@@ -32,6 +32,10 @@ const MAP: Record<string, { label: string; variant: Variant }> = {
   PAID: { label: 'Paid', variant: 'success' },
   COMPLETED: { label: 'Completed', variant: 'success' },
   FAILED: { label: 'Failed', variant: 'destructive' },
+  // commissions (DUE / PAID / WAIVED) and sales (CREATED until paid)
+  DUE: { label: 'Due', variant: 'warning' },
+  WAIVED: { label: 'Waived', variant: 'secondary' },
+  CREATED: { label: 'Created', variant: 'secondary' },
   // watchlist match alerts — shares FAILED above with payments.
   SENT: { label: 'Sent', variant: 'success' },
   CANCELLED: { label: 'Cancelled', variant: 'secondary' },

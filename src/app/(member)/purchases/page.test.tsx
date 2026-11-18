@@ -8,7 +8,6 @@ vi.mock('next/navigation', () => ({
   usePathname: () => '/purchases',
   useSearchParams: () => new URLSearchParams(m.qs),
 }));
-vi.mock('@/features/strikes/components/strike-banner', () => ({ StrikeBanner: () => <div>strike notice</div> }));
 vi.mock('@/features/second-chance/components/offers-section', () => ({
   usePendingOffers: () => ({ pending: [{ id: 'o1' }] }),
   OffersList: () => <div>offers list</div>,
@@ -23,10 +22,10 @@ beforeEach(() => {
 });
 
 describe('Purchases page', () => {
-  it('shows header, strike notice, and all purchases by default', () => {
+  it('shows the header and all purchases by default', () => {
     render(<PurchasesPage />);
     expect(screen.getByRole('heading', { name: 'Purchases' })).toBeInTheDocument();
-    expect(screen.getByText('strike notice')).toBeInTheDocument();
+    expect(screen.queryByText('strike notice')).not.toBeInTheDocument();
     expect(screen.getByText('purchases all')).toBeInTheDocument();
   });
   it('shows the Offers tab with a count and its list from the URL', () => {

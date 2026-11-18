@@ -1,6 +1,7 @@
 import { api } from '@/lib/api-client';
 import { useLiveStore } from '@/store/live-store';
-import { auctionListParams, pageParams } from './auctions.filters';
+import { parsePaged, type Paged } from '@/lib/paged';
+import { auctionListParams } from './auctions.filters';
 import {
   parseAuctionDetail,
   parseAuctionPage,
@@ -9,6 +10,7 @@ import {
   parseWritten,
 } from './auctions.parse';
 import type {
+  AuctionCard,
   AuctionFilters,
   AuctionPage,
   AuctionPageParam,
@@ -31,9 +33,10 @@ export async function fetchAuctions(filters: AuctionFilters, param: AuctionPageP
   return sync(parseAuctionPage(res.data));
 }
 
-export async function fetchMyAuctions(status: MineStatus, param: AuctionPageParam): Promise<AuctionPage> {
-  const res = await api.get('/auctions/mine', { params: { status, ...pageParams(param) } });
-  return sync(parseAuctionPage(res.data));
+export async function fetchMyAuctions(status: MineStatus, page: number, pageSize: number): Promise<Paged<AuctionCard>> {
+  const res = await api.get('/auctions/mine', { params: { status, page, pageSize } });
+  const parsed = sync(parseAuctionPage(res.data));
+  return { items: parsed.items, meta: parsePaged<AuctionCard>(res.data).meta };
 }
 
 export async function fetchCategories() {

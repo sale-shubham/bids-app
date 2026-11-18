@@ -76,5 +76,5 @@ export function ProfilePage() {
     ...(isMember ? [{ value: 'alerts', label: 'Alerts', icon: BellRing, content: <AlertsCard /> }] : []),
   ];
 
-  return <MorePage nav={nav} title="Profile" tabs={tabs} />;
+  return <MorePage nav={nav} title="Profile" description="Your account, security, notifications and app settings." tabs={tabs} />;
 }

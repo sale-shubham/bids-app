@@ -17,6 +17,7 @@ vi.mock('next/image', () => ({
   // eslint-disable-next-line @next/next/no-img-element
   default: ({ src, alt }: ImgHTMLAttributes<HTMLImageElement> & { fill?: boolean }) => <img src={src as string} alt={alt} />,
 }));
+vi.mock('@/hooks/use-is-narrow-content', () => ({ useIsNarrowContent: () => false }));
 vi.mock('../sales.api');
 
 const sale = (status: string): SaleDTO =>
@@ -24,6 +25,7 @@ const sale = (status: string): SaleDTO =>
     id: 's1',
     status,
     amountPaise: 250000,
+    createdAt: '2026-11-01T10:00:00.000Z',
     auction: { id: 'a1', title: 'Brass Vase', coverImage: null },
     buyer: { id: 'b', name: 'Bea' },
     seller: { id: 'u', name: 'Sam' },
@@ -48,7 +50,8 @@ describe('SaleList', () => {
     nav.search = 'status=PAID';
     setup('seller');
     expect(screen.getByRole('tab', { name: 'Paid' })).toHaveAttribute('data-state', 'active');
-    expect(await screen.findByRole('link', { name: 'Ship' })).toHaveAttribute('href', '/sell/sales/s1');
+    await userEvent.click(await screen.findByRole('button', { name: 'Actions for Brass Vase' }));
+    expect(screen.getByRole('menuitem', { name: 'Ship' })).toHaveAttribute('href', '/sell/sales/s1');
     await waitFor(() => expect(vi.mocked(salesApi.fetchMySales).mock.calls[0]?.[1]).toBe('PAID'));
   });
 
@@ -63,7 +66,26 @@ describe('SaleList', () => {
   it('buyer: still links to /purchases and offers Pay now', async () => {
     vi.mocked(salesApi.fetchMySales).mockResolvedValue(pageOf(sale('AWAITING_PAYMENT')));
     setup('buyer');
+    await userEvent.click(await screen.findByRole('button', { name: 'Actions for Brass Vase' }));
+    expect(screen.getByRole('menuitem', { name: 'Pay now' })).toHaveAttribute('href', '/purchases/s1');
+  });
+
+  it('buyer: shows Pay now inline (solid) as well as in the menu', async () => {
+    vi.mocked(salesApi.fetchMySales).mockResolvedValue(pageOf(sale('AWAITING_PAYMENT')));
+    setup('buyer');
     expect(await screen.findByRole('link', { name: 'Pay now' })).toHaveAttribute('href', '/purchases/s1');
+  });
+
+  it('seller: shows Ship inline for a paid sale, and nothing inline otherwise', async () => {
+    setup('seller');
+    expect(await screen.findByRole('link', { name: 'Ship' })).toHaveAttribute('href', '/sell/sales/s1');
+  });
+
+  it('shows no inline next step for a shipped sale', async () => {
+    vi.mocked(salesApi.fetchMySales).mockResolvedValue(pageOf(sale('SHIPPED')));
+    setup('seller');
+    await screen.findByRole('button', { name: 'Actions for Brass Vase' });
+    expect(screen.queryByRole('link', { name: 'Ship' })).not.toBeInTheDocument();
   });
 
   it('SaleListBody: controlled status, no toolbar of its own', async () => {
@@ -73,7 +95,8 @@ describe('SaleList', () => {
       </QueryClientProvider>,
     );
     expect(screen.queryByRole('tab')).not.toBeInTheDocument();
-    expect(await screen.findByRole('link', { name: 'View' })).toHaveAttribute('href', '/purchases/s1');
+    await userEvent.click(await screen.findByRole('button', { name: 'Actions for Brass Vase' }));
+    expect(screen.getByRole('menuitem', { name: 'View' })).toHaveAttribute('href', '/purchases/s1');
     await waitFor(() => expect(vi.mocked(salesApi.fetchMySales).mock.calls[0]?.[1]).toBe('SHIPPED'));
   });
 });

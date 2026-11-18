@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { EmptyState } from '@/components/common/empty-state';
+import { Notice } from '@/components/common/notice';
 import { PageHeader } from '@/components/common/page-header';
 import { CoverImage } from '@/features/auctions/components/auction-card';
 import { apiErrorCode } from '@/lib/api-client';
@@ -76,9 +77,7 @@ export function OfferDetailPage({ id }: { id: string }) {
               </div>
               <p className="min-w-0 wrap-break-word text-lg font-semibold">{offer.auction.title}</p>
             </Link>
-            <p className="text-sm text-muted-foreground">
-              The winner did not pay, so the seller is offering you this item at your maximum bid.
-            </p>
+            <Notice tone="info">The winner did not pay, so the seller is offering you this item at your maximum bid.</Notice>
             <dl className="grid gap-3 text-sm @lg/content:grid-cols-3">
               <div>
                 <dt className="text-xs text-muted-foreground">Price</dt>
@@ -106,8 +105,8 @@ export function OfferDetailPage({ id }: { id: string }) {
                 </Button>
               </div>
             )}
-            {expired && <p className="rounded-lg border border-dashed p-3 text-center text-sm text-muted-foreground">This offer has expired.</p>}
-            {offer.status === 'DECLINED' && <p className="text-sm text-muted-foreground">You declined this offer.</p>}
+            {expired && <Notice tone="info">This offer has expired.</Notice>}
+            {offer.status === 'DECLINED' && <Notice tone="info">You declined this offer.</Notice>}
             {offer.status === 'ACCEPTED' && (
               <Button asChild>
                 <Link href={offer.newSaleId ? `/purchases/${offer.newSaleId}` : '/purchases'}>View purchase</Link>

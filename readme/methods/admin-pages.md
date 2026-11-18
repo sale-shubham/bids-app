@@ -9,16 +9,18 @@ Pilots: `src/app/(admin)/admin/members/page.tsx` and `src/app/(admin)/admin/auct
 | Title row | `PageHeader` `{ title, description?, backHref?, backLabel?, action?, className? }` | `components/common/page-header.tsx` |
 | Search, tabs, filters | `ListToolbar` `{ tabs?, search?, activeFilters?, onClearFilters?, children? }` | `components/common/list-toolbar.tsx` |
 | Select filter in the panel | `FilterSelect` `{ value, onChange, options: {value,label}[], allLabel, ariaLabel }` (`''` = no filter) | same file |
-| Status tabs | `StatusTabs` `{ value, tabs, onChange }` | `features/admin/components/admin-list.tsx` |
-| Debounced search | `SearchInput` `{ value, onChange, placeholder }` (500ms) | `components/common/search-input.tsx` |
-| Table on wide, cards on narrow, pagination / infinite scroll, skeleton, empty, error + "Try again" | `AdminList<T>` `{ list, page, onPageChange, onPageSizeChange, renderTable, renderCard, getKey, empty }` | `features/admin/components/admin-list.tsx` (wraps `components/common/responsive-list.tsx`) |
+| Status tabs | `StatusTabs` `{ value, tabs, onChange }` X search | `SearchInput` `{ value, onChange, placeholder }` (500ms) | `components/common/search-input.tsx` |
+| Table on wide, cards on narrow, pagination / infinite scroll, skeleton, empty, error + "Try again" | `PagedList<T>` `{ list, page, onPageChange, onPageSizeChange, renderTable, renderCard, getKey, empty, errorTitle? }`; `empty` is `{ icon, title, description, actionLabel?, actionHref?, onAction? }` (the action renders a button in the empty state) | `components/common/paged-list.tsx` (wraps `responsive-list.tsx`); `AdminList` in `features/admin/components/admin-list.tsx` is an alias |
 | Row actions | `RowActionsMenu` `{ name, actions: RowAction[] }`, `RowAction = { label, icon, onSelect?, href?, destructive?, separated?, disabled?, hint? }` | `components/common/row-actions-menu.tsx` |
 | Status pills | `StatusBadge` (never inline coloured spans) | `components/common/status-badge.tsx` |
 | Confirm | `ConfirmDialog` (page-level, one per action) | `components/common/confirm-dialog.tsx` |
 | URL state | `useUrlState(DEFAULTS)` returns `{ values, page, pageSize, update }` | `features/admin/use-url-state.ts` |
-| Data | `useAdminList(resource, filters, page, size, fetcher)` (offset query wide, infinite query narrow) | `features/admin/use-admin.ts` |
+| Data | `usePagedList(key, filters, page, size, fetcher)` (offset query wide, infinite query narrow; keys `[...key,'list',filters,page,size]` / `[...key,'infinite',filters]`) | `hooks/use-paged-list.ts` |
+| Admin data | `useAdminList(resource, ...)` = `usePagedList(['admin', resource], ...)` | `features/admin/use-admin.ts` |
 
 Admin pages import the common `PageHeader` (`components/common/page-header.tsx`) directly; the old `admin-list.tsx` adapter was removed.
+
+Member pages use the same pattern with `usePagedList([<their existing query-key prefix>], ...)` so existing invalidations keep matching.
 
 ## Skeleton
 
@@ -71,7 +73,8 @@ export default function Page() { return <Suspense><XView /></Suspense>; } // use
 5. Filter state is in the URL via `useUrlState`. Validate each value read from the URL against the options you offer, and never send a value the UI does not offer. Changing a filter resets `page`.
 6. Mobile is cards, desktop is a table, both through `AdminList`; the switch is the `@3xl/content` container query (768px of content). Layout inside page bodies uses container queries (`@lg/content:`), never bare `sm:` / `md:` (docs/CONTAINER_QUERIES.md).
 7. Row actions live in one `RowActionsMenu` (the same on table row and card). Destructive ones are `destructive` + `separated` and open a page-level `ConfirmDialog` (docs/CONFIRM_DIALOG.md); mutations toast success and error exactly as before.
-8. Table: header `h-11 text-xs uppercase` (the `TableHead` default), cells `px-4 py-3 text-sm`, numbers `tnum` and right-aligned, money through `formatINR`. Actions column: `w-12`, sr-only header. Cards: `<Card><CardContent className="space-y-2 p-4">`, three spacing steps only (`space-y-2` between blocks).
+7a. A row's single next step, such as Pay now or Ship, may show inline beside the menu (small button, also kept in the menu).
+8. Table: header `h-11 text-xs uppercase` (the `TableHead` default), cells `px-4 py-3 text-sm`, numbers `tnum` and right-aligned, money through `formatINR`. Actions column: `w-12`, sr-only header (`w-px` where an inline next-step button sits beside the menu). Cards: `<Card><CardContent className="space-y-2 p-4">`, three spacing steps only (`space-y-2` between blocks).
 9. Statuses use `StatusBadge` / the feature's badge. Empty copy differs for "nothing exists" vs "search/filter matched nothing" when useful.
 10. Page sizes are 10/25/50/75/100 (`ADMIN_PAGE_SIZES` now matches `ListPagination`); cards load 100 per batch.
 11. Hidden data: super admin accounts never appear in `/admin/members` (API hides them); there is no role filter any more (the members page filters by `seller=true|false` and status).
