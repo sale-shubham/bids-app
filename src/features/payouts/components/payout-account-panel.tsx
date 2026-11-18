@@ -1,7 +1,6 @@
 'use client';
-import { AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Notice } from '@/components/common/notice';
 import { Skeleton } from '@/components/ui/skeleton';
 import { apiErrorMessage } from '@/lib/api-client';
 import { usePayoutAccount } from '../use-payouts';
@@ -15,15 +14,12 @@ export function PayoutAccountPanel() {
   if (isLoading) return <Skeleton className="h-64" />;
   if (error) {
     return (
-      <Card>
-        <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
-          <AlertTriangle className="h-8 w-8 text-destructive" />
-          <p className="text-sm text-muted-foreground">{apiErrorMessage(error, 'Could not load your payout account')}</p>
-          <Button variant="outline" onClick={() => void refetch()}>
-            Try again
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="space-y-2">
+        <Notice tone="error">{apiErrorMessage(error, 'Could not load your payout account')}</Notice>
+        <Button variant="outline" onClick={() => void refetch()}>
+          Try again
+        </Button>
+      </div>
     );
   }
   if (!account) {

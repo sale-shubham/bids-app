@@ -19,6 +19,7 @@ vi.mock('next/image', () => ({
   // eslint-disable-next-line @next/next/no-img-element
   default: ({ src, alt }: ImgHTMLAttributes<HTMLImageElement> & { fill?: boolean }) => <img src={src as string} alt={alt} />,
 }));
+vi.mock('@/hooks/use-is-narrow-content', () => ({ useIsNarrowContent: () => false }));
 vi.mock('@/features/commissions/commissions.api');
 vi.mock('@/features/referrals/use-referrals', () => ({
   useCreditBalance: () => state.balance,
@@ -74,12 +75,12 @@ describe('Commission pay with credits', () => {
     expect(commissionsApi.createCommissionCheckout).not.toHaveBeenCalled();
   });
 
-  it('shows the figure strip and a bare title, with the tab read from the URL', async () => {
+  it('shows the total-unpaid notice and a bare title, with the tab read from the URL', async () => {
     nav.search = 'status=paid';
     setup();
     expect(screen.getByRole('heading', { name: 'Commissions' })).toBeInTheDocument();
-    expect(await screen.findByText('Total unpaid')).toBeInTheDocument();
-    expect(screen.getByText('Overdue')).toBeInTheDocument();
+    expect(await screen.findByText('Total unpaid', { exact: false })).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('Total unpaid ₹50 across 1 due commission');
     expect(screen.getByRole('tab', { name: 'Paid' })).toHaveAttribute('data-state', 'active');
     await waitFor(() => expect(vi.mocked(commissionsApi.fetchCommissions).mock.calls[0]?.[0]).toBe('paid'));
   });

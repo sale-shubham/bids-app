@@ -4,7 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAuthStore, type AuthMember } from '@/store/auth-store';
 import type { StrikeDTO } from '../strikes.types';
 
-const m = vi.hoisted(() => ({ remove: vi.fn(), refetch: vi.fn(), strikes: [] as StrikeDTO[] }));
+const m = vi.hoisted(() => ({ remove: vi.fn(), refetch: vi.fn(), strikes: [] as StrikeDTO[], path: '/my-bids' }));
+vi.mock('next/navigation', () => ({ usePathname: () => m.path }));
 const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock('sonner', () => ({ toast }));
 vi.mock('../use-strikes', () => ({
@@ -18,6 +19,24 @@ import { StrikeBanner } from './strike-banner';
 const signIn = (strikes?: number) => useAuthStore.setState({ member: { id: 'me', role: 'MEMBER', activeStrikes: strikes } as AuthMember, initialized: true });
 
 describe('StrikeBanner', () => {
+  beforeEach(() => {
+    m.path = '/my-bids';
+  });
+  it('shows on the buying pages and their sub-paths but not on selling pages', () => {
+    signIn(1);
+    for (const path of ['/my-bids', '/purchases', '/purchases/s1', '/watchlist']) {
+      m.path = path;
+      const { unmount } = render(<StrikeBanner />);
+      expect(screen.getByRole('alert')).toBeInTheDocument();
+      unmount();
+    }
+    for (const path of ['/sell/auctions', '/profile', '/notifications']) {
+      m.path = path;
+      const { container, unmount } = render(<StrikeBanner />);
+      expect(container).toBeEmptyDOMElement();
+      unmount();
+    }
+  });
   it('renders nothing without strikes', () => {
     signIn(0);
     const { container } = render(<StrikeBanner />);

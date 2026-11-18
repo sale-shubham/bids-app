@@ -3,6 +3,7 @@ import { useInfiniteQuery, useMutation, useQueryClient, type QueryClient } from 
 import { toast } from 'sonner';
 import { formatINR } from '@/lib/utils';
 import { nextPagedParam } from '@/lib/paged';
+import { usePagedList } from '@/hooks/use-paged-list';
 import { recordEngagement } from '@/lib/engagement';
 import * as api from './bids.api';
 import type { MyBidsTab } from './bids.types';
@@ -57,11 +58,7 @@ export function useAuctionBids(auctionId: string, enabled = true) {
   });
 }
 
-export function useMyBids(tab: MyBidsTab) {
-  return useInfiniteQuery({
-    queryKey: ['my-bids', tab],
-    queryFn: ({ pageParam }) => api.fetchMyBids(tab, pageParam),
-    initialPageParam: 1,
-    getNextPageParam: nextPagedParam,
-  });
+/** The member's bids for one tab, paged (table on wide, infinite cards on narrow). Key prefix `['my-bids']` is invalidated after every bid. */
+export function useMyBids(tab: MyBidsTab, page: number, pageSize: number) {
+  return usePagedList(['my-bids'], { tab }, page, pageSize, (f, p, size) => api.fetchMyBids(f.tab, p, size));
 }

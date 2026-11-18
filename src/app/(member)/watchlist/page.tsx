@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { PageHeader } from '@/components/common/page-header';
 import { WatchlistView } from '@/features/watchlist/components/watchlist-view';
@@ -8,7 +9,9 @@ export default function WatchlistPage() {
   return (
     <div className="space-y-4">
       <PageHeader title="Watchlist" />
-      <WatchlistView />
+      <Suspense>
+        <WatchlistView />
+      </Suspense>
     </div>
   );
 }

@@ -2,6 +2,7 @@
 import { AuthGuard } from '@/components/common/auth-guard';
 import { PushPermissionPrompt } from '@/components/common/push-permission-prompt';
 import { DashboardShell } from '@/components/layout/dashboard-shell';
+import { StrikeBanner } from '@/features/strikes/components/strike-banner';
 import { useMoreTab, useNav } from '@/components/layout/nav-items';
 
 // Member area (auctions you bid on and sell: /my-bids, /purchases, /sell/*, /watchlist,
@@ -14,7 +15,12 @@ export default function MemberLayout({ children }: { children: React.ReactNode }
   return (
     <AuthGuard allow={['MEMBER']}>
       <PushPermissionPrompt />
-      <DashboardShell nav={nav} moreTab={moreTab}>{children}</DashboardShell>
+      <DashboardShell nav={nav} moreTab={moreTab}>
+        <div className="space-y-4">
+          <StrikeBanner />
+          {children}
+        </div>
+      </DashboardShell>
     </AuthGuard>
   );
 }

@@ -20,7 +20,7 @@ src/
     sitemap.ts, robots.ts            SEO (app public pages + /auctions/sitemap, fail-soft); public/og-image.png = default OG image
   components/
     ui/                              shadcn/Radix primitives
-    common/                          generic app components (page-header, list-toolbar, row-actions-menu, notice, figure, confirm-dialog, auth-guard, countdown, responsive-list, infinite-scroll,
+    common/                          generic app components (page-header, list-toolbar, row-actions-menu, notice, figure, confirm-dialog, auth-guard, countdown, responsive-list, paged-list (table + cards + states, `AdminList` alias), status-tabs, infinite-scroll,
                                      form-input, otp-*, pwa-*, push-permission-prompt, offline-banner, theme-toggle, profile-page (shared by /profile and /admin/profile), ...)
     layout/                          dashboard-shell (guest prop), public-shell (DashboardShell for the public pages, guest or member mode),
                                      shell-footer (website + legal links), mobile-bottom-nav, more-page, nav-items (member / admin / guest nav,
@@ -65,7 +65,7 @@ src/
     legal/                           legal.api/schema, use-legal (admin legal page editing)
     admin/                           admin.api/parse/schema/types, use-admin, use-url-state,
                                      components/{admin-list,admin-charts,marketplace-settings,legal-settings,copy-button}
-  hooks/                             use-client-state, use-login-href (login/signup URL with ?next=), use-is-mobile, use-is-narrow-content, use-resend-cooldown
+  hooks/                             use-paged-list (dual offset/infinite list query), use-client-state, use-login-href (login/signup URL with ?next=), use-is-mobile, use-is-narrow-content, use-resend-cooldown
   lib/                               api-client, server-api, query-client, paged + pagination, site (SITE_URL), pwa, push, razorpay, pdf (fetchPdfBlob, openPdfTab, showPdf),
                                      engagement, assets, device-info, utils (cn, formatINR, dates), zod
   providers/                         Providers (Query + theme + tooltip + toaster), AuthBootstrap

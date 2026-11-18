@@ -1,4 +1,5 @@
 'use client';
+import { Notice } from '@/components/common/notice';
 import * as React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
@@ -119,7 +120,7 @@ export function PurchaseActions({ sale }: { sale: SaleDTO }) {
           </div>
         )}
         {a.payWindowClosed && (
-          <p className="text-sm text-destructive">The payment window for this purchase has closed.</p>
+          <Notice tone="error">The payment window for this purchase has closed.</Notice>
         )}
         {(a.canConfirm || a.canDispute) && (
           <div className="flex flex-wrap items-center gap-2">

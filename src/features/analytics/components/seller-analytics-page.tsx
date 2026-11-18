@@ -1,24 +1,26 @@
 'use client';
-import * as React from 'react';
 import Link from 'next/link';
-import { AlertTriangle, BarChart3, Banknote, Eye, Gavel, Heart, PackageCheck, Users, UserCheck } from 'lucide-react';
+import { BarChart3, Banknote, Eye, Gavel, Heart, PackageCheck, Users, UserCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/components/ui/table';
 import { EmptyState } from '@/components/common/empty-state';
+import { Notice } from '@/components/common/notice';
 import { SortableTableHead } from '@/components/common/sortable-table-head';
 import { Figure, FigureStrip } from '@/components/common/figure';
 import { ListToolbar } from '@/components/common/list-toolbar';
 import { PageHeader } from '@/components/common/page-header';
 import { useSortedItems, useSortState } from '@/components/common/use-sortable-data';
+import { useUrlState } from '@/features/admin/use-url-state';
 import { apiErrorMessage } from '@/lib/api-client';
 import { formatINR } from '@/lib/utils';
-import type { AnalyticsDays } from '../analytics.api';
+import { ANALYTICS_DAYS, type AnalyticsDays } from '../analytics.api';
 import { useSellerAnalytics } from '../use-analytics';
 import { DailyChart } from './analytics-charts';
 import { DaysSwitch } from './days-switch';
 
+const URL_DEFAULTS = { days: '30' };
 const n = (v: number) => v.toLocaleString('en-IN');
 
 const COLUMNS: { key: string; label: string; right?: boolean }[] = [
@@ -34,7 +36,8 @@ const COLUMNS: { key: string; label: string; right?: boolean }[] = [
 
 /** /sell/analytics: KPI tiles, views + bids per day, and a sortable per-auction table. */
 export function SellerAnalyticsPage() {
-  const [days, setDays] = React.useState<AnalyticsDays>(30);
+  const { values, update } = useUrlState(URL_DEFAULTS);
+  const days = (ANALYTICS_DAYS.find((d) => String(d) === values.days) ?? 30) as AnalyticsDays;
   const q = useSellerAnalytics(days);
   const { sortConfig, requestSort } = useSortState();
   const rows = useSortedItems(q.data?.auctions ?? [], sortConfig);
@@ -45,18 +48,15 @@ export function SellerAnalyticsPage() {
     <div className="space-y-4">
       <PageHeader title="Analytics" />
 
-      <ListToolbar tabs={<DaysSwitch value={days} onChange={setDays} />} />
+      <ListToolbar tabs={<DaysSwitch value={days} onChange={(d) => update({ days: String(d) })} />} />
 
       {q.isError && !data ? (
-        <Card>
-          <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
-            <AlertTriangle className="h-8 w-8 text-destructive" />
-            <p className="text-sm text-muted-foreground">{apiErrorMessage(q.error, 'Could not load your analytics')}</p>
-            <Button variant="outline" onClick={() => void q.refetch()}>
-              Try again
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="space-y-2">
+          <Notice tone="error">{apiErrorMessage(q.error, 'Could not load your analytics')}</Notice>
+          <Button variant="outline" onClick={() => void q.refetch()}>
+            Try again
+          </Button>
+        </div>
       ) : !data ? (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-2 @lg/content:grid-cols-3 @3xl/content:grid-cols-7">

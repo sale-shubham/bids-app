@@ -14,8 +14,8 @@ export interface WatchlistIds {
 
 export const WATCHLIST_PAGE_SIZE = 12;
 
-export async function fetchWatchlist(page: number): Promise<Paged<WatchlistEntry>> {
-  const res = await api.get('/watchlist', { params: { page, pageSize: WATCHLIST_PAGE_SIZE } });
+export async function fetchWatchlist(page: number, pageSize: number = WATCHLIST_PAGE_SIZE): Promise<Paged<WatchlistEntry>> {
+  const res = await api.get('/watchlist', { params: { page, pageSize } });
   return parsePaged<WatchlistEntry>(res.data);
 }
 

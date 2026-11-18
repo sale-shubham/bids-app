@@ -2,6 +2,7 @@
 import * as React from 'react';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useServerNow } from '@/components/common/countdown';
+import { usePagedList } from '@/hooks/use-paged-list';
 import { useLiveStore } from '@/store/live-store';
 import * as api from './auctions.api';
 import { nextAuctionPage } from './auctions.filters';
@@ -28,13 +29,9 @@ export function useAuctionsList(filters: AuctionFilters, initialPage?: AuctionPa
   });
 }
 
-export function useMyAuctions(status: MineStatus) {
-  return useInfiniteQuery({
-    queryKey: ['auctions', 'mine', status],
-    queryFn: ({ pageParam }) => api.fetchMyAuctions(status, pageParam),
-    initialPageParam: FIRST,
-    getNextPageParam: nextAuctionPage,
-  });
+/** The seller's own auctions; key prefix `['auctions','mine']` keeps every `['auctions']` invalidation matching. */
+export function useMyAuctions(status: MineStatus, page: number, pageSize: number) {
+  return usePagedList(['auctions', 'mine'], { status }, page, pageSize, (f, p, size) => api.fetchMyAuctions(f.status, p, size));
 }
 
 export function useCategories() {

@@ -13,7 +13,7 @@ test('my auctions lists a seeded live auction with its actions', async ({ page }
   const a = await createAuction({ sellerId: sellerId(), title: unique('Mine'), startsInSec: -60, endsInSec: 2 * HOUR });
   await page.goto('/sell/auctions');
   await expect(page.getByRole('heading', { name: 'My auctions' })).toBeVisible();
-  const row = page.getByRole('listitem').filter({ hasText: a.title });
+  const row = page.getByRole('row').filter({ hasText: a.title });
   await expect(row).toBeVisible();
   await expect(row.getByText('Live', { exact: true })).toBeVisible();
   await row.getByRole('button', { name: /^Actions for / }).click();
@@ -34,14 +34,14 @@ test('edit an auction with 0 bids', async ({ page }) => {
 
   await page.goto('/sell/auctions');
   await page.getByRole('tab', { name: 'Upcoming' }).click();
-  await expect(page.getByRole('listitem').filter({ hasText: newTitle })).toBeVisible();
+  await expect(page.getByRole('row').filter({ hasText: newTitle })).toBeVisible();
 });
 
 test('delete an auction with 0 bids (confirm dialog)', async ({ page }) => {
   const a = await createAuction({ sellerId: sellerId(), title: unique('Delete me'), startsInSec: HOUR, endsInSec: 2 * HOUR });
   await page.goto('/sell/auctions');
   await page.getByRole('tab', { name: 'Upcoming' }).click();
-  const row = page.getByRole('listitem').filter({ hasText: a.title });
+  const row = page.getByRole('row').filter({ hasText: a.title });
   await row.getByRole('button', { name: /^Actions for / }).click();
   await page.getByRole('menuitem', { name: 'Delete' }).click();
 

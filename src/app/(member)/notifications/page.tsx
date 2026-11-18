@@ -1,18 +1,24 @@
 'use client';
+import { Suspense } from 'react';
 import { useRouter } from 'next/navigation';
-import { AlertCircle, Bell, CheckCheck } from 'lucide-react';
+import { Bell, CheckCheck, ExternalLink } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { EmptyState } from '@/components/common/empty-state';
-import { InfiniteScroll } from '@/components/common/infinite-scroll';
+import { Card } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { PagedList } from '@/components/common/paged-list';
 import { PageHeader } from '@/components/common/page-header';
-import { apiErrorMessage } from '@/lib/api-client';
+import { RowActionsMenu, type RowAction } from '@/components/common/row-actions-menu';
+import { useUrlState } from '@/features/admin/use-url-state';
 import { NotificationItem, useOpenNotification } from '@/features/notifications/components/notification-item';
+import type { NotificationDTO } from '@/features/notifications/notifications.types';
 import { useMarkAllRead, useMarkRead, useNotificationList, useUnreadCount } from '@/features/notifications/use-notifications';
+import { cn, formatListTime } from '@/lib/utils';
 
-export default function NotificationsPage() {
+function NotificationsView() {
   const router = useRouter();
-  const list = useNotificationList();
+  const { page, pageSize, update } = useUrlState({});
+  const list = useNotificationList(page, pageSize);
   const unread = useUnreadCount();
   const markRead = useMarkRead();
   const markAll = useMarkAllRead();
@@ -20,7 +26,12 @@ export default function NotificationsPage() {
     (id) => markRead.mutate(id),
     (path) => router.push(path),
   );
-  const items = list.data?.pages.flatMap((p) => p.items) ?? [];
+
+  const actions = (n: NotificationDTO) => {
+    const items: RowAction[] = [{ label: 'Open', icon: ExternalLink, onSelect: () => onOpen(n) }];
+    if (!n.readAt) items.push({ label: 'Mark read', icon: CheckCheck, onSelect: () => markRead.mutate(n.id) });
+    return <RowActionsMenu name={n.title} actions={items} />;
+  };
 
   return (
     <div className="space-y-4">
@@ -33,31 +44,55 @@ export default function NotificationsPage() {
         }
       />
 
-      {list.isPending ? (
-        <div className="space-y-2">
-          {Array.from({ length: 5 }, (_, i) => (
-            <Skeleton key={i} className="h-16 w-full" />
-          ))}
-        </div>
-      ) : list.isError ? (
-        <EmptyState
-          icon={AlertCircle}
-          title="Could not load notifications"
-          description={apiErrorMessage(list.error, 'Please try again.')}
-          actionLabel="Try again"
-          onAction={() => void list.refetch()}
-        />
-      ) : items.length === 0 ? (
-        <EmptyState icon={Bell} title="No notifications yet" description="You will be told here when you are outbid, win an auction or a sale completes." />
-      ) : (
-        <div className="divide-y overflow-hidden rounded-xl border">
-          {items.map((n) => (
-            <NotificationItem key={n.id} n={n} onOpen={onOpen} />
-          ))}
-        </div>
-      )}
-
-      <InfiniteScroll onLoadMore={() => void list.fetchNextPage()} hasMore={!!list.hasNextPage && !list.isFetchNextPageError} loading={list.isFetchingNextPage} />
+      <PagedList<NotificationDTO>
+        list={list}
+        page={page}
+        onPageChange={(p) => update({ page: String(p) })}
+        onPageSizeChange={(s) => update({ pageSize: String(s) })}
+        getKey={(n) => n.id}
+        errorTitle="Could not load notifications"
+        empty={{ icon: Bell, title: 'No notifications yet', description: 'You will be told here when you are outbid, win an auction or a sale completes.' }}
+        renderTable={(items) => (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Notification</TableHead>
+                <TableHead>Received</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="w-12">
+                  <span className="sr-only">Actions</span>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {items.map((n) => (
+                <TableRow key={n.id}>
+                  <TableCell className="max-w-lg">
+                    <p className={cn('truncate', !n.readAt && 'font-semibold')}>{n.title}</p>
+                    <p className="line-clamp-2 text-xs text-muted-foreground">{n.body}</p>
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap">{formatListTime(n.createdAt)}</TableCell>
+                  <TableCell>{!n.readAt && <Badge variant="default" dot>Unread</Badge>}</TableCell>
+                  <TableCell className="text-right">{actions(n)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+        renderCard={(n) => (
+          <Card className="overflow-hidden">
+            <NotificationItem n={n} onOpen={onOpen} />
+          </Card>
+        )}
+      />
     </div>
+  );
+}
+
+export default function NotificationsPage() {
+  return (
+    <Suspense>
+      <NotificationsView />
+    </Suspense>
   );
 }

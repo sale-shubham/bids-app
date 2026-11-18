@@ -1,9 +1,9 @@
 'use client';
 import { useRef } from 'react';
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ME_KEY } from '@/features/members/use-members';
 import { useRazorpayPayment } from '@/features/payments/use-razorpay-payment';
-import { nextPagedParam } from '@/lib/paged';
+import { usePagedList } from '@/hooks/use-paged-list';
 import * as api from './sales.api';
 import { isStaleSaleError, salePaymentErrorMessage } from './sales.errors';
 import type { SaleListRole, SaleStatus, ShipSaleInput, ShippingMethod } from './sales.types';
@@ -11,16 +11,12 @@ import type { SaleListRole, SaleStatus, ShipSaleInput, ShippingMethod } from './
 export const saleKeys = {
   all: ['sales'] as const,
   one: (id: string) => ['sales', 'one', id] as const,
-  mine: (role: SaleListRole, status: SaleStatus | 'all') => ['sales', 'mine', role, status] as const,
+  /** Prefix of one role's lists (`usePagedList` appends `list` / `infinite`); still under `saleKeys.all`. */
+  mine: (role: SaleListRole) => ['sales', 'mine', role] as const,
 };
 
-export function useMySales(role: SaleListRole, status: SaleStatus | 'all') {
-  return useInfiniteQuery({
-    queryKey: saleKeys.mine(role, status),
-    queryFn: ({ pageParam }) => api.fetchMySales(role, status, pageParam),
-    initialPageParam: 1,
-    getNextPageParam: nextPagedParam,
-  });
+export function useMySales(role: SaleListRole, status: SaleStatus | 'all', page: number, pageSize: number) {
+  return usePagedList(saleKeys.mine(role), { status }, page, pageSize, (f, p, size) => api.fetchMySales(role, f.status, p, size));
 }
 
 export function useSale(id: string) {
